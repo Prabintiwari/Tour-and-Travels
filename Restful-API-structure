@@ -1,0 +1,144 @@
+# Initial Restful planning of Tour and Travel
+1️ AUTH & USER MANAGEMENT
+Auth
+POST   /api/auth/register
+POST   /api/auth/login
+POST   /api/auth/logout
+GET    /api/auth/me
+
+Users 
+GET    /api/users/me                 → logged-in user profile
+PUT    /api/users/me                 → update own profile
+PUT    /api/users/me/profile-image   → update profile image
+
+Admin – User Management
+GET    /api/admin/users
+GET    /api/admin/users/:userId
+PUT    /api/admin/users/:userId
+PATCH  /api/admin/users/:userId/block
+PATCH  /api/admin/users/:userId/role
+DELETE /api/admin/users/:userId
+
+2️ DESTINATIONS
+GET    /api/destinations
+GET    /api/destinations/:destinationId
+
+Admin
+POST   /api/admin/destinations
+PUT    /api/admin/destinations/:destinationId
+DELETE /api/admin/destinations/:destinationId
+
+3️ TOUR PACKAGES
+GET    /api/tours
+GET    /api/tours/:tourId
+
+Admin – Tour Management
+POST   /api/admin/tours
+PUT    /api/admin/tours/:tourId
+DELETE /api/admin/tours/:tourId
+
+Tour Images
+POST   /api/admin/tours/:tourId/images
+DELETE /api/admin/tours/:tourId/images/:imageId
+
+Tour Itineraries (Admin-defined)
+GET    /api/tours/:tourId/itinerary
+
+Admin
+POST   /api/admin/tours/:tourId/itinerary
+PUT    /api/admin/itinerary/:itineraryId
+DELETE /api/admin/itinerary/:itineraryId
+
+4️ TOUR SCHEDULES
+GET    /api/tours/:tourId/schedules
+
+Admin
+POST   /api/admin/tours/:tourId/schedules
+PUT    /api/admin/schedules/:scheduleId
+DELETE /api/admin/schedules/:scheduleId
+
+5️ BOOKINGS & PAYMENTS (TOUR)
+Bookings
+POST   /api/bookings
+GET    /api/bookings/my
+GET    /api/bookings/:bookingId
+
+Admin
+GET    /api/admin/bookings
+PUT    /api/admin/bookings/:bookingId/status
+
+Tour Payments
+POST   /api/payments/tour
+GET    /api/payments/tour/:bookingId
+
+6️ REVIEWS
+Tour Reviews
+POST   /api/reviews/tours/:tourId
+GET    /api/reviews/tours/:tourId
+DELETE /api/reviews/tours/:reviewId
+
+
+(Admin can delete any review)
+
+Vehicle Reviews
+POST   /api/reviews/vehicles/:vehicleId
+GET    /api/reviews/vehicles/:vehicleId
+DELETE /api/reviews/vehicles/:reviewId
+
+7️ VEHICLE RENTAL SYSTEM 🚗🏍
+Vehicles
+GET    /api/vehicles
+GET    /api/vehicles/:vehicleId
+
+Admin
+POST   /api/admin/vehicles
+PUT    /api/admin/vehicles/:vehicleId
+DELETE /api/admin/vehicles/:vehicleId
+
+Vehicle Rentals
+POST   /api/vehicle-rentals
+GET    /api/vehicle-rentals/my
+GET    /api/vehicle-rentals/:rentalId
+
+Admin
+GET    /api/admin/vehicle-rentals
+PUT    /api/admin/vehicle-rentals/:rentalId/status
+
+Vehicle Payments
+POST   /api/payments/vehicle
+GET    /api/payments/vehicle/:rentalId
+
+8️ CUSTOM ITINERARY (USER-PRIVATE)
+Custom Itineraries
+POST   /api/custom-itineraries
+GET    /api/custom-itineraries/my
+GET    /api/custom-itineraries/:itineraryId
+PUT    /api/custom-itineraries/:itineraryId
+DELETE /api/custom-itineraries/:itineraryId
+
+Custom Itinerary Events
+POST   /api/custom-itineraries/:itineraryId/events
+GET    /api/custom-itineraries/:itineraryId/events
+PUT    /api/custom-itinerary-events/:eventId
+DELETE /api/custom-itinerary-events/:eventId
+
+
+
+
+9️ FAQs
+Tour FAQs
+GET    /api/faqs/tours/:tourId
+
+Admin
+POST   /api/admin/faqs/tours/:tourId
+PUT    /api/admin/faqs/tours/:faqId
+DELETE /api/admin/faqs/tours/:faqId
+
+Vehicle FAQs
+GET    /api/faqs/vehicles
+
+Admin
+POST   /api/admin/faqs/vehicles
+PUT    /api/admin/faqs/vehicles/:faqId
+DELETE /api/admin/faqs/vehicles/:faqId
+
