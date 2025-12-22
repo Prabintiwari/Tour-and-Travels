@@ -1,0 +1,432 @@
+// prisma/schema.prisma
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ==================== ENUMS ====================
+enum UserRole {
+  ADMIN
+  USER
+  GUEST
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+enum PaymentMethod {
+  CASH
+  WALLET
+  CREDIT_CARD
+  DEBIT_CARD
+  NET_BANKING
+  UPI
+}
+
+enum RentalStatus {
+  PENDING
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum VehicleType {
+  CAR
+  MOTORCYCLE
+  BICYCLE
+  BUS
+  VAN
+  TRUCK
+}
+
+enum FuelType {
+  PETROL
+  DIESEL
+  HYBRID
+  ELECTRIC
+}
+
+// ==================== AUTH & USER MANAGEMENT ====================
+
+model User {
+  id                    String   @id @default(auto()) @map("_id") @db.ObjectId
+  email                 String   @unique
+  password              String
+  fullName              String?
+  phone                 String?
+  profileImage          String?
+  address               String?
+  street                String?
+  city                  String?
+  country               String?
+  dateOfBirth           DateTime?
+  role                  UserRole @default(USER)
+  isBlocked             Boolean  @default(false)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  // Relations
+  tourBookings          TourBooking[]
+  vehicleBookings       VehicleBooking[]
+  tourReviews           TourReview[]
+  vehicleReviews        VehicleReview[]
+  customItineraries     CustomItinerary[]
+  tourPayments          TourPayment[]
+  vehiclePayments       VehiclePayment[]
+
+}
+
+// ==================== DESTINATIONS ====================
+model Destination {
+  id                    String   @id @default(auto()) @map("_id") @db.ObjectId
+  name                  String
+  description           String?
+  region                String?
+  location              String
+  imageUrl              String?
+  attractions           String[] // Array of attraction names/descriptions
+  bestTimeToVisit       String?
+  views                 Int      @default(0)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  // Relations
+  tours                 Tour[]
+  destinationGalleries  DestinationGallery[]
+  tourBookings          TourBooking[]
+  tourReviews           TourReview[]
+  customItineraries     CustomItinerary[]
+
+  @@index([name])
+  @@index([region])
+}
+
+// ==================== DESTINATION GALLERY ====================
+
+model DestinationGallery {
+  id                    String   @id @default(auto()) @map("_id") @db.ObjectId
+  destinationId         String   @db.ObjectId
+  destination           Destination @relation(fields: [destinationId], references: [id], onDelete: Cascade)
+  imageUrl              String
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@index([destinationId])
+}
+
+// ==================== TOUR PACKAGES ====================
+model Tour {
+  id                    String   @id @default(auto()) @map("_id") @db.ObjectId
+  destinationId         String   @db.ObjectId
+  destination           Destination @relation(fields: [destinationId], references: [id], onDelete: Cascade)
+  title                 String
+  description           String?
+  numberOfDays          Int
+  basePrice             Float
+  maxParticipants       Int?
+  minParticipants       Int?
+  difficultyLevel       String? // EASY, MODERATE, HARD
+  isFeatured            Boolean  @default(false)
+  coverImage            String?
+  images                String[] // Array of image URLs
+  views                 Int      @default(0)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  // Relations
+  itineraries           Itinerary[]
+  schedules             TourSchedule[]
+  reviews               TourReview[]
+  faqs                  TourFAQ[]
+  tourBookings          TourBooking[]
+
+  @@index([destinationId])
+  @@index([isFeatured])
+}
+
+// ==================== TOUR ITINERARY (Day-by-day breakdown) ====================
+model Itinerary {
+  id                    String   @id @default(auto()) @map("_id") @db.ObjectId
+  tourId                String   @db.ObjectId
+  tour                  Tour @relation(fields: [tourId], references: [id], onDelete: Cascade)
+  day                   Int
+  title                 String
+  description           String?
+  activities            String[] // Array of activities
+  accommodationType     String?
+  mealInclusions        String[] // BREAKFAST, LUNCH, DINNER
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@unique([tourId, day])
+  @@index([tourId])
+}
+
+// ==================== TOUR SCHEDULES ====================
+model TourSchedule {
+  id                    String   @id @default(auto()) @map("_id") @db.ObjectId
+  tourId                String   @db.ObjectId
+  tour                  Tour @relation(fields: [tourId], references: [id], onDelete: Cascade)
+  startDate             DateTime
+  endDate               DateTime
+  availableSeats        Int
+  currentBookings       Int      @default(0)
+  price                 Float
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  // Relations
+  bookings              TourBooking[]
+
+  @@index([tourId])
+  @@index([startDate])
+}
+
+// ==================== TOUR BOOKINGS ====================
+model TourBooking {
+  id                    String   @id @default(auto()) @map("_id") @db.ObjectId
+  bookingCode           String   @unique
+  userId                String   @db.ObjectId
+  user                  User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tourId                String   @db.ObjectId
+  tour                  Tour @relation(fields: [tourId], references: [id], onDelete: Cascade)
+  scheduleId            String   @db.ObjectId
+  schedule              TourSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  destinationId         String   @db.ObjectId
+  destination           Destination @relation(fields: [destinationId], references: [id], onDelete: Cascade)
+  numberOfParticipants  Int
+  discountRate          Float    @default(0)
+  discountPrice         Float    @default(0)
+  totalPrice            Float
+  needsGuide            Boolean  @default(false)
+  guidePrice            Float?
+  status                BookingStatus @default(PENDING)
+  bookingDate           DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  // Relations
+  payment               TourPayment?
+
+  @@index([userId])
+  @@index([tourId])
+  @@index([scheduleId])
+  @@index([destinationId])
+  @@index([status])
+}
+
+// ==================== TOUR PAYMENTS ====================
+model TourPayment {
+  id                    String   @id @default(auto()) @map("_id") @db.ObjectId
+  bookingId             String   @unique @db.ObjectId
+  booking               TourBooking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  userId                String   @db.ObjectId
+  user                  User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amount                Float
+  status                PaymentStatus @default(PENDING)
+  paymentMethod         PaymentMethod @default(CASH)
+  transactionId         String?
+  paymentDate           DateTime?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status])
+}
+
+// ==================== TOUR REVIEWS ====================
+model TourReview {
+  id                    String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId                String   @db.ObjectId
+  user                  User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tourId                String   @db.ObjectId
+  tour                  Tour @relation(fields: [tourId], references: [id], onDelete: Cascade)
+  destinationId         String   @db.ObjectId
+  destination           Destination @relation(fields: [destinationId], references: [id], onDelete: Cascade)
+  rating                Int // 1-5
+  comment               String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@unique([tourId, userId])
+  @@index([tourId])
+  @@index([userId])
+  @@index([destinationId])
+}
+
+// ==================== TOUR FAQ ====================
+model TourFAQ {
+  id                    String   @id @default(auto()) @map("_id") @db.ObjectId
+  tourId                String   @db.ObjectId
+  tour                  Tour @relation(fields: [tourId], references: [id], onDelete: Cascade)
+  question              String
+  answer                String
+  isActive              Boolean  @default(true)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@index([tourId])
+  @@index([isActive])
+}
+
+// ==================== CUSTOM ITINERARY ====================
+model CustomItinerary {
+  id                    String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId                String   @db.ObjectId
+  user                  User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  destinationId         String   @db.ObjectId
+  destination           Destination @relation(fields: [destinationId], references: [id], onDelete: Cascade)
+  title                 String
+  description           String?
+  numberOfDays          Int?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  // Relations
+  events                CustomItineraryEvent[]
+
+  @@index([userId])
+  @@index([destinationId])
+}
+
+model CustomItineraryEvent {
+  id                    String   @id @default(auto()) @map("_id") @db.ObjectId
+  itineraryId           String   @db.ObjectId
+  itinerary             CustomItinerary @relation(fields: [itineraryId], references: [id], onDelete: Cascade)
+  title                 String
+  description           String?
+  startTime             DateTime?
+  endTime               DateTime?
+  location              String?
+  type                  String? // ACTIVITY, MEAL, TRANSPORT, ACCOMMODATION
+  notes                 String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@index([itineraryId])
+}
+
+// ==================== VEHICLE MANAGEMENT ====================
+model Vehicle {
+  id                    String   @id @default(auto()) @map("_id") @db.ObjectId
+  vehicleType           VehicleType
+  brand                 String
+  model                 String?
+  year                  Int?
+  licensePlate          String?  @unique
+  capacity              Int? // Number of seats
+  pricePerDay           Float
+  totalQuantity         Int // Total vehicles available
+  availableQuantity     Int // Currently available
+  fuelType              FuelType?
+  isActive              Boolean  @default(true)
+  images                String[] // Array of image URLs
+  description           String?
+  features              String[] // WIFI, AC, HEATER, etc.
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  // Relations
+  bookings              VehicleBooking[]
+  reviews               VehicleReview[]
+  faqs                  VehicleFAQ[]
+
+  @@index([vehicleType])
+  @@index([isActive])
+}
+
+// ==================== VEHICLE BOOKINGS ====================
+model VehicleBooking {
+  id                    String   @id @default(auto()) @map("_id") @db.ObjectId
+  bookingCode           String   @unique
+  userId                String   @db.ObjectId
+  user                  User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vehicleId             String   @db.ObjectId
+  vehicle               Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  startDate             DateTime
+  endDate               DateTime
+  durationDays          Int
+  numberOfVehicles      Int
+  needsDriver           Boolean  @default(false)
+  driverPrice           Float?
+  totalPrice            Float
+  discountRate          Float?   @default(0)
+  discountAmount        Float?   @default(0)
+  status                RentalStatus @default(PENDING)
+  bookingDate           DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  // Relations
+  payment               VehiclePayment?
+
+  @@index([userId])
+  @@index([vehicleId])
+  @@index([status])
+}
+
+// ==================== VEHICLE PAYMENTS ====================
+model VehiclePayment {
+  id                    String   @id @default(auto()) @map("_id") @db.ObjectId
+  bookingId             String   @unique @db.ObjectId
+  booking               VehicleBooking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  userId                String   @db.ObjectId
+  user                  User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amount                Float
+  status                PaymentStatus @default(PENDING)
+  paymentMethod         PaymentMethod @default(CASH)
+  transactionId         String?
+  paymentDate           DateTime?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status])
+}
+
+// ==================== VEHICLE REVIEWS ====================
+model VehicleReview {
+  id                    String   @id @default(auto()) @map("_id") @db.ObjectId
+  vehicleId             String   @db.ObjectId
+  vehicle               Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  userId                String   @db.ObjectId
+  user                  User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rating                Int // 1-5
+  comment               String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@unique([vehicleId, userId])
+  @@index([vehicleId])
+  @@index([userId])
+}
+
+// ==================== VEHICLE FAQ ====================
+model VehicleFAQ {
+  id                    String   @id @default(auto()) @map("_id") @db.ObjectId
+  vehicleId             String   @db.ObjectId
+  vehicle               Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  vehicleType           VehicleType?
+  question              String
+  answer                String
+  isActive              Boolean  @default(true)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@index([vehicleId])
+  @@index([isActive])
+}
