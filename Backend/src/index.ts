@@ -3,6 +3,7 @@ import { Request,Response } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
+import responseHandler from './middleware/responseHandler';
 
 dotenv.config();
 
@@ -17,6 +18,9 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+
+
+app.use(responseHandler)
 
 
 app.get('/', (req:Request, res:Response) => {
