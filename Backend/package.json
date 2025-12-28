@@ -12,18 +12,22 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
-    "@prisma/client": "^6.19.1",
-    "@types/multer": "^2.0.0",
+    "@prisma/client": "^6.19.0",
     "bcrypt": "^6.0.0",
     "bcryptjs": "^3.0.3",
+    "bullmq": "^5.66.2",
+    "cloudinary": "^2.8.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "express": "^5.2.1",
+    "express-rate-limit": "^8.2.1",
+    "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.2",
     "multer": "^2.0.2",
+    "multer-storage-cloudinary": "^4.0.0",
     "nodemailer": "^7.0.11",
     "nodemon": "^3.1.11",
-    "uploadthing": "^7.7.4",
+    "prisma": "^6.19.0",
     "zod": "^4.1.13"
   },
   "devDependencies": {
@@ -32,10 +36,10 @@
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/jsonwebtoken": "^9.0.10",
+    "@types/multer": "^2.0.0",
     "@types/node": "^24.10.1",
     "@types/nodemailer": "^7.0.4",
     "dotenv": "^17.2.3",
-    "prisma": "^7.2.0",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.9.3"
   }

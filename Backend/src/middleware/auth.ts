@@ -1,6 +1,6 @@
-
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
+import { UserRole } from "../types/user.types";
 
 interface User {
   id: string;
@@ -86,4 +86,4 @@ const AdminOnly = (req: AuthRequest, res: Response, next: NextFunction) => {
   }
 };
 
-export {generateToken,authenticateToken,AdminOnly}
+export {AuthRequest, generateToken, authenticateToken, AdminOnly };

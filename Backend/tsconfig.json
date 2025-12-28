@@ -12,6 +12,6 @@
     "resolveJsonModule": true,
     "moduleResolution": "node"
   },
-  "include": ["src/**/*", "src/templets/userEmailTemplet/WelcomeEmail.ts", "src/templets/userEmailTemplet/registration_otp.ts"],
+  "include": ["src/**/*", "src/templets/userEmailTemplet/WelcomeEmail.ts", "src/templets/userEmailTemplet/registration_otp.ts", "src/utils/rateLimiter.ts", "src/config/cloudinary.ts", "src/config/prisma.ts", "src/templets/userEmailTemplet"],
   "exclude": ["node_modules"]
 }

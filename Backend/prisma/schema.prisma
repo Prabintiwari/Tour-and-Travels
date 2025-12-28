@@ -14,6 +14,11 @@ enum UserRole {
   USER
   GUEST
 }
+enum DifficultyLevel {
+  EASY
+  MODERATE
+  HARD
+}
 
 enum BookingStatus {
   PENDING
@@ -21,6 +26,21 @@ enum BookingStatus {
   CANCELLED
   COMPLETED
 }
+enum MealType {
+  BREAKFAST
+  LUNCH
+  DINNER
+  SNACK
+}
+enum AccommodationType {
+  HOTEL
+  HOSTEL
+  GUESTHOUSE
+  RESORT
+  APARTMENT
+}
+
+
 
 enum PaymentStatus {
   PENDING
@@ -68,7 +88,7 @@ model User {
   id                    String   @id @default(auto()) @map("_id") @db.ObjectId
   email                 String   @unique
   password              String
-  fullName              String?
+  fullName              String
   phone                 String?
   profileImage          String?
   address               String?
@@ -77,6 +97,7 @@ model User {
   country               String?
   dateOfBirth           DateTime?
   role                  UserRole @default(USER)
+  isActive              Boolean  @default(true)
   isBlocked             Boolean  @default(false)
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
@@ -91,6 +112,18 @@ model User {
   vehiclePayments       VehiclePayment[]
 
 }
+// TempUser Model
+model TempUser {
+  id            String     @id @default(auto()) @map("_id") @db.ObjectId
+  fullName      String
+  email         String  @unique
+  password      String
+  phone         String?
+  otp           Int
+  expiry        DateTime
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
 
 // ==================== DESTINATIONS ====================
 model Destination {
@@ -100,7 +133,7 @@ model Destination {
   region                String?
   location              String
   imageUrl              String?
-  attractions           String[] // Array of attraction names/descriptions
+  attractions           Json[] // Array of attraction names/descriptions/images
   bestTimeToVisit       String?
   views                 Int      @default(0)
   createdAt             DateTime @default(now())
@@ -118,12 +151,12 @@ model Destination {
 }
 
 // ==================== DESTINATION GALLERY ====================
-
 model DestinationGallery {
   id                    String   @id @default(auto()) @map("_id") @db.ObjectId
   destinationId         String   @db.ObjectId
   destination           Destination @relation(fields: [destinationId], references: [id], onDelete: Cascade)
-  imageUrl              String
+  imageUrl              String[]
+  imagePublicId         String[]  
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
 
@@ -135,16 +168,22 @@ model Tour {
   id                    String   @id @default(auto()) @map("_id") @db.ObjectId
   destinationId         String   @db.ObjectId
   destination           Destination @relation(fields: [destinationId], references: [id], onDelete: Cascade)
+
   title                 String
   description           String?
   numberOfDays          Int
   basePrice             Float
   maxParticipants       Int?
   minParticipants       Int?
-  difficultyLevel       String? // EASY, MODERATE, HARD
+  difficultyLevel       DifficultyLevel @default(EASY)
   isFeatured            Boolean  @default(false)
+  isActive              Boolean  @default(true)
+  
   coverImage            String?
-  images                String[] // Array of image URLs
+  coverImagePublicId    String?
+  images                String[] 
+  imagePublicIds        String[]
+
   views                 Int      @default(0)
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
@@ -168,9 +207,14 @@ model Itinerary {
   day                   Int
   title                 String
   description           String?
-  activities            String[] // Array of activities
-  accommodationType     String?
-  mealInclusions        String[] // BREAKFAST, LUNCH, DINNER
+  
+  activities            Json[] // [{ time, activity, location }]
+  accommodationType     AccommodationType?
+  mealInclusions        MealType[]
+  
+  images                String[]
+  imagePublicIds        String[]
+
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
 
@@ -178,21 +222,23 @@ model Itinerary {
   @@index([tourId])
 }
 
-// ==================== TOUR SCHEDULES ====================
+// ==================== TOUR SCHEDULE ====================
 model TourSchedule {
-  id                    String   @id @default(auto()) @map("_id") @db.ObjectId
-  tourId                String   @db.ObjectId
-  tour                  Tour @relation(fields: [tourId], references: [id], onDelete: Cascade)
-  startDate             DateTime
-  endDate               DateTime
-  availableSeats        Int
-  currentBookings       Int      @default(0)
-  price                 Float
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  tourId          String   @db.ObjectId
+  tour            Tour @relation(fields: [tourId], references: [id], onDelete: Cascade)
+  
+  startDate       DateTime
+  endDate         DateTime
+  availableSeats  Int
+  currentBookings Int      @default(0)
+  price           Float
+  isActive        Boolean  @default(true) // Optional: schedule active or cancelled
 
-  // Relations
-  bookings              TourBooking[]
+  bookings        TourBooking[]
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   @@index([tourId])
   @@index([startDate])
@@ -202,25 +248,34 @@ model TourSchedule {
 model TourBooking {
   id                    String   @id @default(auto()) @map("_id") @db.ObjectId
   bookingCode           String   @unique
+
   userId                String   @db.ObjectId
   user                  User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   tourId                String   @db.ObjectId
   tour                  Tour @relation(fields: [tourId], references: [id], onDelete: Cascade)
+
   scheduleId            String   @db.ObjectId
   schedule              TourSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+
   destinationId         String   @db.ObjectId
   destination           Destination @relation(fields: [destinationId], references: [id], onDelete: Cascade)
+
   numberOfParticipants  Int
+  pricePerParticipantAtBooking Float // snapshot of price at booking
   discountRate          Float    @default(0)
   discountPrice         Float    @default(0)
   totalPrice            Float
   needsGuide            Boolean  @default(false)
-  guidePrice            Float?
+  guidePricePerParticipant Float? // snapshot
+  guideTotalPrice       Float?
+
   status                BookingStatus @default(PENDING)
   bookingDate           DateTime @default(now())
+  cancelledAt           DateTime?
+  completedAt           DateTime?
   updatedAt             DateTime @updatedAt
 
-  // Relations
   payment               TourPayment?
 
   @@index([userId])
@@ -232,18 +287,22 @@ model TourBooking {
 
 // ==================== TOUR PAYMENTS ====================
 model TourPayment {
-  id                    String   @id @default(auto()) @map("_id") @db.ObjectId
-  bookingId             String   @unique @db.ObjectId
-  booking               TourBooking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
-  userId                String   @db.ObjectId
-  user                  User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  amount                Float
-  status                PaymentStatus @default(PENDING)
-  paymentMethod         PaymentMethod @default(CASH)
-  transactionId         String?
-  paymentDate           DateTime?
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  bookingId       String   @unique @db.ObjectId
+  booking         TourBooking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  userId          String   @db.ObjectId
+  user            User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  amount          Float
+  status          PaymentStatus @default(PENDING)
+  paymentMethod   PaymentMethod @default(CASH)
+  transactionId   String?
+  paymentDate     DateTime?
+  paymentGatewayResponse Json?  // Optional: store raw payment gateway response
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   @@index([userId])
   @@index([status])
@@ -336,6 +395,7 @@ model Vehicle {
   fuelType              FuelType?
   isActive              Boolean  @default(true)
   images                String[] // Array of image URLs
+  imagePublicIds        String[]
   description           String?
   features              String[] // WIFI, AC, HEATER, etc.
   createdAt             DateTime @default(now())
@@ -354,24 +414,36 @@ model Vehicle {
 model VehicleBooking {
   id                    String   @id @default(auto()) @map("_id") @db.ObjectId
   bookingCode           String   @unique
+
   userId                String   @db.ObjectId
-  user                  User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   vehicleId             String   @db.ObjectId
-  vehicle               Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  vehicle               Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
   startDate             DateTime
   endDate               DateTime
   durationDays          Int
-  numberOfVehicles      Int
-  needsDriver           Boolean  @default(false)
-  driverPrice           Float?
-  totalPrice            Float
-  discountRate          Float?   @default(0)
-  discountAmount        Float?   @default(0)
-  status                RentalStatus @default(PENDING)
-  bookingDate           DateTime @default(now())
-  updatedAt             DateTime @updatedAt
 
-  // Relations
+  numberOfVehicles      Int
+
+  pricePerDayAtBooking  Float     
+  needsDriver           Boolean   @default(false)
+  driverPricePerDay     Float?
+  driverTotalPrice      Float?
+
+  totalPrice            Float
+
+  discountRate          Float?    @default(0)
+  discountAmount        Float?    @default(0)
+
+  status                RentalStatus @default(PENDING)
+
+  bookingDate           DateTime  @default(now())
+  cancelledAt           DateTime?
+  completedAt           DateTime?
+  updatedAt             DateTime  @updatedAt
+
   payment               VehiclePayment?
 
   @@index([userId])
@@ -381,18 +453,22 @@ model VehicleBooking {
 
 // ==================== VEHICLE PAYMENTS ====================
 model VehiclePayment {
-  id                    String   @id @default(auto()) @map("_id") @db.ObjectId
-  bookingId             String   @unique @db.ObjectId
-  booking               VehicleBooking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
-  userId                String   @db.ObjectId
-  user                  User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  amount                Float
-  status                PaymentStatus @default(PENDING)
-  paymentMethod         PaymentMethod @default(CASH)
-  transactionId         String?
-  paymentDate           DateTime?
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  id                String   @id @default(auto()) @map("_id") @db.ObjectId
+  bookingId         String   @unique  @db.ObjectId
+  booking           VehicleBooking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  
+  userId            String   @db.ObjectId
+  user              User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  amount            Float
+  status            PaymentStatus @default(PENDING)
+  paymentMethod     PaymentMethod @default(CASH)
+  transactionId     String?
+  paymentDate       DateTime?
+  paymentGatewayResponse Json? // raw response
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
   @@index([userId])
   @@index([status])

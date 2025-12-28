@@ -3,3 +3,4 @@ enum UserRole {
   USER = "USER",
   GUEST = "GUEST",
 }
+export {UserRole}
