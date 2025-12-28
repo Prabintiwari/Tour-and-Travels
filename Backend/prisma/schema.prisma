@@ -40,8 +40,6 @@ enum AccommodationType {
   APARTMENT
 }
 
-
-
 enum PaymentStatus {
   PENDING
   PROCESSING
@@ -133,6 +131,7 @@ model Destination {
   region                String?
   location              String
   imageUrl              String?
+  imagePublicId         String?
   attractions           Json[] // Array of attraction names/descriptions/images
   bestTimeToVisit       String?
   views                 Int      @default(0)

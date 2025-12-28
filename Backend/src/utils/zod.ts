@@ -71,10 +71,12 @@ const destinationSchema = z.object({
   }, z.array(z.string()).min(1)),
 });
 
+
 export {
   registerSchema,
   loginSchema,
   updateUserSchema,
   updateUserRoleSchema,
-  destinationSchema,
+  destinationSchema
+  ,
 };

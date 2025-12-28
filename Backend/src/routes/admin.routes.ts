@@ -13,7 +13,7 @@ import {
   updateUserDetails,
 } from "../controllers/user.controller";
 import { deleteUser } from "../controllers/auth.controller";
-import { createDestination } from "../controllers/destination.controller";
+import { createDestination, deleteDestination, updateDestination } from "../controllers/destination.controller";
 
 const router = Router();
 
@@ -34,5 +34,9 @@ router.patch("/users/:id/role",authenticateToken, AdminOnly,validate(updateUserR
 
 // Destination API
 router.post("/destinations",authenticateToken,AdminOnly,cloudinaryUpload("destination/").array("imageUrl",5),validate(destinationSchema),createDestination)
+
+router.post("/destinations/update/:id",authenticateToken,AdminOnly,cloudinaryUpload("destination/").array("imageUrl",5),validate(destinationSchema),updateDestination)
+
+router.delete('/destinations/delete/:id',authenticateToken,AdminOnly,deleteDestination)
 
 export default router;
