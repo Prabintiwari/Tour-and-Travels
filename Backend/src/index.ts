@@ -9,6 +9,9 @@ dotenv.config();
 import userRoute from "./routes/user.routes";
 import authRoute from "./routes/auth.routes";
 import adminRoute from "./routes/admin.routes";
+import destinationRoute from "./routes/destination.routes";
+import tourRoute from "./routes/tour.routes";
+import destinationGalleryRoute from "./routes/destinationGallery.routes.";
 
 
 const app = express();
@@ -29,6 +32,9 @@ app.use(cookieParser());
 app.use("/api/auth", authRoute);
 app.use("/api/users", userRoute);
 app.use("/api/admin", adminRoute);
+app.use("/api/destinations", destinationRoute);
+app.use("/api/destinations", destinationGalleryRoute);
+app.use("/api/tour", tourRoute);
 app.use(responseHandler);
 
 app.get("/", (req: Request, res: Response) => {

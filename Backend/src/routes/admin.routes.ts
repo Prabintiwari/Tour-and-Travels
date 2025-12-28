@@ -6,17 +6,18 @@ import {
   updateUserRole,
 } from "../controllers/admin.controller";
 import { validate } from "../middleware/validate";
-import { updateUserRoleSchema, updateUserSchema } from "../utils/zod";
+import { destinationSchema, updateUserRoleSchema, updateUserSchema } from "../utils/zod";
 import { AdminOnly, authenticateToken } from "../middleware/auth";
 import { cloudinaryUpload } from "../middleware/upload";
 import {
   updateUserDetails,
 } from "../controllers/user.controller";
 import { deleteUser } from "../controllers/auth.controller";
+import { createDestination } from "../controllers/destination.controller";
 
 const router = Router();
 
-// update user profile
+// user API
 router.patch(
   "/users/update-profile/:id",
   authenticateToken,
@@ -31,5 +32,7 @@ router.delete("/users/delete/:id",authenticateToken, AdminOnly, deleteUser);
 router.patch("/users/block/:id",authenticateToken, AdminOnly, blockUser);
 router.patch("/users/:id/role",authenticateToken, AdminOnly,validate(updateUserRoleSchema), updateUserRole);
 
+// Destination API
+router.post("/destinations",authenticateToken,AdminOnly,cloudinaryUpload("destination/").array("imageUrl",5),validate(destinationSchema),createDestination)
 
 export default router;

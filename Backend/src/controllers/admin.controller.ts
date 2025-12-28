@@ -43,9 +43,9 @@ const getUserById = async (req: Request, res: Response, next: NextFunction)=>{
     }
 
     next({ status: 200, success: true, data: { user } });
-  } catch (error) {
+  } catch (error:any) {
     console.error("Update role error:", error);
-    next({ status: 500, success: false, message: "Internal server error" });
+    next({ status: 500, success: false, message: "Internal server error",error: error.message, });
   }
 }
 // update user role
