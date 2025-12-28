@@ -237,6 +237,85 @@ const getAllDestinations = async (
   }
 };
 
+// Get all regions
+const getAllRegions = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const regions = await prisma.destination.findMany({
+      distinct: ["region"],
+      where: {
+        region: {
+          not: null,
+        },
+      },
+      select: {
+        region: true,
+      },
+    });
+
+    const regionList = regions.map((r) => r.region).filter(Boolean);
+
+    next({
+      status: 200,
+      success: true,
+      data: regionList,
+      count: regionList.length,
+    });
+  } catch (error: any) {
+    next({
+      status: 500,
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+};
+
+// Get popular destinations (by views)
+const getPopularDestinations = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  console.log("hello i'm reach here!");
+  try {
+    const limit = parseInt(req.query.limit as string) || 10;
+
+    const destinations = await prisma.destination.findMany({
+      take: limit,
+      orderBy: { views: "desc" },
+      include: {
+        tours: {
+          where: { isActive: true },
+          select: { id: true },
+        },
+        _count: {
+          select: {
+            tours: { where: { isActive: true } },
+            tourReviews: true,
+          },
+        },
+      },
+    });
+
+    next({ status: 200, success: true, data: destinations });
+  } catch (error: any) {
+    next({
+      status: 500,
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+};
 
 
-export { createDestination, getDestinationById, getAllDestinations };
+
+export {
+  createDestination,
+  getDestinationById,
+  getAllDestinations,
+  getAllRegions,
+  getPopularDestinations,
+};
