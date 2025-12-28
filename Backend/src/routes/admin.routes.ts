@@ -8,12 +8,13 @@ import {
 import { validate } from "../middleware/validate";
 import { destinationSchema, updateUserRoleSchema, updateUserSchema } from "../utils/zod";
 import { AdminOnly, authenticateToken } from "../middleware/auth";
-import { cloudinaryUpload } from "../middleware/upload";
+import { cloudinaryUpload, cloudinaryUploadDynamic } from "../middleware/upload";
 import {
   updateUserDetails,
 } from "../controllers/user.controller";
 import { deleteUser } from "../controllers/auth.controller";
 import { createDestination, deleteDestination, updateDestination } from "../controllers/destination.controller";
+import { createOrUpdateGallery } from "../controllers/destinationGallery.controller";
 
 const router = Router();
 
@@ -32,11 +33,22 @@ router.delete("/users/delete/:id",authenticateToken, AdminOnly, deleteUser);
 router.patch("/users/block/:id",authenticateToken, AdminOnly, blockUser);
 router.patch("/users/:id/role",authenticateToken, AdminOnly,validate(updateUserRoleSchema), updateUserRole);
 
+
 // Destination API
 router.post("/destinations",authenticateToken,AdminOnly,cloudinaryUpload("destination/").array("imageUrl",5),validate(destinationSchema),createDestination)
 
 router.post("/destinations/update/:id",authenticateToken,AdminOnly,cloudinaryUpload("destination/").array("imageUrl",5),validate(destinationSchema),updateDestination)
 
 router.delete('/destinations/delete/:id',authenticateToken,AdminOnly,deleteDestination)
+
+
+// Destination Gallery API
+router.post(
+  "/destination-gallery/:destinationId",
+  authenticateToken,
+  AdminOnly,
+  cloudinaryUploadDynamic("destination/gallery","destinationId").array("imageUrl",10), 
+  createOrUpdateGallery
+);
 
 export default router;

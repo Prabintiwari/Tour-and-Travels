@@ -20,6 +20,7 @@ const createDestination = async (
 ) => {
   try {
     const validatedData = destinationSchema.parse(req.body);
+    const files = req.files as Express.Multer.File[];
 
     // Check if destination with same name already exists
     const existingDestination = await prisma.destination.findFirst({
@@ -29,13 +30,12 @@ const createDestination = async (
     if (existingDestination) {
       return next({
         status: 400,
+        success: false,
         message: "Destination with this name already exists",
       });
     }
 
     // Handle image upload
-    const files = req.files as Express.Multer.File[];
-
     if (!files || files.length === 0) {
       return next({
         status: 400,
@@ -449,18 +449,24 @@ const deleteDestination = async (
 };
 
 //  Get destination stats
- const getDestinationStats = async (req: Request,
+const getDestinationStats = async (
+  req: Request,
   res: Response,
-  next: NextFunction) => {
+  next: NextFunction
+) => {
   try {
-    const id  = req.params.id;
+    const id = req.params.id;
 
     const destination = await prisma.destination.findUnique({
       where: { id },
     });
 
     if (!destination) {
-      return next({status:404,success:false, message: "Destination not found" });
+      return next({
+        status: 404,
+        success: false,
+        message: "Destination not found",
+      });
     }
 
     const [toursCount, reviewsCount, bookingsCount, totalViews] =
@@ -491,19 +497,25 @@ const deleteDestination = async (
           ).toFixed(1)
         : 0;
 
-    next({status:200,
+    next({
+      status: 200,
       success: true,
       data: {
         destinationName: destination.name,
         totalTours: toursCount,
         totalReviews: reviewsCount,
-        averageRating: (avgRating),
+        averageRating: avgRating,
         completedBookings: bookingsCount,
         totalViews: totalViews?.views,
       },
     });
-  } catch (error:any) {
-    next({status:500,success:false, message: "Internal server error", error: error.message });
+  } catch (error: any) {
+    next({
+      status: 500,
+      success: false,
+      message: "Internal server error",
+      error: error.message,
+    });
   }
 };
 
