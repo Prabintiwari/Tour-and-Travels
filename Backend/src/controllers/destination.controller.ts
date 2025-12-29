@@ -2,15 +2,8 @@ import { Request, Response, NextFunction } from "express";
 import { destinationSchema } from "../utils/zod";
 import prisma from "../config/prisma";
 import cloudinary from "../config/cloudinary";
+import GetAllDestinationsQuery from "../types/GetAllDestinationsQuery.types";
 
-interface GetAllDestinationsQuery {
-  page?: string;
-  limit?: string;
-  region?: string;
-  search?: string;
-  sortBy?: string;
-  order?: string;
-}
 
 // Create a new destination
 const createDestination = async (

@@ -6,49 +6,75 @@ import {
   updateUserRole,
 } from "../controllers/admin.controller";
 import { validate } from "../middleware/validate";
-import { destinationSchema, updateUserRoleSchema, updateUserSchema } from "../utils/zod";
-import { AdminOnly, authenticateToken } from "../middleware/auth";
-import { cloudinaryUpload, cloudinaryUploadDynamic } from "../middleware/upload";
 import {
-  updateUserDetails,
-} from "../controllers/user.controller";
+  destinationSchema,
+  updateUserRoleSchema,
+  updateUserSchema,
+} from "../utils/zod";
+import { AdminOnly, authenticateToken } from "../middleware/auth";
+import {
+  cloudinaryUpload,
+  cloudinaryUploadDynamic,
+} from "../middleware/upload";
+import { updateUserDetails } from "../controllers/user.controller";
 import { deleteUser } from "../controllers/auth.controller";
-import { createDestination, deleteDestination, updateDestination } from "../controllers/destination.controller";
-import { createOrUpdateGallery } from "../controllers/destinationGallery.controller";
+import {
+  createDestination,
+  deleteDestination,
+  updateDestination,
+} from "../controllers/destination.controller";
+import {
+  createOrUpdateGallery,
+  deleteGallery,
+  removeGalleryImages,
+} from "../controllers/destinationGallery.controller";
 
 const router = Router();
+
+router.use(authenticateToken, AdminOnly);
 
 // user API
 router.patch(
   "/users/update-profile/:id",
-  authenticateToken,
-  AdminOnly,
   cloudinaryUpload("users/profile").single("profileImage"),
   validate(updateUserSchema),
   updateUserDetails
 );
-router.get("/users", authenticateToken, AdminOnly, getAllUsers);
-router.get("/users/:id", authenticateToken, AdminOnly, getUserById);
-router.delete("/users/delete/:id",authenticateToken, AdminOnly, deleteUser);
-router.patch("/users/block/:id",authenticateToken, AdminOnly, blockUser);
-router.patch("/users/:id/role",authenticateToken, AdminOnly,validate(updateUserRoleSchema), updateUserRole);
-
+router.get("/users", getAllUsers);
+router.get("/users/:id", getUserById);
+router.delete("/users/:id", deleteUser);
+router.patch("/users/block/:id", blockUser);
+router.patch("/users/:id/role", validate(updateUserRoleSchema), updateUserRole);
 
 // Destination API
-router.post("/destinations",authenticateToken,AdminOnly,cloudinaryUpload("destination/").array("imageUrl",5),validate(destinationSchema),createDestination)
+router.post(
+  "/destinations",
+  cloudinaryUpload("destination/").array("imageUrl", 5),
+  validate(destinationSchema),
+  createDestination
+);
 
-router.post("/destinations/update/:id",authenticateToken,AdminOnly,cloudinaryUpload("destination/").array("imageUrl",5),validate(destinationSchema),updateDestination)
+router.post(
+  "/destinations/:id",
+  cloudinaryUpload("destination/").array("imageUrl", 5),
+  validate(destinationSchema),
+  updateDestination
+);
 
-router.delete('/destinations/delete/:id',authenticateToken,AdminOnly,deleteDestination)
-
+router.delete("/destinations/:id", deleteDestination);
 
 // Destination Gallery API
 router.post(
   "/destination-gallery/:destinationId",
-  authenticateToken,
-  AdminOnly,
-  cloudinaryUploadDynamic("destination/gallery","destinationId").array("imageUrl",10), 
+  cloudinaryUploadDynamic("destination/gallery", "destinationId").array(
+    "imageUrl",
+    10
+  ),
   createOrUpdateGallery
 );
+
+router.patch("/destination-gallery/:destinationId/images", removeGalleryImages);
+
+router.delete("/destination-gallery/:destinationId", deleteGallery);
 
 export default router;
