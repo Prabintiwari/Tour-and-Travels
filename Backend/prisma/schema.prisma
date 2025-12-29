@@ -178,8 +178,8 @@ model Tour {
   
   coverImage            String?
   coverImagePublicId    String?
-  images                String[] 
-  imagePublicIds        String[]
+  images                String[] @default([]) 
+  imagePublicIds        String[] @default([])
 
   views                 Int      @default(0)
   createdAt             DateTime @default(now())

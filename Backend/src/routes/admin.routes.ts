@@ -7,6 +7,7 @@ import {
 } from "../controllers/admin.controller";
 import { validate } from "../middleware/validate";
 import {
+  createTourSchema,
   destinationSchema,
   updateUserRoleSchema,
   updateUserSchema,
@@ -14,7 +15,7 @@ import {
 import { AdminOnly, authenticateToken } from "../middleware/auth";
 import {
   cloudinaryUpload,
-  cloudinaryUploadDynamic,
+  cloudinaryUploadFromParams,
 } from "../middleware/upload";
 import { updateUserDetails } from "../controllers/user.controller";
 import { deleteUser } from "../controllers/auth.controller";
@@ -28,6 +29,7 @@ import {
   deleteGallery,
   removeGalleryImages,
 } from "../controllers/destinationGallery.controller";
+import { addTourImages, createTour } from "../controllers/tour.controller";
 
 const router = Router();
 
@@ -66,7 +68,7 @@ router.delete("/destinations/:id", deleteDestination);
 // Destination Gallery API
 router.post(
   "/destination-gallery/:destinationId",
-  cloudinaryUploadDynamic("destination/gallery", "destinationId").array(
+  cloudinaryUploadFromParams("destination/gallery", "destinationId").array(
     "imageUrl",
     10
   ),
@@ -76,5 +78,14 @@ router.post(
 router.patch("/destination-gallery/:destinationId/images", removeGalleryImages);
 
 router.delete("/destination-gallery/:destinationId", deleteGallery);
+
+// Tour API
+router.post("/tour", validate(createTourSchema), createTour);
+
+router.post(
+  "/tour/:tourId",
+  cloudinaryUploadFromParams("tour", "tourId").array("imageUrl", 10),
+  addTourImages
+);
 
 export default router;

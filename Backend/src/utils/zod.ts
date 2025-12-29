@@ -1,5 +1,5 @@
 import z from "zod";
-import { UserRole } from "../types/user.types";
+import { DifficultyLevel, UserRole } from "@prisma/client";
 
 const registerSchema = z.object({
   email: z.string().email("Invalid email format"),
@@ -45,7 +45,7 @@ const updateUserSchema = z.object({
 });
 
 const updateUserRoleSchema = z.object({
-  role: z.enum(UserRole),
+  role: z.nativeEnum(UserRole),
 });
 
 const destinationSchema = z.object({
@@ -71,12 +71,55 @@ const destinationSchema = z.object({
   }, z.array(z.string()).min(1)),
 });
 
+const createTourSchema = z
+  .object({
+    destinationId: z.string().min(1, "Destination ID is required"),
+
+    title: z.string().min(1, "Title is required"),
+
+    description: z
+      .string()
+      .min(10, "Description must be at least 10 characters"),
+
+    numberOfDays: z
+      .coerce.number()
+      .int()
+      .positive("Number of days must be greater than 0"),
+
+    basePrice: z.coerce.number().positive("Base price must be greater than 0"),
+
+    maxParticipants: z
+      .coerce.number()
+      .int()
+      .positive("Max participants must be greater than 0")
+      .optional(),
+
+    minParticipants: z
+      .coerce.number()
+      .int()
+      .positive("Min participants must be greater than 0")
+      .optional(),
+
+    difficultyLevel: z.nativeEnum(DifficultyLevel).optional(),
+
+    isFeatured: z.coerce.boolean().optional().default(false),
+  })
+  .refine(
+    (data) =>
+      !data.minParticipants ||
+      !data.maxParticipants ||
+      data.minParticipants <= data.maxParticipants,
+    {
+      message: "Min participants cannot be greater than max participants",
+      path: ["minParticipants"],
+    }
+  );
 
 export {
   registerSchema,
   loginSchema,
   updateUserSchema,
   updateUserRoleSchema,
-  destinationSchema
-  ,
+  destinationSchema,
+  createTourSchema,
 };
