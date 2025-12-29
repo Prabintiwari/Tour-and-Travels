@@ -81,21 +81,21 @@ const createTourSchema = z
       .string()
       .min(10, "Description must be at least 10 characters"),
 
-    numberOfDays: z
-      .coerce.number()
+    numberOfDays: z.coerce
+      .number()
       .int()
       .positive("Number of days must be greater than 0"),
 
     basePrice: z.coerce.number().positive("Base price must be greater than 0"),
 
-    maxParticipants: z
-      .coerce.number()
+    maxParticipants: z.coerce
+      .number()
       .int()
       .positive("Max participants must be greater than 0")
       .optional(),
 
-    minParticipants: z
-      .coerce.number()
+    minParticipants: z.coerce
+      .number()
       .int()
       .positive("Min participants must be greater than 0")
       .optional(),
@@ -103,6 +103,49 @@ const createTourSchema = z
     difficultyLevel: z.nativeEnum(DifficultyLevel).optional(),
 
     isFeatured: z.coerce.boolean().optional().default(false),
+  })
+  .refine(
+    (data) =>
+      !data.minParticipants ||
+      !data.maxParticipants ||
+      data.minParticipants <= data.maxParticipants,
+    {
+      message: "Min participants cannot be greater than max participants",
+      path: ["minParticipants"],
+    }
+  );
+const updateTourSchema = z
+  .object({
+
+    title: z.string().min(1, "Title is required").optional(),
+
+    description: z
+      .string()
+      .min(10, "Description must be at least 10 characters").optional(),
+
+    numberOfDays: z.coerce
+      .number()
+      .int()
+      .positive("Number of days must be greater than 0").optional(),
+
+    basePrice: z.coerce.number().positive("Base price must be greater than 0").optional(),
+
+    maxParticipants: z.coerce
+      .number()
+      .int()
+      .positive("Max participants must be greater than 0")
+      .optional(),
+
+    minParticipants: z.coerce
+      .number()
+      .int()
+      .positive("Min participants must be greater than 0")
+      .optional(),
+
+    difficultyLevel: z.nativeEnum(DifficultyLevel).optional(),
+
+    isFeatured: z.coerce.boolean().optional().default(false),
+    isActive:z.coerce.boolean().optional().default(true)
   })
   .refine(
     (data) =>
@@ -122,4 +165,5 @@ export {
   updateUserRoleSchema,
   destinationSchema,
   createTourSchema,
+  updateTourSchema,
 };

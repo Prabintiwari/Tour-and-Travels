@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import prisma from "../config/prisma";
 import cloudinary from "../config/cloudinary";
-import GetAllDestinationsQuery from "../types/GetAllDestinationsQuery.types";
+import GetAllDestinationsQuery from "../types/Destinations.types";
 
 // Create gallery for a destination (or add images if already exists)
 const createOrUpdateGallery = async (
@@ -225,12 +225,14 @@ const getAllGalleries = async (
     next({
       status: 200,
       success: true,
-      data: enrichedGalleries,
-      pagination: {
-        page: parseInt(page),
-        limit: parseInt(limit),
-        total,
-        pages: Math.ceil(total / parseInt(limit)),
+      data: {
+        enrichedGalleries,
+        pagination: {
+          page: parseInt(page),
+          limit: parseInt(limit),
+          total,
+          pages: Math.ceil(total / parseInt(limit)),
+        },
       },
     });
   } catch (error: any) {

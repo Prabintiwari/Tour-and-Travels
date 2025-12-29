@@ -9,6 +9,7 @@ import { validate } from "../middleware/validate";
 import {
   createTourSchema,
   destinationSchema,
+  updateTourSchema,
   updateUserRoleSchema,
   updateUserSchema,
 } from "../utils/zod";
@@ -29,7 +30,7 @@ import {
   deleteGallery,
   removeGalleryImages,
 } from "../controllers/destinationGallery.controller";
-import { addTourImages, createTour } from "../controllers/tour.controller";
+import { addTourImages, createTour, deleteTour, removeTourImages, updateTour } from "../controllers/tour.controller";
 
 const router = Router();
 
@@ -87,5 +88,9 @@ router.post(
   cloudinaryUploadFromParams("tour", "tourId").array("imageUrl", 10),
   addTourImages
 );
+
+router.patch("/tour/:tourId",validate(updateTourSchema),updateTour)
+router.patch("/tour/:tourId/images",removeTourImages)
+router.delete("/tour/:tourId",validate(updateTourSchema),deleteTour)
 
 export default router;

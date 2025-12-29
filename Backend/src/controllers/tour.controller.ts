@@ -1,12 +1,12 @@
 import { Request, Response, NextFunction } from "express";
 import prisma from "../config/prisma";
 import cloudinary from "../config/cloudinary";
-import { createTourSchema } from "../utils/zod";
+import { createTourSchema, updateTourSchema } from "../utils/zod";
+import { PackageQueryParams } from "../types/tour.types";
 
 // create tour without images
 const createTour = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    
     const validatedData = createTourSchema.parse(req.body);
 
     // Check if destination exists
@@ -50,252 +50,239 @@ const createTour = async (req: Request, res: Response, next: NextFunction) => {
   }
 };
 
-// READ - Get tour by ID
-// const getTourById = async (req: Request, res: Response, next: NextFunction) => {
-//   try {
-//     const { id } = req.params;
+//  Get tour by ID
+const getTourById = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { tourId } = req.params;
 
-//     const tour = await prisma.tour.findUnique({
-//       where: { id },
-//       include: {
-//         destination: true,
-//         itineraries: {
-//           orderBy: { day: "asc" },
-//         },
-//         schedules: {
-//           orderBy: { startDate: "asc" },
-//         },
-//         faqs: {
-//           where: { isActive: true },
-//         },
-//         reviews: {
-//           include: {
-//             user: {
-//               select: { id: true, fullName: true, profileImage: true },
-//             },
-//           },
-//           orderBy: { createdAt: "desc" },
-//           take: 5,
-//         },
-//       },
-//     });
+    const tour = await prisma.tour.findUnique({
+      where: { id: tourId },
+      include: {
+        destination: true,
+        itineraries: {
+          orderBy: { day: "asc" },
+        },
+        schedules: {
+          orderBy: { startDate: "asc" },
+        },
+        faqs: {
+          where: { isActive: true },
+        },
+        reviews: {
+          include: {
+            user: {
+              select: { id: true, fullName: true, profileImage: true },
+            },
+          },
+          orderBy: { createdAt: "desc" },
+          take: 5,
+        },
+      },
+    });
 
-//     if (!tour) {
-//       return res.status(404).json({ message: "Tour not found" });
-//     }
+    if (!tour) {
+      return next({
+        status: 404,
+        success: false,
+        message: "Tour not found",
+      });
+    }
 
-//     // Increment views
-//     await prisma.tour.update({
-//       where: { id },
-//       data: { views: { increment: 1 } },
-//     });
+    // Increment views
+    await prisma.tour.update({
+      where: { id: tourId },
+      data: { views: { increment: 1 } },
+    });
+    next({
+      status: 200,
+      success: true,
+      data: tour,
+    });
+  } catch (error: any) {
+    next({
+      status: 500,
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+};
 
-//     res.status(200).json({
-//       success: true,
-//       data: tour,
-//     });
-//   } catch (error) {
-//     res
-//       .status(500)
-//       .json({ message: "Internal server error", error: error.message });
-//   }
-// };
+//  Get all tours with filtering and pagination
+const getAllTours = async (
+  req: Request<{}, {}, {}, PackageQueryParams>,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const {
+      page = "1",
+      limit = "10",
+      destinationId,
+      difficultyLevel,
+      isFeatured,
+      minPrice,
+      maxPrice,
+      search,
+    } = req.query;
 
-// // READ - Get all tours with filtering and pagination
-// const getAllTours = async (req: Request, res: Response, next: NextFunction) => {
-//   try {
-//     const {
-//       page = 1,
-//       limit = 10,
-//       destinationId,
-//       difficultyLevel,
-//       isFeatured,
-//       minPrice,
-//       maxPrice,
-//       search,
-//     } = req.query;
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const filters: any = { isActive: true };
 
-//     const skip = (page - 1) * limit;
-//     const filters = { isActive: true };
+    if (destinationId) filters.destinationId = destinationId;
+    if (difficultyLevel) filters.difficultyLevel = difficultyLevel;
+    if (isFeatured === "true") filters.isFeatured = true;
 
-//     if (destinationId) filters.destinationId = destinationId;
-//     if (difficultyLevel) filters.difficultyLevel = difficultyLevel;
-//     if (isFeatured === "true") filters.isFeatured = true;
+    // Search in title or description
+    if (search) {
+      filters.OR = [
+        { title: { contains: search, mode: "insensitive" } },
+        { description: { contains: search, mode: "insensitive" } },
+      ];
+    }
 
-//     // Search in title or description
-//     if (search) {
-//       filters.OR = [
-//         { title: { contains: search, mode: "insensitive" } },
-//         { description: { contains: search, mode: "insensitive" } },
-//       ];
-//     }
+    // Price range filter
+    if (minPrice || maxPrice) {
+      filters.AND = [];
+      if (minPrice)
+        filters.AND.push({ basePrice: { gte: parseFloat(minPrice) } });
+      if (maxPrice)
+        filters.AND.push({ basePrice: { lte: parseFloat(maxPrice) } });
+    }
 
-//     // Price range filter
-//     if (minPrice || maxPrice) {
-//       filters.AND = [];
-//       if (minPrice)
-//         filters.AND.push({ basePrice: { gte: parseFloat(minPrice) } });
-//       if (maxPrice)
-//         filters.AND.push({ basePrice: { lte: parseFloat(maxPrice) } });
-//     }
+    const tours = await prisma.tour.findMany({
+      where: filters,
+      skip,
+      take: parseInt(limit),
+      include: {
+        destination: {
+          select: { id: true, name: true, location: true },
+        },
+        reviews: {
+          select: { rating: true },
+        },
+        _count: {
+          select: { reviews: true, tourBookings: true },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    });
 
-//     const tours = await prisma.tour.findMany({
-//       where: filters,
-//       skip,
-//       take: parseInt(limit),
-//       include: {
-//         destination: {
-//           select: { id: true, name: true, location: true },
-//         },
-//         reviews: {
-//           select: { rating: true },
-//         },
-//         _count: {
-//           select: { reviews: true, tourBookings: true },
-//         },
-//       },
-//       orderBy: { createdAt: "desc" },
-//     });
+    const total = await prisma.tour.count({ where: filters });
 
-//     const total = await prisma.tour.count({ where: filters });
+    // Calculate average rating
+    const toursWithRating = tours.map((tour) => {
+      const avgRating =
+        tour.reviews.length > 0
+          ? (
+              tour.reviews.reduce((acc, r) => acc + r.rating, 0) /
+              tour.reviews.length
+            ).toFixed(1)
+          : 0;
 
-//     // Calculate average rating
-//     const toursWithRating = tours.map((tour) => {
-//       const avgRating =
-//         tour.reviews.length > 0
-//           ? (
-//               tour.reviews.reduce((acc, r) => acc + r.rating, 0) /
-//               tour.reviews.length
-//             ).toFixed(1)
-//           : 0;
+      const { reviews, ...rest } = tour;
+      return { ...rest, averageRating: avgRating };
+    });
 
-//       const { reviews, ...rest } = tour;
-//       return { ...rest, averageRating: parseFloat(avgRating) };
-//     });
+    next({
+      status: 200,
+      success: true,
+      data: {
+        toursWithRating,
+        pagination: {
+          page: parseInt(page),
+          limit: parseInt(limit),
+          total,
+          pages: Math.ceil(total / parseInt(limit)),
+        },
+      },
+    });
+  } catch (error: any) {
+    next({
+      status: 500,
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+};
 
-//     res.status(200).json({
-//       success: true,
-//       data: toursWithRating,
-//       pagination: {
-//         page: parseInt(page),
-//         limit: parseInt(limit),
-//         total,
-//         pages: Math.ceil(total / limit),
-//       },
-//     });
-//   } catch (error) {
-//     res
-//       .status(500)
-//       .json({ message: "Internal server error", error: error.message });
-//   }
-// };
+//  Update tour details
+const updateTour = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { tourId } = req.params;
+    const validatedData = updateTourSchema.parse(req.body);
 
-// // UPDATE - Update tour details
-// const updateTour = async (req: Request, res: Response, next: NextFunction) => {
-//   try {
-//     const { id } = req.params;
-//     const {
-//       title,
-//       description,
-//       numberOfDays,
-//       basePrice,
-//       maxParticipants,
-//       minParticipants,
-//       difficultyLevel,
-//       isFeatured,
-//       isActive,
-//     } = req.body;
+    // Check if tour exists
+    const tour = await prisma.tour.findUnique({ where: { id: tourId } });
+    if (!tour) {
+      return next({ status: 404, message: "Tour not found" });
+    }
 
-//     // Check if tour exists
-//     const tour = await prisma.tour.findUnique({ where: { id } });
-//     if (!tour) {
-//       return res.status(404).json({ message: "Tour not found" });
-//     }
+    const updatedTour = await prisma.tour.update({
+      where: { id: tourId },
+      data: validatedData,
+      include: {
+        destination: {
+          select: { id: true, name: true, location: true },
+        },
+      },
+    });
 
-//     const updateData = {};
-//     if (title !== undefined) updateData.title = title;
-//     if (description !== undefined) updateData.description = description;
-//     if (numberOfDays) updateData.numberOfDays = parseInt(numberOfDays);
-//     if (basePrice) updateData.basePrice = parseFloat(basePrice);
-//     if (maxParticipants !== undefined)
-//       updateData.maxParticipants = maxParticipants
-//         ? parseInt(maxParticipants)
-//         : null;
-//     if (minParticipants !== undefined)
-//       updateData.minParticipants = minParticipants
-//         ? parseInt(minParticipants)
-//         : null;
-//     if (difficultyLevel !== undefined)
-//       updateData.difficultyLevel = difficultyLevel;
-//     if (isFeatured !== undefined)
-//       updateData.isFeatured = isFeatured === "true" || isFeatured === true;
-//     if (isActive !== undefined)
-//       updateData.isActive = isActive === "true" || isActive === true;
+    next({
+      status: 200,
+      success: true,
+      message: "Tour updated successfully",
+      data: updatedTour,
+    });
+  } catch (error: any) {
+    next({
+      status: 500,
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+};
 
-//     const updatedTour = await prisma.tour.update({
-//       where: { id },
-//       data: updateData,
-//       include: {
-//         destination: {
-//           select: { id: true, name: true, location: true },
-//         },
-//       },
-//     });
+//  Delete tour
+const deleteTour = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { tourId } = req.params;
 
-//     res.status(200).json({
-//       success: true,
-//       message: "Tour updated successfully",
-//       data: updatedTour,
-//     });
-//   } catch (error) {
-//     res
-//       .status(500)
-//       .json({ message: "Internal server error", error: error.message });
-//   }
-// };
+    const tour = await prisma.tour.findUnique({ where: { id: tourId } });
+    if (!tour) {
+      return next({ status: 404, message: "Tour not found" });
+    }
 
-// // DELETE - Delete tour
-// const deleteTour = async (req: Request, res: Response, next: NextFunction) => {
-//   try {
-//     const { id } = req.params;
+    // Delete images from Cloudinary
+    if (tour.coverImagePublicId) {
+      try {
+        await cloudinary.uploader.destroy(tour.coverImagePublicId);
+      } catch (error) {
+        console.error("Failed to delete cover image:", error);
+      }
+    }
 
-//     const tour = await prisma.tour.findUnique({ where: { id } });
-//     if (!tour) {
-//       return res.status(404).json({ message: "Tour not found" });
-//     }
+    for (const publicId of tour.imagePublicIds) {
+      try {
+        await cloudinary.uploader.destroy(publicId);
+      } catch (error) {
+        console.error(`Failed to delete image ${publicId}:`, error);
+      }
+    }
 
-//     // Delete images from Cloudinary
-//     if (tour.coverImagePublicId) {
-//       try {
-//         await cloudinary.v2.uploader.destroy(tour.coverImagePublicId);
-//       } catch (error) {
-//         console.error("Failed to delete cover image:", error);
-//       }
-//     }
+    // Delete tour
+    await prisma.tour.delete({ where: { id: tourId } });
 
-//     for (const publicId of tour.imagePublicIds) {
-//       try {
-//         await cloudinary.v2.uploader.destroy(publicId);
-//       } catch (error) {
-//         console.error(`Failed to delete image ${publicId}:`, error);
-//       }
-//     }
+    next({ status: 200, success: true, message: "Tour deleted successfully" });
+  } catch (error: any) {
+    next({
+      status: 500,
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+};
 
-//     // Delete tour (cascade will handle related data)
-//     await prisma.tour.delete({ where: { id } });
-
-//     res.status(200).json({
-//       success: true,
-//       message: "Tour deleted successfully",
-//     });
-//   } catch (error) {
-//     res
-//       .status(500)
-//       .json({ message: "Internal server error", error: error.message });
-//   }
-// };
-
-// // ADD IMAGES - Add more images to existing tour
+//  Add more images to existing tour
 const addTourImages = async (
   req: Request,
   res: Response,
@@ -352,68 +339,98 @@ const addTourImages = async (
   }
 };
 
-// // REMOVE IMAGES - Remove specific images from tour
-// const removeTourImages = async (
-//   req: Request,
-//   res: Response,
-//   next: NextFunction
-// ) => {
-//   try {
-//     const { id } = req.params;
-//     const { imagePublicIds } = req.body;
+//  Remove specific images from tour
+const removeTourImages = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { tourId } = req.params;
+    const { imagePublicIds } = req.body;
 
-//     const tour = await prisma.tour.findUnique({ where: { id } });
-//     if (!tour) {
-//       return res.status(404).json({ message: "Tour not found" });
-//     }
+    const tour = await prisma.tour.findUnique({ where: { id: tourId } });
+    if (!tour) {
+      return next({ status: 404, message: "Tour not found" });
+    }
 
-//     if (!imagePublicIds || imagePublicIds.length === 0) {
-//       return res.status(400).json({ message: "No images specified" });
-//     }
+    if (!imagePublicIds || imagePublicIds.length === 0) {
+      return next({ status: 400, message: "No images specified" });
+    }
 
-//     // Delete from Cloudinary
-//     for (const publicId of imagePublicIds) {
-//       try {
-//         await cloudinary.v2.uploader.destroy(publicId);
-//       } catch (error) {
-//         console.error(`Failed to delete image ${publicId}:`, error);
-//       }
-//     }
+    // Track successful and failed deletions
+    const successfulDeletions: string[] = [];
+    const failedDeletions: string[] = [];
 
-//     // Remove from database
-//     const updatedImageUrls = tour.images.filter(
-//       (_, index) => !imagePublicIds.includes(tour.imagePublicIds[index])
-//     );
-//     const updatedPublicIds = tour.imagePublicIds.filter(
-//       (id) => !imagePublicIds.includes(id)
-//     );
+    // Delete from Cloudinary
+    for (const publicId of imagePublicIds) {
+      try {
+        const result = await cloudinary.uploader.destroy(publicId);
+        if (result.result === "ok") {
+          successfulDeletions.push(publicId);
+        } else {
+          failedDeletions.push(publicId);
+          console.log("deletion failed");
+        }
+      } catch (error) {
+        failedDeletions.push(publicId);
+      }
+    }
 
-//     const updatedTour = await prisma.tour.update({
-//       where: { id },
-//       data: {
-//         images: updatedImageUrls,
-//         imagePublicIds: updatedPublicIds,
-//       },
-//     });
+    let updatedCoverImage;
+    let updatedCoverImagePublicId;
+    if (imagePublicIds.includes(tour.coverImagePublicId)) {
+      updatedCoverImage = null;
+      updatedCoverImagePublicId = null;
+    }
+    // Remove from database
+    const updatedImageUrls = tour.images.filter(
+      (_, index) => !imagePublicIds.includes(tour.imagePublicIds[index])
+    );
+    const updatedPublicIds = tour.imagePublicIds.filter(
+      (id) => !imagePublicIds.includes(id)
+    );
 
-//     res.status(200).json({
-//       success: true,
-//       message: "Images removed successfully",
-//       data: updatedTour,
-//     });
-//   } catch (error) {
-//     res
-//       .status(500)
-//       .json({ message: "Internal server error", error: error.message });
-//   }
-// };
+    const updatedTour = await prisma.tour.update({
+      where: { id: tourId },
+      data: {
+        coverImage: updatedCoverImage,
+        coverImagePublicId: updatedCoverImagePublicId,
+        images: updatedImageUrls,
+        imagePublicIds: updatedPublicIds,
+      },
+    });
+
+    next({
+      status: 200,
+      success: true,
+      message: `Successfully removed ${successfulDeletions.length} image(s)`,
+      data: {
+        ...updatedTour,
+        totalImages: updatedTour.images.length,
+        summary: {
+          requested: imagePublicIds.length,
+          successful: successfulDeletions.length,
+          failed: failedDeletions.length,
+        },
+        failedDeletions: failedDeletions.length > 0 ? failedDeletions : null,
+      },
+    });
+  } catch (error: any) {
+    next({
+      status: 500,
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+};
 
 export {
   createTour,
-  //   getTourById,
-  //   getAllTours,
-  //   updateTour,
-  //   deleteTour,
+  getTourById,
+  getAllTours,
+  updateTour,
+  deleteTour,
   addTourImages,
-  //   removeTourImages,
+  removeTourImages,
 };
