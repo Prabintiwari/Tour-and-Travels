@@ -4,7 +4,7 @@ import cloudinary from "../config/cloudinary";
 import { createTourSchema, updateTourSchema } from "../utils/zod";
 import { PackageQueryParams } from "../types/tour.types";
 
-// create tour without images
+// create tour without image
 const createTour = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const validatedData = createTourSchema.parse(req.body);
