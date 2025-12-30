@@ -8,9 +8,11 @@ import {
 import { validate } from "../middleware/validate";
 import {
   createItinerarySchema,
+  createTourScheduleSchema,
   createTourSchema,
   destinationSchema,
   updateItinerarySchema,
+  updateTourScheduleSchema,
   updateTourSchema,
   updateUserRoleSchema,
   updateUserSchema,
@@ -34,6 +36,7 @@ import {
 } from "../controllers/destinationGallery.controller";
 import { addTourImages, createTour, deleteTour, removeTourImages, updateTour } from "../controllers/tour.controller";
 import { addActivity, createItinerary, deleteItinerary, removeActivity, updateItinerary } from "../controllers/itinerary.controller";
+import { createTourSchedule, deleteTourSchedule, updateTourSchedule } from "../controllers/tourSchedule.controller";
 
 const router = Router();
 
@@ -102,5 +105,10 @@ router.patch("/itinerary/:itineraryId",validate(updateItinerarySchema),updateIti
 router.delete("/itinerary/:itineraryId",deleteItinerary)
 router.patch("/itinerary/:itineraryId/add-activities",addActivity)
 router.delete("/itinerary/:itineraryId/remove-activities",removeActivity)
+
+// Tour Schedule API
+router.post("/tour-schedule",validate(createTourScheduleSchema),createTourSchedule)
+router.patch("/tour-schedule/:tourScheduleId",validate(updateTourScheduleSchema),updateTourSchedule)
+router.delete("/tour-schedule/:tourScheduleId",deleteTourSchedule)
 
 export default router;

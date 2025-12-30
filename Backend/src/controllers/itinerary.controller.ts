@@ -193,15 +193,18 @@ const updateItinerary = async (
       return;
     }
 
-    const { tourId, day, ...updateData } = validateData;
+    // const { day, ...updateData } = validateData;
 
     // If updating day, check for conflicts
-    if (day !== undefined && day !== existingItinerary.day) {
+    if (
+      validateData.day !== undefined &&
+      validateData.day !== existingItinerary.day
+    ) {
       const conflictingItinerary = await prisma.itinerary.findUnique({
         where: {
           tourId_day: {
             tourId: existingItinerary.tourId,
-            day,
+            day: validateData.day,
           },
         },
       });
@@ -210,7 +213,7 @@ const updateItinerary = async (
         next({
           status: 400,
           success: false,
-          message: `Itinerary for day ${day} already exists`,
+          message: `Itinerary for day ${validateData.day} already exists`,
         });
         return;
       }
@@ -220,11 +223,11 @@ const updateItinerary = async (
         where: { id: existingItinerary.tourId },
       });
 
-      if (tour && day > tour.numberOfDays) {
+      if (tour && validateData.day > tour.numberOfDays) {
         next({
           status: 400,
           success: false,
-          message: `Day ${day} exceeds tour duration of ${tour.numberOfDays} days`,
+          message: `Day ${validateData.day} exceeds tour duration of ${tour.numberOfDays} days`,
         });
         return;
       }
@@ -233,8 +236,7 @@ const updateItinerary = async (
     const updatedItinerary = await prisma.itinerary.update({
       where: { id: itineraryId },
       data: {
-        ...updateData,
-        day: day || existingItinerary.day,
+        ...validateData
       },
       include: {
         tour: {

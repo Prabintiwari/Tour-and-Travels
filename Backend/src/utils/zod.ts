@@ -140,7 +140,89 @@ const createItinerarySchema = z.object({
   mealInclusions: z.array(z.nativeEnum(MealType)).optional().default([]),
 });
 
-const updateItinerarySchema = createItinerarySchema.partial();
+const updateItinerarySchema = z.object({
+  day: z.number().min(1, "Day must be at least 1"),
+  title: z.string().min(1, "Title is required"),
+  description: z.string().optional(),
+  activities: z
+    .array(
+      z.object({
+        time: z.string(),
+        activity: z.string(),
+        location: z.string(),
+      })
+    )
+    .optional()
+    .default([]),
+  accommodationType: z.nativeEnum(AccommodationType).optional(),
+  mealInclusions: z.array(z.nativeEnum(MealType)).optional().default([]),
+});
+
+const createTourScheduleSchema = z
+  .object({
+    tourId: z.string().min(1, "Tour ID is required"),
+    startDate: z
+      .string()
+      .refine((val) => !val || /^\d{4}-\d{2}-\d{2}$/.test(val), {
+        message: "Date must be in YYYY-MM-DD format",
+      }),
+    endDate: z
+      .string()
+      .refine((val) => !val || /^\d{4}-\d{2}-\d{2}$/.test(val), {
+        message: "Date must be in YYYY-MM-DD format",
+      }),
+    availableSeats: z
+      .number()
+      .int()
+      .positive("Available seats must be positive"),
+    price: z.number().positive("Price must be positive"),
+    isActive: z.boolean().optional().default(true),
+  })
+  .refine((data) => new Date(data.endDate) > new Date(data.startDate), {
+    message: "End date must be after start date",
+    path: ["endDate"],
+  });
+
+const updateTourScheduleSchema = z
+  .object({
+    startDate: z
+      .string()
+      .optional()
+      .refine((val) => !val || /^\d{4}-\d{2}-\d{2}$/.test(val), {
+        message: "Date must be in YYYY-MM-DD format",
+      })
+      .optional(),
+    endDate: z
+      .string()
+      .optional()
+      .refine((val) => !val || /^\d{4}-\d{2}-\d{2}$/.test(val), {
+        message: "Date must be in YYYY-MM-DD format",
+      }),
+    availableSeats: z
+      .number()
+      .int()
+      .positive("Available seats must be positive")
+      .optional(),
+    currentBookings: z
+      .number()
+      .int()
+      .min(0, "Current bookings cannot be negative")
+      .optional(),
+    price: z.number().positive("Price must be positive").optional(),
+    isActive: z.boolean().optional(),
+  })
+  .refine(
+    (data) => {
+      if (data.startDate && data.endDate) {
+        return new Date(data.endDate) > new Date(data.startDate);
+      }
+      return true;
+    },
+    {
+      message: "End date must be after start date",
+      path: ["endDate"],
+    }
+  );
 
 export {
   registerSchema,
@@ -152,4 +234,6 @@ export {
   updateTourSchema,
   createItinerarySchema,
   updateItinerarySchema,
+  createTourScheduleSchema,
+  updateTourScheduleSchema,
 };
