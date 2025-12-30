@@ -208,9 +208,6 @@ model Itinerary {
   activities            Json[] // [{ time, activity, location }]
   accommodationType     AccommodationType?
   mealInclusions        MealType[]
-  
-  images                String[]
-  imagePublicIds        String[]
 
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt

@@ -7,6 +7,7 @@ import {
 } from "../controllers/admin.controller";
 import { validate } from "../middleware/validate";
 import {
+  createItinerarySchema,
   createTourSchema,
   destinationSchema,
   updateTourSchema,
@@ -31,6 +32,7 @@ import {
   removeGalleryImages,
 } from "../controllers/destinationGallery.controller";
 import { addTourImages, createTour, deleteTour, removeTourImages, updateTour } from "../controllers/tour.controller";
+import { createItinerary } from "../controllers/itinerary.controller";
 
 const router = Router();
 
@@ -92,5 +94,8 @@ router.post(
 router.patch("/tour/:tourId",validate(updateTourSchema),updateTour)
 router.patch("/tour/:tourId/images",removeTourImages)
 router.delete("/tour/:tourId",validate(updateTourSchema),deleteTour)
+
+// Itinerary API
+router.post("/itinerary",validate(createItinerarySchema),createItinerary)
 
 export default router;

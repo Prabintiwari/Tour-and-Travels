@@ -12,6 +12,7 @@ import adminRoute from "./routes/admin.routes";
 import destinationRoute from "./routes/destination.routes";
 import tourRoute from "./routes/tour.routes";
 import destinationGalleryRoute from "./routes/destination.gallery.routes.";
+import itineraryRoute from "./routes/itinerary.routes";
 
 
 const app = express();
@@ -35,6 +36,7 @@ app.use("/api/admin", adminRoute);
 app.use("/api/destinations", destinationRoute);
 app.use("/api/destination-gallery", destinationGalleryRoute);
 app.use("/api/tour", tourRoute);
+app.use("/api/itinerary", itineraryRoute);
 app.use(responseHandler);
 
 app.get("/", (req: Request, res: Response) => {
