@@ -1,5 +1,5 @@
 export interface ActivityType extends Record<string, any> {
-     time: string;
-     activity: string;
-     location: string;
-   }
+  time: string;
+  activity: string;
+  location: string;
+}

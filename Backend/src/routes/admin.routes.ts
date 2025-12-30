@@ -10,6 +10,7 @@ import {
   createItinerarySchema,
   createTourSchema,
   destinationSchema,
+  updateItinerarySchema,
   updateTourSchema,
   updateUserRoleSchema,
   updateUserSchema,
@@ -32,7 +33,7 @@ import {
   removeGalleryImages,
 } from "../controllers/destinationGallery.controller";
 import { addTourImages, createTour, deleteTour, removeTourImages, updateTour } from "../controllers/tour.controller";
-import { createItinerary } from "../controllers/itinerary.controller";
+import { addActivity, createItinerary, deleteItinerary, removeActivity, updateItinerary } from "../controllers/itinerary.controller";
 
 const router = Router();
 
@@ -97,5 +98,9 @@ router.delete("/tour/:tourId",validate(updateTourSchema),deleteTour)
 
 // Itinerary API
 router.post("/itinerary",validate(createItinerarySchema),createItinerary)
+router.patch("/itinerary/:itineraryId",validate(updateItinerarySchema),updateItinerary)
+router.delete("/itinerary/:itineraryId",deleteItinerary)
+router.patch("/itinerary/:itineraryId/add-activities",addActivity)
+router.delete("/itinerary/:itineraryId/remove-activities",removeActivity)
 
 export default router;

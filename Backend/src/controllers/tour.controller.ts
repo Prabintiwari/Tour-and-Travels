@@ -4,7 +4,7 @@ import cloudinary from "../config/cloudinary";
 import { createTourSchema, updateTourSchema } from "../utils/zod";
 import { PackageQueryParams } from "../types/tour.types";
 
-// create tour without images
+// CREATE TOUR (WITHOUT ITINERARY)
 const createTour = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const validatedData = createTourSchema.parse(req.body);
@@ -21,12 +21,8 @@ const createTour = async (req: Request, res: Response, next: NextFunction) => {
     const tour = await prisma.tour.create({
       data: {
         ...validatedData,
-        maxParticipants: validatedData.maxParticipants
-          ? validatedData.maxParticipants
-          : null,
-        minParticipants: validatedData.minParticipants
-          ? validatedData.minParticipants
-          : null,
+        maxParticipants: validatedData.maxParticipants || null,
+        minParticipants: validatedData.minParticipants || null,
       },
       include: {
         destination: {
@@ -36,7 +32,7 @@ const createTour = async (req: Request, res: Response, next: NextFunction) => {
     });
 
     next({
-      status: 200,
+      status: 201,
       success: true,
       message: "Tour created successfully",
       data: tour,
@@ -50,7 +46,7 @@ const createTour = async (req: Request, res: Response, next: NextFunction) => {
   }
 };
 
-//  Get tour by ID
+// GET TOUR BY ID WITH ALL RELATED DATA
 const getTourById = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { tourId } = req.params;
@@ -59,9 +55,6 @@ const getTourById = async (req: Request, res: Response, next: NextFunction) => {
       where: { id: tourId },
       include: {
         destination: true,
-        itineraries: {
-          orderBy: { day: "asc" },
-        },
         schedules: {
           orderBy: { startDate: "asc" },
         },
@@ -93,6 +86,7 @@ const getTourById = async (req: Request, res: Response, next: NextFunction) => {
       where: { id: tourId },
       data: { views: { increment: 1 } },
     });
+
     next({
       status: 200,
       success: true,
@@ -107,7 +101,7 @@ const getTourById = async (req: Request, res: Response, next: NextFunction) => {
   }
 };
 
-//  Get all tours with filtering and pagination
+// GET ALL TOURS WITH FILTERING
 const getAllTours = async (
   req: Request<{}, {}, {}, PackageQueryParams>,
   res: Response,
@@ -205,7 +199,7 @@ const getAllTours = async (
   }
 };
 
-//  Update tour details
+// UPDATE TOUR
 const updateTour = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { tourId } = req.params;
@@ -242,7 +236,7 @@ const updateTour = async (req: Request, res: Response, next: NextFunction) => {
   }
 };
 
-//  Delete tour
+// DELETE TOUR
 const deleteTour = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { tourId } = req.params;
@@ -269,7 +263,7 @@ const deleteTour = async (req: Request, res: Response, next: NextFunction) => {
       }
     }
 
-    // Delete tour
+    // Delete tour (cascades to itineraryDetails, dayItinerary, activities)
     await prisma.tour.delete({ where: { id: tourId } });
 
     next({ status: 200, success: true, message: "Tour deleted successfully" });
@@ -282,7 +276,7 @@ const deleteTour = async (req: Request, res: Response, next: NextFunction) => {
   }
 };
 
-//  Add more images to existing tour
+// ADD IMAGES
 const addTourImages = async (
   req: Request,
   res: Response,
@@ -304,7 +298,6 @@ const addTourImages = async (
       });
     }
 
-    // Handle image uploads
     const coverImageUrl = files[0].path;
     const coverImagePublicId = files[0].filename;
     const imageUrls = files.slice(1).map((file: any) => file.path);
@@ -339,7 +332,7 @@ const addTourImages = async (
   }
 };
 
-//  Remove specific images from tour
+// REMOVE IMAGES
 const removeTourImages = async (
   req: Request,
   res: Response,
@@ -358,11 +351,9 @@ const removeTourImages = async (
       return next({ status: 400, message: "No images specified" });
     }
 
-    // Track successful and failed deletions
     const successfulDeletions: string[] = [];
     const failedDeletions: string[] = [];
 
-    // Delete from Cloudinary
     for (const publicId of imagePublicIds) {
       try {
         const result = await cloudinary.uploader.destroy(publicId);
@@ -370,7 +361,6 @@ const removeTourImages = async (
           successfulDeletions.push(publicId);
         } else {
           failedDeletions.push(publicId);
-          console.log("deletion failed");
         }
       } catch (error) {
         failedDeletions.push(publicId);
@@ -383,7 +373,7 @@ const removeTourImages = async (
       updatedCoverImage = null;
       updatedCoverImagePublicId = null;
     }
-    // Remove from database
+
     const updatedImageUrls = tour.images.filter(
       (_, index) => !imagePublicIds.includes(tour.imagePublicIds[index])
     );
