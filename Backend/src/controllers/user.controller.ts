@@ -30,7 +30,7 @@ const updateUserDetails = async (
       });
     }
 
-    // image already uploaded by multer-cloudinary
+    // image already uploaded by cloudinary
     const imageUrl = req.file?.path;
 
     const user = await prisma.user.update({
