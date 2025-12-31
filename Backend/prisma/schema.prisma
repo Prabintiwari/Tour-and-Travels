@@ -160,7 +160,7 @@ model DestinationGallery {
   updatedAt             DateTime @updatedAt
 }
 
-// ==================== TOUR PACKAGES ====================
+// ====================  TOUR MODEL ====================
 model Tour {
   id                    String   @id @default(auto()) @map("_id") @db.ObjectId
   destinationId         String   @db.ObjectId
@@ -191,6 +191,7 @@ model Tour {
   reviews               TourReview[]
   faqs                  TourFAQ[]
   tourBookings          TourBooking[]
+  guidePricing          TourGuidePricing? 
 
   @@index([destinationId])
   @@index([isFeatured])
@@ -238,7 +239,37 @@ model TourSchedule {
   @@index([startDate])
 }
 
-// ==================== TOUR BOOKINGS ====================
+// ==================== TOUR GUIDE PRICING ====================
+model TourGuidePricing {
+  id                    String   @id @default(auto()) @map("_id") @db.ObjectId
+  
+  tourId                String?  @db.ObjectId @unique
+  tour                  Tour?    @relation(fields: [tourId], references: [id], onDelete: Cascade)
+  
+  // If tourId is null, this is the default pricing
+  isDefault             Boolean   @default(false)
+  
+  // Pricing options - flexible to support different models
+  pricePerDay           Float?   // Fixed price per day 
+  pricePerPerson        Float?   // Price per person 
+  pricePerGroup         Float?   // Flat rate per group 
+  
+  // For complex pricing
+  minimumCharge         Float?   // Minimum charge regardless of group size
+  maximumGroupSize      Int?     // Max people one guide can handle
+  
+  // Additional metadata
+  description           String?  // Describe what's included with guide service
+  
+  isActive              Boolean  @default(true)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  
+  @@unique([isDefault])
+  @@index([isActive])
+}
+
+// ====================  TOUR BOOKINGS ====================
 model TourBooking {
   id                    String   @id @default(auto()) @map("_id") @db.ObjectId
   bookingCode           String   @unique
@@ -256,13 +287,22 @@ model TourBooking {
   destination           Destination @relation(fields: [destinationId], references: [id], onDelete: Cascade)
 
   numberOfParticipants  Int
-  pricePerParticipantAtBooking Float // snapshot of price at booking
+  pricePerParticipantAtBooking Float // snapshot of tour price at booking
   discountRate          Float    @default(0)
   discountPrice         Float    @default(0)
-  totalPrice            Float
+  
+  // Guide-related fields
   needsGuide            Boolean  @default(false)
-  guidePricePerParticipant Float? // snapshot
-  guideTotalPrice       Float?
+  numberOfGuides        Int?     @default(1) // Number of guides needed for large groups
+  
+  // Guide pricing snapshots (captured at booking time - only if needsGuide = true)
+  guidePricePerDay      Float?   // Snapshot
+  guidePricePerPerson   Float?   // Snapshot
+  guidePricePerGroup    Float?   // Snapshot
+  guideMinimumCharge    Float?   // Snapshot
+  guideTotalPrice       Float?   // Calculated total guide cost
+  
+  totalPrice            Float    // Total = (tour price - discount) + guide price
 
   status                BookingStatus @default(PENDING)
   bookingDate           DateTime @default(now())
@@ -277,6 +317,7 @@ model TourBooking {
   @@index([scheduleId])
   @@index([destinationId])
   @@index([status])
+  @@index([needsGuide])
 }
 
 // ==================== TOUR PAYMENTS ====================

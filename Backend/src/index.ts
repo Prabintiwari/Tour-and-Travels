@@ -14,6 +14,7 @@ import tourRoute from "./routes/tour.routes";
 import destinationGalleryRoute from "./routes/destination.gallery.routes.";
 import itineraryRoute from "./routes/itinerary.routes";
 import tourScheduleRoute from "./routes/tourSchedule.routes";
+import tourBookingRoute from "./routes/tourBooking.routes";
 
 
 const app = express();
@@ -39,6 +40,7 @@ app.use("/api/destination-gallery", destinationGalleryRoute);
 app.use("/api/tour", tourRoute);
 app.use("/api/itinerary", itineraryRoute);
 app.use("/api/tour-schedule", tourScheduleRoute);
+app.use("/api/tour-bookiing", tourBookingRoute);
 app.use(responseHandler);
 
 app.get("/", (req: Request, res: Response) => {

@@ -1,10 +1,14 @@
 import { Request, Response, NextFunction } from "express";
 import prisma from "../config/prisma";
 import cloudinary from "../config/cloudinary";
-import { createTourSchema, updateTourSchema } from "../utils/zod";
+import {
+  createTourSchema,
+  defaultGuidePricingSchema,
+  updateTourSchema,
+} from "../utils/zod";
 import { PackageQueryParams } from "../types/tour.types";
 
-// CREATE TOUR (WITHOUT ITINERARY)
+// CREATE TOUR (WITH OPTIONAL GUIDE PRICING)
 const createTour = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const validatedData = createTourSchema.parse(req.body);
@@ -13,6 +17,7 @@ const createTour = async (req: Request, res: Response, next: NextFunction) => {
     const destination = await prisma.destination.findUnique({
       where: { id: validatedData.destinationId },
     });
+    console.log(destination?.name);
 
     if (!destination) {
       return next({ status: 404, message: "Destination not found" });
@@ -20,9 +25,16 @@ const createTour = async (req: Request, res: Response, next: NextFunction) => {
 
     const tour = await prisma.tour.create({
       data: {
-        ...validatedData,
-        maxParticipants: validatedData.maxParticipants || null,
-        minParticipants: validatedData.minParticipants || null,
+        destinationId: validatedData.destinationId,
+        title: validatedData.title,
+        description: validatedData.description,
+        numberOfDays: validatedData.numberOfDays,
+        basePrice: validatedData.basePrice,
+        difficultyLevel: validatedData.difficultyLevel,
+        isFeatured: validatedData.isFeatured,
+
+        maxParticipants: validatedData.maxParticipants ?? null,
+        minParticipants: validatedData.minParticipants ?? null,
       },
       include: {
         destination: {
@@ -31,11 +43,42 @@ const createTour = async (req: Request, res: Response, next: NextFunction) => {
       },
     });
 
+    // Create guide pricing if any guide price field is provided
+    if (
+      validatedData.guidePricePerDay !== undefined ||
+      validatedData.guidePricePerPerson !== undefined ||
+      validatedData.guidePricePerGroup !== undefined
+    ) {
+      await prisma.tourGuidePricing.create({
+        data: {
+          tourId: tour.id,
+          pricePerDay: validatedData.guidePricePerDay ?? null,
+          pricePerPerson: validatedData.guidePricePerPerson ?? null,
+          pricePerGroup: validatedData.guidePricePerGroup ?? null,
+          minimumCharge: validatedData.guideMinimumCharge ?? null,
+          maximumGroupSize: validatedData.guideMaximumGroupSize ?? null,
+          description: validatedData.guideDescription ?? null,
+          isActive: true,
+        },
+      });
+    }
+
+    // Fetch tour with guide pricing
+    const tourWithGuidePricing = await prisma.tour.findUnique({
+      where: { id: tour.id },
+      include: {
+        destination: {
+          select: { id: true, name: true, location: true },
+        },
+        guidePricing: true,
+      },
+    });
+
     next({
       status: 201,
       success: true,
       message: "Tour created successfully",
-      data: tour,
+      data: tourWithGuidePricing,
     });
   } catch (error: any) {
     next({
@@ -46,7 +89,7 @@ const createTour = async (req: Request, res: Response, next: NextFunction) => {
   }
 };
 
-// GET TOUR BY ID WITH ALL RELATED DATA
+// GET TOUR BY ID WITH ALL RELATED DATA (INCLUDING GUIDE PRICING)
 const getTourById = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { tourId } = req.params;
@@ -70,6 +113,7 @@ const getTourById = async (req: Request, res: Response, next: NextFunction) => {
           orderBy: { createdAt: "desc" },
           take: 5,
         },
+        guidePricing: true,
       },
     });
 
@@ -78,6 +122,14 @@ const getTourById = async (req: Request, res: Response, next: NextFunction) => {
         status: 404,
         success: false,
         message: "Tour not found",
+      });
+    }
+
+    // If no tour-specific guide pricing, get default
+    let guidePricing = tour.guidePricing;
+    if (!guidePricing) {
+      guidePricing = await prisma.tourGuidePricing.findFirst({
+        where: { isDefault: true, isActive: true },
       });
     }
 
@@ -90,7 +142,10 @@ const getTourById = async (req: Request, res: Response, next: NextFunction) => {
     next({
       status: 200,
       success: true,
-      data: tour,
+      data: {
+        ...tour,
+        guidePricing: guidePricing || null,
+      },
     });
   } catch (error: any) {
     next({
@@ -101,7 +156,7 @@ const getTourById = async (req: Request, res: Response, next: NextFunction) => {
   }
 };
 
-// GET ALL TOURS WITH FILTERING
+// GET ALL TOURS WITH FILTERING (INCLUDING GUIDE PRICING)
 const getAllTours = async (
   req: Request<{}, {}, {}, PackageQueryParams>,
   res: Response,
@@ -154,6 +209,7 @@ const getAllTours = async (
         reviews: {
           select: { rating: true },
         },
+        guidePricing: true,
         _count: {
           select: { reviews: true, tourBookings: true },
         },
@@ -199,11 +255,40 @@ const getAllTours = async (
   }
 };
 
-// UPDATE TOUR
+// UPDATE TOUR (WITH GUIDE PRICING)
 const updateTour = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { tourId } = req.params;
     const validatedData = updateTourSchema.parse(req.body);
+    const {
+      guidePricePerDay,
+      guidePricePerPerson,
+      guidePricePerGroup,
+      guideMinimumCharge,
+      guideMaximumGroupSize,
+      guideDescription,
+      ...tourData
+    } = validatedData;
+
+    const guideUpdateData: any = {};
+
+    if (guidePricePerDay !== undefined)
+      guideUpdateData.pricePerDay = guidePricePerDay;
+
+    if (guidePricePerPerson !== undefined)
+      guideUpdateData.pricePerPerson = guidePricePerPerson;
+
+    if (guidePricePerGroup !== undefined)
+      guideUpdateData.pricePerGroup = guidePricePerGroup;
+
+    if (guideMinimumCharge !== undefined)
+      guideUpdateData.minimumCharge = guideMinimumCharge;
+
+    if (guideMaximumGroupSize !== undefined)
+      guideUpdateData.maximumGroupSize = guideMaximumGroupSize;
+
+    if (guideDescription !== undefined)
+      guideUpdateData.description = guideDescription;
 
     // Check if tour exists
     const tour = await prisma.tour.findUnique({ where: { id: tourId } });
@@ -211,14 +296,43 @@ const updateTour = async (req: Request, res: Response, next: NextFunction) => {
       return next({ status: 404, message: "Tour not found" });
     }
 
-    const updatedTour = await prisma.tour.update({
-      where: { id: tourId },
-      data: validatedData,
-      include: {
-        destination: {
-          select: { id: true, name: true, location: true },
+    const updatedTour = await prisma.$transaction(async (tx) => {
+      //updatedTour
+      await tx.tour.update({
+        where: { id: tourId },
+        data: { ...tourData },
+        include: {
+          destination: { select: { id: true, name: true, location: true } },
         },
-      },
+      });
+
+      // Update or create guide pricing if provided
+      if (Object.keys(guideUpdateData).length > 0) {
+        await tx.tourGuidePricing.upsert({
+          where: { tourId: tourId },
+          update: guideUpdateData,
+          create: {
+            tourId: tourId,
+            pricePerDay: guidePricePerDay ?? null,
+            pricePerPerson: guidePricePerPerson ?? null,
+            pricePerGroup: guidePricePerGroup ?? null,
+            minimumCharge: guideMinimumCharge ?? null,
+            maximumGroupSize: guideMaximumGroupSize ?? null,
+            description: guideDescription ?? null,
+            isActive: true,
+          },
+        });
+      }
+      // Fetch updated tour with guide pricing
+      return await tx.tour.findUnique({
+        where: { id: tourId },
+        include: {
+          destination: {
+            select: { id: true, name: true, location: true },
+          },
+          guidePricing: true,
+        },
+      });
     });
 
     next({
@@ -236,7 +350,7 @@ const updateTour = async (req: Request, res: Response, next: NextFunction) => {
   }
 };
 
-// DELETE TOUR
+// DELETE TOUR (CASCADE DELETES OTHER AUTOMATICALLY)
 const deleteTour = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { tourId } = req.params;
@@ -263,7 +377,7 @@ const deleteTour = async (req: Request, res: Response, next: NextFunction) => {
       }
     }
 
-    // Delete tour (cascades to itineraryDetails, dayItinerary, activities)
+    // Delete tour (cascades to guidePricing, itineraries, schedules, etc.)
     await prisma.tour.delete({ where: { id: tourId } });
 
     next({ status: 200, success: true, message: "Tour deleted successfully" });
@@ -415,6 +529,181 @@ const removeTourImages = async (
   }
 };
 
+// GET GUIDE PRICING FOR SPECIFIC TOUR
+const getGuidePricingForTour = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { tourId } = req.params;
+
+    // Try to get tour-specific pricing first
+    let guidePricing = await prisma.tourGuidePricing.findUnique({
+      where: { tourId },
+    });
+
+
+    // Fallback to default if not found
+    if (!guidePricing) {
+      guidePricing = await prisma.tourGuidePricing.findFirst({
+        where: { isDefault: true, isActive: true },
+      });
+    }
+
+    next({
+      status: 200,
+      success: true,
+      data: guidePricing,
+    });
+  } catch (error: any) {
+    next({
+      status: 500,
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+};
+
+// SET/UPDATE DEFAULT GUIDE PRICING (ADMIN ONLY)
+const setDefaultGuidePricing = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const validateData = defaultGuidePricingSchema.parse(req.body);
+
+    // Check if default pricing already exists
+    const existingDefault = await prisma.tourGuidePricing.findFirst({
+      where: { isDefault: true },
+    });
+
+    let guidePricing;
+
+    if (existingDefault) {
+      // Update existing default
+      guidePricing = await prisma.tourGuidePricing.update({
+        where: { id: existingDefault.id },
+        data: { ...validateData, isDefault: true },
+      });
+
+      next({
+        status: 200,
+        success: true,
+        message: "Default guide pricing updated successfully",
+        data: guidePricing,
+      });
+    } else {
+      // Create new default
+      guidePricing = await prisma.tourGuidePricing.create({
+        data: {
+          isDefault: true,
+          pricePerDay: validateData.pricePerDay ?? null,
+          pricePerPerson: validateData.pricePerPerson ?? null,
+          pricePerGroup: validateData.pricePerGroup ?? null,
+          minimumCharge: validateData.minimumCharge ?? null,
+          maximumGroupSize: validateData.maximumGroupSize ?? null,
+          description: validateData.description ?? null,
+          isActive: true,
+        },
+      });
+
+      next({
+        status: 201,
+        success: true,
+        message: "Default guide pricing created successfully",
+        data: guidePricing,
+      });
+    }
+  } catch (error: any) {
+    next({
+      status: 500,
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+};
+
+// GET DEFAULT GUIDE PRICING
+const getDefaultGuidePricing = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const defaultPricing = await prisma.tourGuidePricing.findFirst({
+      where: { isDefault: true, isActive: true },
+    });
+
+    if (!defaultPricing) {
+      return next({
+        status: 404,
+        message: "Default guide pricing not found",
+      });
+    }
+
+    next({
+      status: 200,
+      success: true,
+      data: defaultPricing,
+    });
+  } catch (error: any) {
+    next({
+      status: 500,
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+};
+
+// DELETE TOUR-SPECIFIC GUIDE PRICING (Revert to default)
+const deleteTourGuidePricing = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { tourId } = req.params;
+
+    const guidePricing = await prisma.tourGuidePricing.findUnique({
+      where: { tourId },
+    });
+
+    if (!guidePricing) {
+      return next({
+        status: 404,
+        message: "Tour-specific guide pricing not found",
+      });
+    }
+
+    if (guidePricing.isDefault) {
+      return next({
+        status: 400,
+        message: "Default guide pricing cannot be deleted",
+      });
+    }
+
+    await prisma.tourGuidePricing.update({
+      where: { id: guidePricing.id },
+      data: { isActive: false },
+    });
+
+    next({
+      status: 200,
+      success: true,
+      message:
+        "Tour-specific guide pricing disabled. Tour will now use default pricing.",
+    });
+  } catch (error: any) {
+    next({
+      status: 500,
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+};
+
 export {
   createTour,
   getTourById,
@@ -423,4 +712,9 @@ export {
   deleteTour,
   addTourImages,
   removeTourImages,
+  // New guide pricing controllers
+  getGuidePricingForTour,
+  setDefaultGuidePricing,
+  getDefaultGuidePricing,
+  deleteTourGuidePricing,
 };
