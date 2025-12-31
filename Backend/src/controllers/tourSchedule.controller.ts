@@ -401,7 +401,7 @@ const deleteTourSchedule = async (
   }
 };
 
-//Get available schedules for a specific tour
+//Get available schedules for  specific tour
 const getAvailableSchedules = async (
   req: Request,
   res: Response,
