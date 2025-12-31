@@ -92,6 +92,16 @@ const createTourSchema = z
       .positive("Number of days must be greater than 0"),
 
     basePrice: z.coerce.number().positive("Base price must be greater than 0"),
+    discountRate: z.coerce
+      .number()
+      .min(0, "Discount rate cannot be negative")
+      .max(100, "Discount rate cannot exceed 100")
+      .optional(),
+    discountAmount: z.coerce
+      .number()
+      .min(0, "Discount amount cannot be negative")
+      .optional(),
+    discountActive: z.boolean().optional().default(false),
 
     maxParticipants: z.coerce
       .number()
@@ -151,22 +161,63 @@ const createTourSchema = z
   )
   .refine(
     (data) =>
-      !data.guidePricePerDay &&
-      !data.guidePricePerPerson &&
-      !data.guidePricePerGroup
-        ? true
-        : true,
+      data.guidePricePerDay !== undefined ||
+      data.guidePricePerPerson !== undefined ||
+      data.guidePricePerGroup !== undefined,
     {
       message:
         "At least one guide pricing option (per day, per person, or per group) should be provided",
       path: ["guidePricePerDay"],
+    }
+  )
+  .refine(
+    (data) => {
+      if (!data.discountActive) return true;
+
+      return (
+        data.discountAmount !== undefined || data.discountRate !== undefined
+      );
+    },
+    {
+      message:
+        "Either discountRate or discountAmount must be provided when discount is active",
+      path: ["discountAmount"],
+    }
+  )
+  .refine(
+    (data) => {
+      if (!data.discountActive) return true;
+
+      const hasAmount = data.discountAmount !== undefined;
+      const hasRate = data.discountRate !== undefined;
+
+      return hasAmount !== hasRate;
+    },
+    {
+      message:
+        "Provide either discountAmount or discountRate (not both) when discount is active",
+      path: ["discountAmount"],
     }
   );
 
 const updateTourSchema = createTourSchema
   .omit({ destinationId: true })
   .partial()
-  .extend({ isActive: z.coerce.boolean().optional().default(true) });
+  .extend({ isActive: z.coerce.boolean().optional().default(true) }).refine(
+    (data) => {
+      if (!data.discountActive) return true;
+
+      const hasAmount = data.discountAmount !== undefined;
+      const hasRate = data.discountRate !== undefined;
+
+      return hasAmount !== hasRate;
+    },
+    {
+      message:
+        "Provide either discountAmount or discountRate (not both) when discount is active",
+      path: ["discountAmount"],
+    }
+  );;
 
 const defaultGuidePricingSchema = z
   .object({
@@ -200,7 +251,6 @@ const defaultGuidePricingSchema = z
       .string()
       .min(5, "Description must be at least 5 characters")
       .optional(),
-      
   })
   .refine(
     (data) =>

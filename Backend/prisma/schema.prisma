@@ -170,6 +170,10 @@ model Tour {
   description           String?
   numberOfDays          Int
   basePrice             Float
+  discountRate          Float?   // e.g. 10 = 10%
+  discountAmount        Float?   // fixed discount (optional)
+  discountActive        Boolean  @default(false)
+  
   maxParticipants       Int?
   minParticipants       Int?
   difficultyLevel       DifficultyLevel @default(EASY)
@@ -193,7 +197,6 @@ model Tour {
   tourBookings          TourBooking[]
   guidePricing          TourGuidePricing? 
 
-  @@index([destinationId])
   @@index([isFeatured])
 }
 
@@ -243,7 +246,7 @@ model TourSchedule {
 model TourGuidePricing {
   id                    String   @id @default(auto()) @map("_id") @db.ObjectId
   
-  tourId                String?  @db.ObjectId @unique
+  tourId                String?  @unique @db.ObjectId 
   tour                  Tour?    @relation(fields: [tourId], references: [id], onDelete: Cascade)
   
   // If tourId is null, this is the default pricing
@@ -265,7 +268,7 @@ model TourGuidePricing {
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
   
-  @@unique([isDefault])
+  @@index([isDefault])
   @@index([isActive])
 }
 
@@ -288,8 +291,12 @@ model TourBooking {
 
   numberOfParticipants  Int
   pricePerParticipantAtBooking Float // snapshot of tour price at booking
-  discountRate          Float    @default(0)
-  discountPrice         Float    @default(0)
+
+  // SNAPSHOTS (system-calculated)
+  basePriceAtBooking    Float
+  discountRateAtBooking Float?   // snapshot
+  discountAmountAtBooking Float? // snapshot
+  finalTourPrice        Float
   
   // Guide-related fields
   needsGuide            Boolean  @default(false)

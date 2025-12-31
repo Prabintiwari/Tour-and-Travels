@@ -9,4 +9,5 @@ export interface PackageQueryParams {
   minPrice?: string;
   maxPrice?: string;
   search?: string;
+  discountedOnly?: string;
 }
