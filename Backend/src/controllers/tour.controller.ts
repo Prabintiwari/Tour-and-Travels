@@ -47,7 +47,7 @@ const createTour = async (req: Request, res: Response, next: NextFunction) => {
       if (validatedData.discountRate && validatedData.discountRate > 0) {
         validatedData.discountAmount = calculatedDiscountAmount;
       }
-      // If discountAmount is provided, calculate discountRate
+      // If discountAmount is provided, calculate and set discountRate
       else if (
         validatedData.discountAmount &&
         validatedData.discountAmount > 0
