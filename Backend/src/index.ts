@@ -40,7 +40,7 @@ app.use("/api/destination-gallery", destinationGalleryRoute);
 app.use("/api/tour", tourRoute);
 app.use("/api/itinerary", itineraryRoute);
 app.use("/api/tour-schedule", tourScheduleRoute);
-app.use("/api/tour-bookiing", tourBookingRoute);
+app.use("/api/tour-booking", tourBookingRoute);
 app.use(responseHandler);
 
 app.get("/", (req: Request, res: Response) => {

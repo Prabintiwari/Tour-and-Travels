@@ -65,6 +65,8 @@ const createTourSchedule = async (
     const schedule = await prisma.tourSchedule.create({
       data: {
         tourId: validatedData.tourId,
+        title: validatedData.title,
+        description: validatedData.description,
         startDate: new Date(validatedData.startDate),
         endDate: new Date(validatedData.endDate),
         availableSeats: validatedData.availableSeats,

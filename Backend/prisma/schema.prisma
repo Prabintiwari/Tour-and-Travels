@@ -20,6 +20,12 @@ enum DifficultyLevel {
   HARD
 }
 
+enum GuidePricingType{
+  PER_DAY
+  PER_GROUP
+  PER_PERSON
+}
+
 enum BookingStatus {
   PENDING
   CONFIRMED
@@ -173,6 +179,7 @@ model Tour {
   discountRate          Float?   // e.g. 10 = 10%
   discountAmount        Float?   // fixed discount (optional)
   discountActive        Boolean  @default(false)
+  finalTourPrice        Float
   
   maxParticipants       Int?
   minParticipants       Int?
@@ -225,12 +232,16 @@ model TourSchedule {
   id              String   @id @default(auto()) @map("_id") @db.ObjectId
   tourId          String   @db.ObjectId
   tour            Tour @relation(fields: [tourId], references: [id], onDelete: Cascade)
+
+  title           String?        // e.g. "Dashain Special Batch"
+  description     String?        // Why price is different
+  price           Float?         // Override price for this schedule
   
   startDate       DateTime
   endDate         DateTime
   availableSeats  Int
   currentBookings Int      @default(0)
-  price           Float
+  
   isActive        Boolean  @default(true) // Optional: schedule active or cancelled
 
   bookings        TourBooking[]
@@ -293,31 +304,28 @@ model TourBooking {
   pricePerParticipantAtBooking Float // snapshot of tour price at booking
 
   // SNAPSHOTS (system-calculated)
-  basePriceAtBooking    Float
-  discountRateAtBooking Float?   // snapshot
-  discountAmountAtBooking Float? // snapshot
-  finalTourPrice        Float
-  
+  basePriceAtBooking      Float
+  discountRateAtBooking   Float?   // snapshot
+  discountAmountAtBooking Float?   // snapshot
+  finalTourPrice          Float
+
   // Guide-related fields
-  needsGuide            Boolean  @default(false)
-  numberOfGuides        Int?     @default(1) // Number of guides needed for large groups
-  
-  // Guide pricing snapshots (captured at booking time - only if needsGuide = true)
-  guidePricePerDay      Float?   // Snapshot
-  guidePricePerPerson   Float?   // Snapshot
-  guidePricePerGroup    Float?   // Snapshot
-  guideMinimumCharge    Float?   // Snapshot
-  guideTotalPrice       Float?   // Calculated total guide cost
-  
-  totalPrice            Float    // Total = (tour price - discount) + guide price
+  needsGuide           Boolean  @default(false)
+  numberOfGuides       Int?     @default(0) // Number of guides needed for large groups
+  guidePricingType     GuidePricingType?     // Enum: PER_DAY / PER_PERSON / PER_GROUP
+  guidePriceAtBooking  Float?                 // Snapshot of price depending on type
+  guideMinimumCharge   Float?                 // Snapshot (if applicable)
+  guideTotalPrice      Float?                 // Calculated total guide cost
 
-  status                BookingStatus @default(PENDING)
-  bookingDate           DateTime @default(now())
-  cancelledAt           DateTime?
-  completedAt           DateTime?
-  updatedAt             DateTime @updatedAt
+  totalPrice           Float    // Total = (tour price - discount) + guide price
 
-  payment               TourPayment?
+  status               BookingStatus @default(PENDING)
+  bookingDate          DateTime @default(now())
+  cancelledAt          DateTime?
+  completedAt          DateTime?
+  updatedAt            DateTime @updatedAt
+
+  payment              TourPayment?
 
   @@index([userId])
   @@index([tourId])

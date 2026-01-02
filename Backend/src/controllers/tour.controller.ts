@@ -56,6 +56,10 @@ const createTour = async (req: Request, res: Response, next: NextFunction) => {
           (validatedData.discountAmount / validatedData.basePrice) * 100;
       }
     }
+    const finalPrice = calculateFinalPrice(
+      validatedData.basePrice,
+      validatedData.discountAmount ?? 0
+    );
 
     const tour = await prisma.tour.create({
       data: {
@@ -67,6 +71,7 @@ const createTour = async (req: Request, res: Response, next: NextFunction) => {
         discountRate: validatedData.discountRate ?? null,
         discountAmount: validatedData.discountAmount ?? null,
         discountActive: validatedData.discountActive ?? false,
+        finalTourPrice: finalPrice,
         difficultyLevel: validatedData.difficultyLevel,
         isFeatured: validatedData.isFeatured,
         maxParticipants: validatedData.maxParticipants ?? null,
@@ -109,19 +114,12 @@ const createTour = async (req: Request, res: Response, next: NextFunction) => {
       },
     });
 
-    // Add calculated final price to response
-    const discountAmount = tour.discountAmount ? tour.discountAmount : 0;
-
-    const finalPrice = calculateFinalPrice(tour.basePrice, discountAmount);
-
     next({
       status: 201,
       success: true,
       message: "Tour created successfully",
       data: {
         ...tourWithGuidePricing,
-        finalPrice,
-        discountAmount,
       },
     });
   } catch (error: any) {
@@ -394,6 +392,10 @@ const updateTour = async (req: Request, res: Response, next: NextFunction) => {
       tourData.discountRate = 0;
       tourData.discountAmount = 0;
     }
+    const finalPrice = calculateFinalPrice(
+      tourData.basePrice ?? tour.basePrice,
+      tourData.discountAmount ?? tour.discountAmount ?? 0
+    );
 
     const guideUpdateData: any = {};
 
@@ -419,7 +421,7 @@ const updateTour = async (req: Request, res: Response, next: NextFunction) => {
       // Update tour with discount fields
       await tx.tour.update({
         where: { id: tourId },
-        data: tourData,
+        data: { ...tourData, finalTourPrice: finalPrice },
       });
 
       // Update or create guide pricing if provided
@@ -452,12 +454,9 @@ const updateTour = async (req: Request, res: Response, next: NextFunction) => {
       });
     });
     // Calculate final price for response
-    const discountAmount = updatedTour?.discountAmount ? updatedTour.discountAmount : 0;
-
-    const finalPrice = calculateFinalPrice(
-      updatedTour!.basePrice,
-      discountAmount
-    );
+    const discountAmount = updatedTour?.discountAmount
+      ? updatedTour.discountAmount
+      : 0;
 
     next({
       status: 200,
@@ -477,7 +476,6 @@ const updateTour = async (req: Request, res: Response, next: NextFunction) => {
     });
   }
 };
-
 
 // DELETE TOUR (CASCADE DELETES OTHER AUTOMATICALLY)
 const deleteTour = async (req: Request, res: Response, next: NextFunction) => {
@@ -813,7 +811,7 @@ const deleteTourGuidePricing = async (
     }
 
     await prisma.tourGuidePricing.delete({
-      where: { id: guidePricing.id }
+      where: { id: guidePricing.id },
     });
 
     next({

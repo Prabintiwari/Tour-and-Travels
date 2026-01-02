@@ -2,6 +2,7 @@ import z from "zod";
 import {
   AccommodationType,
   DifficultyLevel,
+  GuidePricingType,
   MealType,
   UserRole,
 } from "@prisma/client";
@@ -203,7 +204,8 @@ const createTourSchema = z
 const updateTourSchema = createTourSchema
   .omit({ destinationId: true })
   .partial()
-  .extend({ isActive: z.coerce.boolean().optional().default(true) }).refine(
+  .extend({ isActive: z.coerce.boolean().optional().default(true) })
+  .refine(
     (data) => {
       if (!data.discountActive) return true;
 
@@ -217,7 +219,7 @@ const updateTourSchema = createTourSchema
         "Provide either discountAmount or discountRate (not both) when discount is active",
       path: ["discountAmount"],
     }
-  );;
+  );
 
 const defaultGuidePricingSchema = z
   .object({
@@ -288,26 +290,62 @@ const updateItinerarySchema = createItinerarySchema
   .omit({ tourId: true })
   .partial();
 
+const today = new Date();
+today.setHours(0, 0, 0, 0);
+
 const createTourScheduleSchema = z
   .object({
     tourId: z.string().min(1, "Tour ID is required"),
-    startDate: z
+
+    title: z.string().min(1, "Title is required"),
+
+    description: z
       .string()
-      .refine((val) => !val || /^\d{4}-\d{2}-\d{2}$/.test(val), {
-        message: "Date must be in YYYY-MM-DD format",
-      }),
-    endDate: z
-      .string()
-      .refine((val) => !val || /^\d{4}-\d{2}-\d{2}$/.test(val), {
-        message: "Date must be in YYYY-MM-DD format",
-      }),
+      .min(10, "Description must be at least 10 characters"),
+
+    startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, {
+      message: "Start date must be in YYYY-MM-DD format",
+    }),
+
+    endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, {
+      message: "End date must be in YYYY-MM-DD format",
+    }),
+
     availableSeats: z
       .number()
       .int()
-      .positive("Available seats must be positive"),
+      .positive("Available seats must be a positive integer"),
+
     price: z.number().positive("Price must be positive"),
+
     isActive: z.boolean().optional().default(true),
   })
+
+  /* Prevent past start date */
+  .refine(
+    (data) => {
+      const start = new Date(data.startDate);
+      return start >= today;
+    },
+    {
+      message: "Start date cannot be in the past",
+      path: ["startDate"],
+    }
+  )
+
+  /* Prevent past end date */
+  .refine(
+    (data) => {
+      const end = new Date(data.endDate);
+      return end >= today;
+    },
+    {
+      message: "End date cannot be in the past",
+      path: ["endDate"],
+    }
+  )
+
+  /*  End date must be after start date */
   .refine((data) => new Date(data.endDate) > new Date(data.startDate), {
     message: "End date must be after start date",
     path: ["endDate"],
@@ -324,27 +362,59 @@ const updateTourScheduleSchema = createTourScheduleSchema
       .optional(),
   });
 
-const createBookingSchema = z.object({
-  tourId: z.string().min(1, "tourId is required"),
+const createBookingSchema = z
+  .object({
+    tourId: z.string().min(1, "tourId is required"),
 
-  scheduleId: z.string().min(1, "scheduleId is required"),
+    scheduleId: z.string().min(1, "scheduleId is required"),
 
-  destinationId: z.string().min(1, "destinationId is required"),
+    numberOfParticipants: z.coerce
+      .number()
+      .positive("Number of participants must be greater than 0")
+      .int("numberOfParticipants must be an integer")
+      .min(1, "At least 1 participant is required"),
 
-  numberOfParticipants: z.coerce
-    .number()
-    .positive("Number of days must be greater than 0")
-    .int("numberOfParticipants must be an integer")
-    .min(1, "At least 1 participant is required"),
+    needsGuide: z.boolean().default(false),
+    numberOfGuideNeeds: z.coerce
+      .number()
+      .positive("Number of guides must be greater than 0")
+      .int("numberOfGuideNeeds must be an integer")
+      .optional(),
+    guidePricingType: z.nativeEnum(GuidePricingType).optional(),
+  })
+  .refine(
+    (data) => {
+      if (!data.needsGuide) return true;
 
-  needsGuide: z.boolean("needsGuide is required"),
+      // PER_DAY requires guide number
+      if (data.guidePricingType === GuidePricingType.PER_DAY) {
+        return (
+          data.numberOfGuideNeeds !== undefined && data.numberOfGuideNeeds >= 1
+        );
+      }
 
-  discountRate: z
-    .number()
-    .min(0, "discountRate cannot be negative")
-    .max(100, "discountRate cannot exceed 100")
-    .default(0),
-});
+      // PER_PERSON / PER_GROUP → guide number optional
+      return true;
+    },
+    {
+      message:
+        "Number of guides needed must be at least 1 when pricing is PER_DAY",
+      path: ["numberOfGuideNeeds"],
+    }
+  )
+
+  .refine(
+    (data) => {
+      if (data.needsGuide) {
+        return data.guidePricingType !== undefined;
+      }
+      return true;
+    },
+    {
+      message: "Guide pricing type must be selected if guide is needed",
+      path: ["guidePricingType"],
+    }
+  );
 
 export {
   registerSchema,
