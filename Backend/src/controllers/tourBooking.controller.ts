@@ -233,124 +233,118 @@ const createTourBooking = async (
   }
 };
 
-// /**
-//  * @desc    Get user's own bookings
-//  * @route   GET /api/bookings/tours/my-bookings
-//  * @access  Private (User)
-//  */
-// const getUserTourBookings = async (
-//   req: AuthRequest,
-//   res: Response,
-//   next: NextFunction
-// ) => {
-//   try {
-//     const userId = req.id;
-//     const { status, page = 1, limit = 10 } = req.query;
+// Get my-bookings
+const getUserTourBookings = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const userId = req.id;
+    const { status, page = "1", limit = "10" } = req.query;
 
-//     const skip = (Number(page) - 1) * Number(limit);
+    const skip = (parseInt(page as string) - 1) * parseInt(limit as string);
 
-//     const where: any = { userId };
-//     if (status) {
-//       where.status = status as BookingStatus;
-//     }
+    const where: any = { userId };
+    if (status) {
+      where.status = status as BookingStatus;
+    }
 
-//     const [bookings, total] = await Promise.all([
-//       prisma.tourBooking.findMany({
-//         where,
-//         skip,
-//         take: Number(limit),
-//         include: {
-//           tour: {
-//             include: {
-//               destination: true,
-//             },
-//           },
-//           schedule: true,
-//           payment: true,
-//         },
-//         orderBy: { bookingDate: "desc" },
-//       }),
-//       prisma.tourBooking.count({ where }),
-//     ]);
+    const [bookings, total] = await Promise.all([
+      prisma.tourBooking.findMany({
+        where,
+        skip,
+        take: parseInt(limit as string),
+        include: {
+          tour: {
+            include: {
+              destination: true,
+            },
+          },
+          schedule: true,
+          payment: true,
+        },
+        orderBy: { bookingDate: "desc" },
+      }),
+      prisma.tourBooking.count({ where }),
+    ]);
 
-//     next({
-//       status: 200,
-//       success: true,
-//       data: bookings,
-//       pagination: {
-//         total,
-//         page: Number(page),
-//         limit: Number(limit),
-//         totalPages: Math.ceil(total / Number(limit)),
-//       },
-//     });
-//   } catch (error: any) {
-//     next({
-//       status: 500,
-//       message: "Internal server error",
-//       error: error.message,
-//     });
-//   }
-// };
+    next({
+      status: 200,
+      success: true,
+      data: {
+        bookings,
+        pagination: {
+          total,
+          page: parseInt(page as string),
+          limit: parseInt(limit as string),
+          totalPages: Math.ceil(total / parseInt(limit as string)),
+        },
+      },
+    });
+  } catch (error: any) {
+    next({
+      status: 500,
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+};
 
-// /**
-//  * @desc    Get single booking by ID (own booking)
-//  * @route   GET /api/bookings/tours/:id
-//  * @access  Private (User)
-//  */
-// const getUserTourBookingById = async (
-//   req: AuthRequest,
-//   res: Response,
-//   next: NextFunction
-// ) => {
-//   try {
-//     const userId = req.id;
-//     const { id } = req.params;
+//  Get single booking by ID (own booking)
+const getUserTourBookingById = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const userId = req.id;
+    const { id } = req.params;
 
-//     const booking = await prisma.tourBooking.findFirst({
-//       where: {
-//         id,
-//         userId,
-//       },
-//       include: {
-//         tour: {
-//           include: {
-//             destination: true,
-//             itineraries: {
-//               orderBy: { day: "asc" },
-//             },
-//           },
-//         },
-//         schedule: true,
-//         payment: true,
-//         user: {
-//           select: {
-//             id: true,
-//             fullName: true,
-//             email: true,
-//             phone: true,
-//           },
-//         },
-//       },
-//     });
+    const booking = await prisma.tourBooking.findFirst({
+      where: {
+        id,
+        userId,
+      },
+      include: {
+        tour: {
+          include: {
+            destination: true,
+            itineraries: {
+              orderBy: { day: "asc" },
+            },
+          },
+        },
+        schedule: true,
+        payment: true,
+        user: {
+          select: {
+            id: true,
+            fullName: true,
+            email: true,
+            phone: true,
+          },
+        },
+      },
+    });
 
-//     if (!booking) {
-//       return next({
-//         status: 404,
-//         success: false,
-//         message: "Booking not found",
-//       });
-//     }
+    if (!booking) {
+      return next({
+        status: 404,
+        success: false,
+        message: "Booking not found",
+      });
+    }
 
-//     next({ status: 200, success: true, data: booking });
-//   } catch (error: any) {
-//     next({
-//       status: 500,
-//       message: "Internal server error",
-//       error: error.message,
-//     });
-//   }
-// };
+    next({ status: 200, success: true, data: booking });
+  } catch (error: any) {
+    next({
+      status: 500,
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+};
 
 // /**
 //  * @desc    Cancel user's own booking
@@ -727,8 +721,8 @@ const createTourBooking = async (
 
 export {
   createTourBooking,
-  //   getUserTourBookings,
-  //   getUserTourBookingById,
+  getUserTourBookings,
+    getUserTourBookingById,
   //   cancelUserTourBooking,
   //   getAllTourBookings,
   //   getAdminTourBookingById,
