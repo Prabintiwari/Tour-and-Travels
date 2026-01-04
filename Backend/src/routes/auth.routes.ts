@@ -27,11 +27,39 @@ const router = Router();
  *             $ref: '#/components/schemas/RegisterSchema'
  *     responses:
  *       201:
- *         description: User registered successfully, verification email sent
+ *         description: User registered successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/RegisterResponse'
  *       400:
- *         description: Invalid input or user already exists
+ *         description: User already exists or invalid input
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: User with this email already exists
  *       422:
  *         description: Validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 errors:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       field:
+ *                         type: string
+ *                         example: email
+ *                       message:
+ *                         type: string
+ *                         example: Invalid email format
  */
 router.post("/register", validate(registerSchema), register);
 
@@ -72,9 +100,23 @@ router.post("/verify-register", verifyRegistration);
  *             $ref: '#/components/schemas/LoginSchema'
  *     responses:
  *       200:
- *         description: Login successful, returns authentication token
+ *         description: Login successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/AuthResponse'
  *       401:
  *         description: Invalid credentials
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Invalid email or password
+ *       422:
+ *         description: Validation error
  */
 router.post("/login", validate(loginSchema), login);
 

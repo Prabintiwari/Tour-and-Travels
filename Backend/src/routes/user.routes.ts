@@ -15,16 +15,36 @@ const router = Router();
 
 /**
  * @swagger
- * /api/users:
- *   get:
- *     summary: Get all users
- *     tags: [Users]
+ * /api/users/update-profile/{id}:
+ *   patch:
+ *     summary: Update a user profile
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             $ref: '#/components/schemas/UpdateUserSchema'
  *     responses:
- *       200:
- *         description: Success
+ *       201:
+ *         description: user profile update successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/User'
+ *       400:
+ *         description: Invalid input
+ *       401:
+ *         description: Unauthorized
  */
-
-// update my profile
+router.patch(
+  "/users/update-profile/:id",
+  cloudinaryUpload("users/profile").single("profileImage"),
+  validate(updateUserSchema),
+  updateUserDetails
+);
 router.patch(
   "/update-profile/:id",
   authenticateToken,

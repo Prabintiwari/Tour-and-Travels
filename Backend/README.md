@@ -9,7 +9,7 @@ Backend service for the Tour and Travel application, built with Node.js/Express 
 ### Prerequisites
 - Node.js 14+
 - npm or yarn
-- Database (MongoDB/PostgreSQL)
+- Database (MongoDB)
 
 ### Installation
 ```bash
@@ -57,6 +57,11 @@ Backend/
 ├── controllers/
 ├── models/
 ├── middleware/
+│   ├── auth.ts
+│   ├── errorHandler.ts
+│   └── validation.ts
+├── utils/
+└── server.ts
 └── config/
 ```
 

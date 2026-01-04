@@ -36,16 +36,6 @@ app.use(cookieParser());
 // Swagger UI route
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
-/**
- * @swagger
- * /api/test:
- *   get:
- *     summary: Test endpoint
- *     responses:
- *       200:
- *         description: Success
- */
-
 app.use("/api/auth", authRoute);
 app.use("/api/users", userRoute);
 app.use("/api/admin", adminRoute);

@@ -22,6 +22,7 @@ const options = {
     "./src/index.ts", 
     "./src/routes/*.ts", 
     "./src/routes/**/*.ts", 
+    "./src/docs/*.ts"
   ],
 };
 
