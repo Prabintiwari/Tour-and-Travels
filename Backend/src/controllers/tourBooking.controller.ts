@@ -299,11 +299,11 @@ const getUserTourBookingById = async (
 ) => {
   try {
     const userId = req.id;
-    const { id } = req.params;
+    const {bookingId} = req.params;
 
     const booking = await prisma.tourBooking.findFirst({
       where: {
-        id,
+        id:bookingId,
         userId,
       },
       include: {
@@ -346,97 +346,95 @@ const getUserTourBookingById = async (
   }
 };
 
-// /**
 //  * @desc    Cancel user's own booking
 //  * @route   PATCH /api/bookings/tours/:id/cancel
-//  * @access  Private (User)
-//  */
-// const cancelUserTourBooking = async (
-//   req: AuthRequest,
-//   res: Response,
-//   next: NextFunction
-// ) => {
-//   try {
-//     const userId = req.id;
-//     const { id } = req.params;
+const cancelUserTourBooking = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const userId = req.id;
+    const {bookingId} = req.params;
+    console.log(userId,bookingId);
 
-//     const booking = await prisma.tourBooking.findFirst({
-//       where: {
-//         id,
-//         userId,
-//       },
-//       include: {
-//         schedule: true,
-//       },
-//     });
+    const booking = await prisma.tourBooking.findFirst({
+      where: {
+        id:bookingId,
+        userId,
+      },
+      include: {
+        schedule: true,
+      },
+    });
 
-//     if (!booking) {
-//       return next({
-//         status: 404,
-//         success: false,
-//         message: "Booking not found",
-//       });
-//     }
+    if (!booking) {
+      return next({
+        status: 404,
+        success: false,
+        message: "Booking not found",
+      });
+    }
 
-//     if (booking.status === BookingStatus.CANCELLED) {
-//       return next({
-//         status: 400,
-//         success: false,
-//         message: "Booking already cancelled",
-//       });
-//     }
+    if (booking.status === BookingStatus.CANCELLED) {
+      return next({
+        status: 400,
+        success: false,
+        message: "Booking already cancelled",
+      });
+    }
 
-//     if (booking.status === BookingStatus.COMPLETED) {
-//       return next({
-//         status: 400,
-//         success: false,
-//         message: "Cannot cancel completed booking",
-//       });
-//     }
+    if (booking.status === BookingStatus.COMPLETED) {
+      return next({
+        status: 400,
+        success: false,
+        message: "Cannot cancel completed booking",
+      });
+    }
 
-//     // Update booking and schedule in transaction
-//     const updatedBooking = await prisma.$transaction(async (tx) => {
-//       // Update booking status
-//       const updated = await tx.tourBooking.update({
-//         where: { id },
-//         data: {
-//           status: BookingStatus.CANCELLED,
-//           cancelledAt: new Date(),
-//         },
-//         include: {
-//           tour: true,
-//           schedule: true,
-//           payment: true,
-//         },
-//       });
+    // Update booking and schedule in transaction
+    const updatedBooking = await prisma.$transaction(async (tx) => {
+      // Update booking status
+      const updated = await tx.tourBooking.update({
+        where: { id:bookingId },
+        data: {
+          status: BookingStatus.CANCELLED,
+          cancelledAt: new Date(),
+        },
+        include: {
+          tour: true,
+          schedule: true,
+          payment: true,
+        },
+      });
 
-//       // Release seats back to schedule
-//       await tx.tourSchedule.update({
-//         where: { id: booking.scheduleId },
-//         data: {
-//           currentBookings: {
-//             decrement: booking.numberOfParticipants,
-//           },
-//         },
-//       });
+      // Release seats back to schedule
+      await tx.tourSchedule.update({
+        where: { id: booking.scheduleId },
+        data: {
+          currentBookings: {
+            decrement: booking.numberOfParticipants,
+          },
+        },
+      });
 
-//       return updated;
-//     });
+      return updated;
+    });
 
-//     next({
-//       status: 200,
-//       success: true,
-//       message: "Booking cancelled successfully",
-//       data: updatedBooking,
-//     });
-//   } catch (error: any) {
-//     next({
-//       status: 500,
-//       message: "Internal server error",
-//       error: error.message,
-//     });
-//   }
-// };
+    next({
+      status: 200,
+      success: true,
+      message: "Booking cancelled successfully",
+      data: updatedBooking,
+    });
+  } catch (error: any) {
+    next({
+      status: 500,
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+};
 
 // /**
 //  * @desc    Get all bookings (Admin)
@@ -722,8 +720,8 @@ const getUserTourBookingById = async (
 export {
   createTourBooking,
   getUserTourBookings,
-    getUserTourBookingById,
-  //   cancelUserTourBooking,
+  getUserTourBookingById,
+  cancelUserTourBooking,
   //   getAllTourBookings,
   //   getAdminTourBookingById,
   //   updateTourBookingStatus,
