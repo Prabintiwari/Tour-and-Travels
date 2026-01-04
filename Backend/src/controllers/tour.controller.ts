@@ -5,7 +5,7 @@ import {
   createTourSchema,
   defaultGuidePricingSchema,
   updateTourSchema,
-} from "../utils/zod";
+} from "../schema";
 import { PackageQueryParams } from "../types/tour.types";
 import {
   calculateDiscountAmount,

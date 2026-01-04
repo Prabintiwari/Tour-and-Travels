@@ -3,7 +3,7 @@ import { BookingStatus, GuidePricingType } from "@prisma/client";
 import { generateBookingCode } from "../utils/generateBookingCode";
 import prisma from "../config/prisma";
 import { AuthRequest } from "../middleware/auth";
-import { createBookingSchema } from "../utils/zod";
+import { createBookingSchema } from "../schema";
 
 // Create a new tour booking
 const createTourBooking = async (
@@ -299,11 +299,11 @@ const getUserTourBookingById = async (
 ) => {
   try {
     const userId = req.id;
-    const {bookingId} = req.params;
+    const { bookingId } = req.params;
 
     const booking = await prisma.tourBooking.findFirst({
       where: {
-        id:bookingId,
+        id: bookingId,
         userId,
       },
       include: {
@@ -355,12 +355,12 @@ const cancelUserTourBooking = async (
 ) => {
   try {
     const userId = req.id;
-    const {bookingId} = req.params;
-    console.log(userId,bookingId);
+    const { bookingId } = req.params;
+    console.log(userId, bookingId);
 
     const booking = await prisma.tourBooking.findFirst({
       where: {
-        id:bookingId,
+        id: bookingId,
         userId,
       },
       include: {
@@ -396,7 +396,7 @@ const cancelUserTourBooking = async (
     const updatedBooking = await prisma.$transaction(async (tx) => {
       // Update booking status
       const updated = await tx.tourBooking.update({
-        where: { id:bookingId },
+        where: { id: bookingId },
         data: {
           status: BookingStatus.CANCELLED,
           cancelledAt: new Date(),

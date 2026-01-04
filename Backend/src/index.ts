@@ -6,6 +6,7 @@ import cookieParser from "cookie-parser";
 import responseHandler from "./middleware/responseHandler";
 import helmet from "helmet";
 dotenv.config();
+import {swaggerUi,swaggerSpec} from "./config/swagger"
 import userRoute from "./routes/user.routes";
 import authRoute from "./routes/auth.routes";
 import adminRoute from "./routes/admin.routes";
@@ -31,6 +32,19 @@ app.use(helmet());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+
+// Swagger UI route
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
+/**
+ * @swagger
+ * /api/test:
+ *   get:
+ *     summary: Test endpoint
+ *     responses:
+ *       200:
+ *         description: Success
+ */
 
 app.use("/api/auth", authRoute);
 app.use("/api/users", userRoute);

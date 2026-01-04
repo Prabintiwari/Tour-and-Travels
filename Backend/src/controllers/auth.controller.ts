@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { loginSchema, registerSchema } from "../utils/zod";
+import { loginSchema, registerSchema } from "../schema";
 import prisma from "../config/prisma";
 import bcrypt from "bcryptjs";
 import generateOTP from "../utils/generateOtp";

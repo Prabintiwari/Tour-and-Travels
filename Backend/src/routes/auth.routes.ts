@@ -1,9 +1,9 @@
 import { Router } from "express";
 import { validate } from "../middleware/validate";
-import { loginSchema, registerSchema } from "../utils/zod";
+import { loginSchema, registerSchema } from "../schema";
 import {
-    deleteUser,
-    getMe,
+  deleteUser,
+  getMe,
   login,
   logout,
   register,
@@ -13,16 +13,126 @@ import { authenticateToken } from "../middleware/auth";
 
 const router = Router();
 
-// register
+/**
+ * @swagger
+ * /api/auth/register:
+ *   post:
+ *     summary: Register a new user
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/RegisterSchema'
+ *     responses:
+ *       201:
+ *         description: User registered successfully, verification email sent
+ *       400:
+ *         description: Invalid input or user already exists
+ *       422:
+ *         description: Validation error
+ */
 router.post("/register", validate(registerSchema), register);
+
+/**
+ * @swagger
+ * /api/auth/verify-register:
+ *   post:
+ *     summary: Verify user registration
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               token:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Email verified successfully
+ *       400:
+ *         description: Invalid or expired verification token
+ */
 router.post("/verify-register", verifyRegistration);
-// Login
+
+/**
+ * @swagger
+ * /api/auth/login:
+ *   post:
+ *     summary: Login user
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/LoginSchema'
+ *     responses:
+ *       200:
+ *         description: Login successful, returns authentication token
+ *       401:
+ *         description: Invalid credentials
+ */
 router.post("/login", validate(loginSchema), login);
-// logout
+
+/**
+ * @swagger
+ * /api/auth/logout:
+ *   post:
+ *     summary: Logout user
+ *     tags: [Auth]
+ *     security:
+ *       - BearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Logout successful
+ *       401:
+ *         description: Unauthorized - token missing or invalid
+ */
 router.post("/logout", authenticateToken, logout);
-// get me
+
+/**
+ * @swagger
+ * /api/auth/my-profile:
+ *   get:
+ *     summary: Get current user profile
+ *     tags: [Auth]
+ *     security:
+ *       - BearerAuth: []
+ *     responses:
+ *       200:
+ *         description: User profile retrieved successfully
+ *       401:
+ *         description: Unauthorized - token missing or invalid
+ */
 router.get("/my-profile", authenticateToken, getMe);
-// delete my account
+
+/**
+ * @swagger
+ * /api/auth/delete/{id}:
+ *   delete:
+ *     summary: Delete user account
+ *     tags: [Auth]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: User ID to delete
+ *     responses:
+ *       200:
+ *         description: User account deleted successfully
+ *       401:
+ *         description: Unauthorized - token missing or invalid
+ *       404:
+ *         description: User not found
+ */
 router.delete("/delete/:id", authenticateToken, deleteUser);
 
 export default router;

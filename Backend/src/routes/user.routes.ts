@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { validate } from "../middleware/validate";
-import { updateUserSchema } from "../utils/zod";
+import { updateUserSchema } from "../schema";
 import { authenticateToken } from "../middleware/auth";
 import { cloudinaryUpload } from "../middleware/upload";
 import {
@@ -12,6 +12,17 @@ import {
 } from "../controllers/user.controller";
 
 const router = Router();
+
+/**
+ * @swagger
+ * /api/users:
+ *   get:
+ *     summary: Get all users
+ *     tags: [Users]
+ *     responses:
+ *       200:
+ *         description: Success
+ */
 
 // update my profile
 router.patch(

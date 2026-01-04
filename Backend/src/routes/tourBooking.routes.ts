@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { authenticateToken } from "../middleware/auth";
 import { validate } from "../middleware/validate";
-import { createBookingSchema } from "../utils/zod";
+import { createBookingSchema } from "../schema";
 import { cancelUserTourBooking, createTourBooking, getUserTourBookingById, getUserTourBookings } from "../controllers/tourBooking.controller";
 
 const router = Router()

@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { destinationSchema } from "../utils/zod";
+import { destinationSchema } from "../schema";
 import prisma from "../config/prisma";
 import cloudinary from "../config/cloudinary";
 import GetAllDestinationsQuery from "../types/Destinations.types";

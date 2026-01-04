@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import prisma from "../config/prisma";
-import { createItinerarySchema, updateItinerarySchema } from "../utils/zod";
+import { createItinerarySchema, updateItinerarySchema } from "../schema";
 import { ActivityType } from "../types/activity.types";
 
 // CREATE ITINERARY

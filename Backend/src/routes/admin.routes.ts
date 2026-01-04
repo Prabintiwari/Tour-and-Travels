@@ -6,18 +6,18 @@ import {
   updateUserRole,
 } from "../controllers/admin.controller";
 import { validate } from "../middleware/validate";
+
 import {
-  createItinerarySchema,
-  createTourScheduleSchema,
-  createTourSchema,
-  defaultGuidePricingSchema,
   destinationSchema,
-  updateItinerarySchema,
-  updateTourScheduleSchema,
-  updateTourSchema,
   updateUserRoleSchema,
   updateUserSchema,
-} from "../utils/zod";
+  createTourSchema,
+  updateTourSchema,
+  defaultGuidePricingSchema,
+  updateItinerarySchema,
+  createItinerarySchema,createTourScheduleSchema,
+  updateTourScheduleSchema,
+} from "../schema";
 import { AdminOnly, authenticateToken } from "../middleware/auth";
 import {
   cloudinaryUpload,
@@ -35,9 +35,27 @@ import {
   deleteGallery,
   removeGalleryImages,
 } from "../controllers/destinationGallery.controller";
-import { addTourImages, createTour, deleteTour, deleteTourGuidePricing, removeTourImages, setDefaultGuidePricing, updateTour } from "../controllers/tour.controller";
-import { addActivity, createItinerary, deleteItinerary, removeActivity, updateItinerary } from "../controllers/itinerary.controller";
-import { createTourSchedule, deleteTourSchedule, updateTourSchedule } from "../controllers/tourSchedule.controller";
+import {
+  addTourImages,
+  createTour,
+  deleteTour,
+  deleteTourGuidePricing,
+  removeTourImages,
+  setDefaultGuidePricing,
+  updateTour,
+} from "../controllers/tour.controller";
+import {
+  addActivity,
+  createItinerary,
+  deleteItinerary,
+  removeActivity,
+  updateItinerary,
+} from "../controllers/itinerary.controller";
+import {
+  createTourSchedule,
+  deleteTourSchedule,
+  updateTourSchedule,
+} from "../controllers/tourSchedule.controller";
 
 const router = Router();
 
@@ -88,7 +106,11 @@ router.patch("/destination-gallery/:destinationId/images", removeGalleryImages);
 router.delete("/destination-gallery/:destinationId", deleteGallery);
 
 // Tour API
-router.post("/tour/guide-pricing/default", validate(defaultGuidePricingSchema), setDefaultGuidePricing);
+router.post(
+  "/tour/guide-pricing/default",
+  validate(defaultGuidePricingSchema),
+  setDefaultGuidePricing
+);
 router.post("/tour", validate(createTourSchema), createTour);
 
 router.post(
@@ -104,14 +126,26 @@ router.delete("/tour/:tourId", deleteTour);
 
 // Itinerary API
 router.post("/itinerary", validate(createItinerarySchema), createItinerary);
-router.patch("/itinerary/:itineraryId", validate(updateItinerarySchema), updateItinerary);
+router.patch(
+  "/itinerary/:itineraryId",
+  validate(updateItinerarySchema),
+  updateItinerary
+);
 router.delete("/itinerary/:itineraryId", deleteItinerary);
 router.patch("/itinerary/:itineraryId/add-activities", addActivity);
 router.delete("/itinerary/:itineraryId/remove-activities", removeActivity);
 
 // Tour Schedule API
-router.post("/tour-schedule", validate(createTourScheduleSchema), createTourSchedule);
-router.patch("/tour-schedule/:tourScheduleId", validate(updateTourScheduleSchema), updateTourSchedule);
+router.post(
+  "/tour-schedule",
+  validate(createTourScheduleSchema),
+  createTourSchedule
+);
+router.patch(
+  "/tour-schedule/:tourScheduleId",
+  validate(updateTourScheduleSchema),
+  updateTourSchedule
+);
 router.delete("/tour-schedule/:tourScheduleId", deleteTourSchedule);
 
 export default router;

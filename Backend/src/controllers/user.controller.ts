@@ -5,7 +5,7 @@ import generateOTP from "../utils/generateOtp";
 import { transporter } from "../utils/emailServices";
 import Password_Reset_OTP from "../templets/userEmailTemplet/forgot_password_otp";
 import passwordResetSuccessEmail from "../templets/userEmailTemplet/passwordResetSuccessfully";
-import { updateUserSchema } from "../utils/zod";
+import { updateUserSchema } from "../schema";
 
 // update user details
 const updateUserDetails = async (

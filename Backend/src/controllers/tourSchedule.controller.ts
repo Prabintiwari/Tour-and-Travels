@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import {
   createTourScheduleSchema,
   updateTourScheduleSchema,
-} from "../utils/zod";
+} from "../schema";
 import prisma from "../config/prisma";
 import { getTourSchedulesQuerySchema } from "../types/tourSchedules.types";
 
