@@ -1,31 +1,24 @@
-import swaggerJsdoc from "swagger-jsdoc";
-import swaggerUi from "swagger-ui-express";
-const PORT = process.env.PORT || 5000;
+import { OpenApiGeneratorV3 } from '@asteasolutions/zod-to-openapi';
+import { registry } from '../utils/openapi.utils';
 
-const options = {
-  definition: {
-    openapi: "3.0.0",
+export const generateOpenApiDocument = () => {
+  const generator = new OpenApiGeneratorV3(registry.definitions);
+
+  return generator.generateDocument({
+    openapi: '3.0.0',
     info: {
-      title: "My API Documentation",
-      version: "1.0.0",
-      description: "A description of my API",
+      title: 'Tour Management API',
+      version: '1.0.0',
+      description: 'API for managing tours and bookings',
     },
     servers: [
-      {
-        url: `http://localhost:${PORT}`,
-        description: "Development server",
-      },
+      { url: 'http://localhost:5000', description: 'Development' },
+      { url: 'https://api.example.com', description: 'Production' },
     ],
-  },
-
-  apis: [
-    "./src/index.ts", 
-    "./src/routes/*.ts", 
-    "./src/routes/**/*.ts", 
-    "./src/docs/*.ts"
-  ],
+    tags: [
+      { name: 'Tours', description: 'Tour management' },
+      { name: 'Destinations', description: 'Destination management' },
+      { name: 'Bookings', description: 'Booking management' },
+    ],
+  });
 };
-
-const swaggerSpec = swaggerJsdoc(options);
-
-export { swaggerUi, swaggerSpec };

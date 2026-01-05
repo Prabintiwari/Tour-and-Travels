@@ -18,6 +18,7 @@ import {
   createItinerarySchema,
   createTourScheduleSchema,
   updateTourScheduleSchema,
+  tourResponseSchema,
 } from "../schema";
 import { AdminOnly, authenticateToken } from "../middleware/auth";
 import {
@@ -57,6 +58,7 @@ import {
   deleteTourSchedule,
   updateTourSchedule,
 } from "../controllers/tourSchedule.controller";
+import { registerRoute } from "../utils/openapi.utils";
 
 const router = Router();
 
@@ -378,32 +380,27 @@ router.post(
   setDefaultGuidePricing
 );
 
-/**
- * @swagger
- * /api/admin/tours:
- *   post:
- *     summary: Create a new tour
- *     tags: [Tours]
- *     security:
- *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/CreateTourSchema'
- *     responses:
- *       201:
- *         description: Tour created successfully
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Tour'
- *       400:
- *         description: Invalid input
- *       401:
- *         description: Unauthorized
- */
+registerRoute({
+  method: "post",
+  path: "/api/admin/tours",
+  summary: "Create a new tour",
+  tags: ["Tours"],
+  request: {
+    body: {
+      content: {
+        "application/json": { schema: createTourSchema },
+      },
+    },
+  },
+  responses: {
+    201: {
+      description: "Tour created",
+      content: {
+        "application/json": { schema: tourResponseSchema },
+      },
+    },
+  },
+});
 router.post("/tour", validate(createTourSchema), createTour);
 
 /**

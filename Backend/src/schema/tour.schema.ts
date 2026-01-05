@@ -1,5 +1,10 @@
 import { DifficultyLevel } from "@prisma/client";
 import z from "zod";
+import { extendZodWithOpenApi } from "@asteasolutions/zod-to-openapi";
+import { paginatedResponse } from "./common.schema";
+
+// Zod lai OpenAPI capabilities extend garnu
+extendZodWithOpenApi(z);
 
 const createTourSchema = z
   .object({
@@ -123,7 +128,8 @@ const createTourSchema = z
         "Provide either discountAmount or discountRate (not both) when discount is active",
       path: ["discountAmount"],
     }
-  );
+  )
+  .openapi("CreateTourRequest");
 
 const updateTourSchema = createTourSchema
   .omit({ destinationId: true })
@@ -143,56 +149,138 @@ const updateTourSchema = createTourSchema
         "Provide either discountAmount or discountRate (not both) when discount is active",
       path: ["discountAmount"],
     }
-  );
+  )
+  .openapi("UpdateTourRequest");
 
-  
-  
-  
-  
-  const defaultGuidePricingSchema = z
-    .object({
-      pricePerDay: z.coerce
-        .number()
-        .min(0, "Price per day cannot be negative")
-        .optional(),
-  
-      pricePerPerson: z.coerce
-        .number()
-        .min(0, "Price per person cannot be negative")
-        .optional(),
-  
-      pricePerGroup: z.coerce
-        .number()
-        .min(0, "Price per group cannot be negative")
-        .optional(),
-  
-      minimumCharge: z.coerce
-        .number()
-        .min(0, "Minimum charge cannot be negative")
-        .optional(),
-  
-      maximumGroupSize: z.coerce
-        .number()
-        .int("Maximum group size must be an integer")
-        .positive("Maximum group size must be greater than 0")
-        .optional(),
-  
-      description: z
-        .string()
-        .min(5, "Description must be at least 5 characters")
-        .optional(),
-    })
-    .refine(
-      (data) =>
-        data.pricePerDay !== undefined ||
-        data.pricePerPerson !== undefined ||
-        data.pricePerGroup !== undefined,
-      {
-        message:
-          "At least one pricing option (per day, per person, or per group) is required",
-        path: ["pricePerDay"],
-      }
-    )
-    .strict();
+const defaultGuidePricingSchema = z
+  .object({
+    pricePerDay: z.coerce
+      .number()
+      .min(0, "Price per day cannot be negative")
+      .optional(),
 
-export { createTourSchema, updateTourSchema,defaultGuidePricingSchema };
+    pricePerPerson: z.coerce
+      .number()
+      .min(0, "Price per person cannot be negative")
+      .optional(),
+
+    pricePerGroup: z.coerce
+      .number()
+      .min(0, "Price per group cannot be negative")
+      .optional(),
+
+    minimumCharge: z.coerce
+      .number()
+      .min(0, "Minimum charge cannot be negative")
+      .optional(),
+
+    maximumGroupSize: z.coerce
+      .number()
+      .int("Maximum group size must be an integer")
+      .positive("Maximum group size must be greater than 0")
+      .optional(),
+
+    description: z
+      .string()
+      .min(5, "Description must be at least 5 characters")
+      .optional(),
+  })
+  .refine(
+    (data) =>
+      data.pricePerDay !== undefined ||
+      data.pricePerPerson !== undefined ||
+      data.pricePerGroup !== undefined,
+    {
+      message:
+        "At least one pricing option (per day, per person, or per group) is required",
+      path: ["pricePerDay"],
+    }
+  )
+  .strict()
+  .openapi("defaultGuidePricingRequest");
+
+const tourResponseSchema = z
+  .object({
+    id: z.string().openapi({ example: "tour_123abc" }),
+    destinationId: z.string().openapi({ example: "dest_123abc" }),
+    title: z.string().openapi({ example: "Everest Base Camp Trek" }),
+    description: z
+      .string()
+      .openapi({ example: "Experience the majestic beauty..." }),
+    numberOfDays: z.number().openapi({ example: 14 }),
+    basePrice: z.number().openapi({ example: 1500 }),
+    finalPrice: z.number().openapi({ example: 1350 }),
+    isActive: z.boolean().openapi({ example: true }),
+    isFeatured: z.boolean().openapi({ example: false }),
+    createdAt: z.string().openapi({ example: "2024-01-15T10:30:00Z" }),
+    updatedAt: z.string().openapi({ example: "2024-01-15T10:30:00Z" }),
+  })
+  .openapi("TourResponse");
+
+const tourListResponseSchema =
+  paginatedResponse(tourResponseSchema).openapi("TourListResponse");
+
+const tourGuidePricingResponseSchema = z
+  .object({
+    tourId: z.string().openapi({ example: "tour_123abc" }),
+    pricePerDay: z.number().nullable().openapi({ example: 50 }),
+    pricePerPerson: z.number().nullable().openapi({ example: 20 }),
+    pricePerGroup: z.number().nullable().openapi({ example: 300 }),
+    minimumCharge: z.number().nullable().openapi({ example: 100 }),
+    maximumGroupSize: z.number().nullable().openapi({ example: 10 }),
+    description: z
+      .string()
+      .nullable()
+      .openapi({ example: "Everest Base Camp guide pricing" }),
+    createdAt: z.string().openapi({ example: "2024-01-01T10:00:00Z" }),
+    updatedAt: z.string().openapi({ example: "2024-01-01T10:00:00Z" }),
+  })
+  .openapi("TourGuidePricingResponse");
+
+const defaultGuidePricingResponseSchema = z
+  .object({
+    pricePerDay: z.number().nullable().openapi({ example: 50 }),
+    pricePerPerson: z.number().nullable().openapi({ example: 20 }),
+    pricePerGroup: z.number().nullable().openapi({ example: 300 }),
+    minimumCharge: z.number().nullable().openapi({ example: 100 }),
+    maximumGroupSize: z.number().nullable().openapi({ example: 10 }),
+    description: z
+      .string()
+      .nullable()
+      .openapi({ example: "Default guide pricing" }),
+    createdAt: z.string().openapi({ example: "2024-01-01T10:00:00Z" }),
+    updatedAt: z.string().openapi({ example: "2024-01-01T10:00:00Z" }),
+  })
+  .openapi("DefaultGuidePricingResponse");
+
+const tourQuerySchema = z.object({
+  page: z.coerce.number().int().positive().optional(),
+  limit: z.coerce.number().int().positive().optional(),
+  destinationId: z.string().optional(),
+  difficultyLevel: z.nativeEnum(DifficultyLevel).optional(),
+  isFeatured: z.coerce.boolean().optional(),
+  minPrice: z.string().optional(),
+  maxPrice: z.string().optional(),
+  search: z.string().optional(),
+  discountedOnly: z.string().optional(),
+});
+const tourParamsSchema = z.object({
+  tourId: z.string().min(1).openapi({ example: "tour_123abc" }),
+});
+
+type TourQueryParams = z.infer<typeof tourQuerySchema>;
+type TourParamsSchema = z.infer<typeof tourParamsSchema>;
+
+export {
+  createTourSchema,
+  updateTourSchema,
+  defaultGuidePricingSchema,
+  tourResponseSchema,
+  tourListResponseSchema,
+  tourGuidePricingResponseSchema,
+  defaultGuidePricingResponseSchema,
+  TourQueryParams,
+  tourQuerySchema,
+  tourParamsSchema,
+  TourParamsSchema,
+};

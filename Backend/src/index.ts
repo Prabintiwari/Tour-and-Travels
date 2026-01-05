@@ -6,7 +6,8 @@ import cookieParser from "cookie-parser";
 import responseHandler from "./middleware/responseHandler";
 import helmet from "helmet";
 dotenv.config();
-import {swaggerUi,swaggerSpec} from "./config/swagger"
+import swaggerUi from 'swagger-ui-express';
+import { generateOpenApiDocument } from './config/swagger';
 import userRoute from "./routes/user.routes";
 import authRoute from "./routes/auth.routes";
 import adminRoute from "./routes/admin.routes";
@@ -34,7 +35,8 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 // Swagger UI route
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+const openApiDocument = generateOpenApiDocument();
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(openApiDocument));
 
 app.use("/api/auth", authRoute);
 app.use("/api/users", userRoute);
