@@ -253,6 +253,18 @@ const defaultGuidePricingResponseSchema = z
   })
   .openapi("DefaultGuidePricingResponse");
 
+   const removeTourImagesBodySchema = z
+  .object({
+    imagePublicIds: z
+      .array(z.string())
+      .min(1, "At least one image publicId is required")
+      .openapi({
+        example: ["tour/abc123/img1", "tour/abc123/img2"],
+      }),
+  })
+  .openapi("RemoveTourImagesBody");
+
+
 const tourQuerySchema = z.object({
   page: z.coerce.number().int().positive().optional(),
   limit: z.coerce.number().int().positive().optional(),
@@ -279,6 +291,7 @@ export {
   tourListResponseSchema,
   tourGuidePricingResponseSchema,
   defaultGuidePricingResponseSchema,
+  removeTourImagesBodySchema,
   TourQueryParams,
   tourQuerySchema,
   tourParamsSchema,

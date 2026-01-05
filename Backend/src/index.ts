@@ -6,18 +6,17 @@ import cookieParser from "cookie-parser";
 import responseHandler from "./middleware/responseHandler";
 import helmet from "helmet";
 dotenv.config();
-import swaggerUi from 'swagger-ui-express';
-import { generateOpenApiDocument } from './config/swagger';
-import userRoute from "./routes/user.routes";
-import authRoute from "./routes/auth.routes";
-import adminRoute from "./routes/admin.routes";
-import destinationRoute from "./routes/destination.routes";
-import tourRoute from "./routes/tour.routes";
-import destinationGalleryRoute from "./routes/destination.gallery.routes.";
-import itineraryRoute from "./routes/itinerary.routes";
-import tourScheduleRoute from "./routes/tourSchedule.routes";
-import tourBookingRoute from "./routes/tourBooking.routes";
-
+import swaggerUi from "swagger-ui-express";
+import { generateOpenApiDocument } from "./config/swagger";
+import userRoute from "./routes/public/user.routes";
+import authRoute from "./routes/public/auth.routes";
+import adminRoute from "./routes/admin";
+import destinationRoute from "./routes/public/destination.routes";
+import tourRoute from "./routes/public/tour.routes";
+import destinationGalleryRoute from "./routes/public/destination.gallery.routes.";
+import itineraryRoute from "./routes/public/itinerary.routes";
+import tourScheduleRoute from "./routes/public/tourSchedule.routes";
+import tourBookingRoute from "./routes/public/tourBooking.routes";
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -36,7 +35,7 @@ app.use(cookieParser());
 
 // Swagger UI route
 const openApiDocument = generateOpenApiDocument();
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(openApiDocument));
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(openApiDocument));
 
 app.use("/api/auth", authRoute);
 app.use("/api/users", userRoute);

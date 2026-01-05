@@ -2,7 +2,7 @@ import { Router } from "express";
 import {
   getAllGalleries,
   getGalleryByDestination,
-} from "../controllers/destinationGallery.controller";
+} from "../../controllers/destinationGallery.controller";
 
 const router = Router();
 

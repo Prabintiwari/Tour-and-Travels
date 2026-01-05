@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { validate } from "../middleware/validate";
-import { loginSchema, registerSchema } from "../schema";
+import { validate } from "../../middleware/validate";
+import { loginSchema, registerSchema } from "../../schema";
 import {
   deleteUser,
   getMe,
@@ -8,8 +8,8 @@ import {
   logout,
   register,
   verifyRegistration,
-} from "../controllers/auth.controller";
-import { authenticateToken } from "../middleware/auth";
+} from "../../controllers/auth.controller";
+import { authenticateToken } from "../../middleware/auth";
 
 const router = Router();
 

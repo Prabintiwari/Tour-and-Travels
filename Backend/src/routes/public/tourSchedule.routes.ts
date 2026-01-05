@@ -1,5 +1,5 @@
 import { Router } from "express";
-import {  getAvailableSchedules, getTourScheduleById, getTourSchedules } from "../controllers/tourSchedule.controller";
+import {  getAvailableSchedules, getTourScheduleById, getTourSchedules } from "../../controllers/tourSchedule.controller";
 const router = Router();
 
 router.get("/",getTourSchedules)

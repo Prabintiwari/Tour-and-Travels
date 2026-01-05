@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { getAllDestinations, getAllRegions, getDestinationById, getDestinationStats, getPopularDestinations } from "../controllers/destination.controller";
+import { getAllDestinations, getAllRegions, getDestinationById, getDestinationStats, getPopularDestinations } from "../../controllers/destination.controller";
 
 const router = Router();
 

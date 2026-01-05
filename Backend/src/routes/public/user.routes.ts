@@ -1,15 +1,15 @@
 import { Router } from "express";
-import { validate } from "../middleware/validate";
-import { updateUserSchema } from "../schema";
-import { authenticateToken } from "../middleware/auth";
-import { cloudinaryUpload } from "../middleware/upload";
+import { validate } from "../../middleware/validate";
+import { updateUserSchema } from "../../schema";
+import { authenticateToken } from "../../middleware/auth";
+import { cloudinaryUpload } from "../../middleware/upload";
 import {
   forgotPassword,
   resendOtp,
   resetPassword,
   updateUserDetails,
   verifyOtp,
-} from "../controllers/user.controller";
+} from "../../controllers/user.controller";
 
 const router = Router();
 

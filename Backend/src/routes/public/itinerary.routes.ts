@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { getCompleteItinerary, getItinerariesByTour, getItineraryById } from "../controllers/itinerary.controller";
+import { getCompleteItinerary, getItinerariesByTour, getItineraryById } from "../../controllers/itinerary.controller";
 
 const router = Router()
 
