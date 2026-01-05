@@ -23,7 +23,7 @@ import {
 import { authenticateToken } from "../../middleware/auth";
 
 const router = Router();
-// GET /tours
+
 registerRoute({
   method: "get",
   path: "/api/tour",
@@ -51,6 +51,7 @@ registerRoute({
   },
 });
 router.get("/", getAllTours);
+
 registerRoute({
   method: "get",
   path: "/api/tour/guide-pricing/default",
@@ -72,8 +73,8 @@ registerRoute({
     500: errorResponse(internalServerErrorSchema, "Internal Server Error"),
   },
 });
-
 router.get("/guide-pricing/default", authenticateToken, getDefaultGuidePricing);
+
 registerRoute({
   method: "get",
   path: "/api/tour/:tourId/guide-pricing",
@@ -98,7 +99,6 @@ registerRoute({
     500: errorResponse(internalServerErrorSchema, "Internal Server Error"),
   },
 });
-
 router.get("/:tourId/guide-pricing", authenticateToken, getGuidePricingForTour);
 
 registerRoute({

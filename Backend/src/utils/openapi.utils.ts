@@ -10,6 +10,7 @@ export const registerRoute = (config: {
   tags: string[];
   request?: any;
   responses: any;
+  security?: Array<{ [key: string]: string[] }>;
 }) => {
   registry.registerPath(config);
 };

@@ -1,10 +1,12 @@
 import { OpenApiGeneratorV3 } from '@asteasolutions/zod-to-openapi';
 import { registry } from '../utils/openapi.utils';
+import { swaggerSecurity } from './security';
 
 export const generateOpenApiDocument = () => {
   const generator = new OpenApiGeneratorV3(registry.definitions);
 
-  return generator.generateDocument({
+  // Generate base document
+  const doc = generator.generateDocument({
     openapi: '3.0.0',
     info: {
       title: 'Tour Management API',
@@ -16,9 +18,19 @@ export const generateOpenApiDocument = () => {
       { url: 'https://api.example.com', description: 'Production' },
     ],
     tags: [
+      { name: 'Auth', description: 'Auth management' },
+      { name: 'Users', description: 'User management' },
       { name: 'Tours', description: 'Tour management' },
       { name: 'Destinations', description: 'Destination management' },
       { name: 'Bookings', description: 'Booking management' },
     ],
   });
+
+  doc.components = {
+    ...doc.components,
+    ...swaggerSecurity.components,
+  };
+
+
+  return doc;
 };

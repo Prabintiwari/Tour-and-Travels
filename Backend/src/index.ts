@@ -7,7 +7,7 @@ import responseHandler from "./middleware/responseHandler";
 import helmet from "helmet";
 dotenv.config();
 import swaggerUi from "swagger-ui-express";
-import { generateOpenApiDocument } from "./config/swagger";
+import { generateOpenApiDocument } from "./swagger/swagger";
 import userRoute from "./routes/public/user.routes";
 import authRoute from "./routes/public/auth.routes";
 import adminRoute from "./routes/admin";
