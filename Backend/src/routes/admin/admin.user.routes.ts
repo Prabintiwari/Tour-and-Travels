@@ -35,6 +35,29 @@ const router = Router();
 
 router.use(authenticateToken, AdminOnly);
 
+// Admin user routes
+
+router.patch(
+  "/update-profile/:id",
+  cloudinaryUpload("users/profile").single("profileImage"),
+  validate(updateUserSchema),
+  updateUserDetails
+);
+
+router.get("/", getAllUsers);
+
+router.get("/:id", getUserById);
+
+router.delete("/:id", deleteUser);
+
+router.patch("/block/:id", blockUser);
+
+router.patch("/:id/role", validate(updateUserRoleSchema), updateUserRole);
+
+
+// Swagger registration
+
+// update user details
 registerRoute({
   method: "patch",
   path: "/api/admin/users/:id",
@@ -66,13 +89,8 @@ registerRoute({
     500: errorResponse(internalServerErrorSchema, "Internal Server Error"),
   },
 });
-router.patch(
-  "/update-profile/:id",
-  cloudinaryUpload("users/profile").single("profileImage"),
-  validate(updateUserSchema),
-  updateUserDetails
-);
 
+// Get all user
 registerRoute({
   method: "get",
   path: "/api/admin/users",
@@ -93,8 +111,8 @@ registerRoute({
     500: errorResponse(internalServerErrorSchema, "Internal Server Error"),
   },
 });
-router.get("/", getAllUsers);
 
+// Get user by id
 registerRoute({
   method: "get",
   path: "/api/admin/users/:id",
@@ -112,8 +130,8 @@ registerRoute({
     500: errorResponse(internalServerErrorSchema, "Internal Server Error"),
   },
 });
-router.get("/:id", getUserById);
 
+// Delete user
 registerRoute({
   method: "delete",
   path: "/api/admin/users/:id",
@@ -135,31 +153,8 @@ registerRoute({
     500: errorResponse(internalServerErrorSchema, "Internal Server Error"),
   },
 });
-router.delete("/:id", deleteUser);
 
-registerRoute({
-  method: "patch",
-  path: "/api/admin/users/block/:id",
-  summary: "Block a user",
-  tags: ["Users"],
-  request: { params: userIdParamSchema },
-  responses: {
-    200: {
-      description: "User blocked successfully",
-      content: {
-        "application/json": {
-          schema: blockUserResponseSchema,
-        },
-      },
-    },
-    401: errorResponse(unauthorizedErrorSchema, "Unauthorized"),
-    403: errorResponse(forbiddenErrorSchema, "Forbidden"),
-    404: errorResponse(notFoundErrorSchema, "User not found"),
-    500: errorResponse(internalServerErrorSchema, "Internal Server Error"),
-  },
-});
-router.patch("/block/:id", blockUser);
-
+// update user role
 registerRoute({
   method: "patch",
   path: "/api/admin/users/:id/role",
@@ -191,6 +186,29 @@ registerRoute({
     500: errorResponse(internalServerErrorSchema, "Internal Server Error"),
   },
 });
-router.patch("/:id/role", validate(updateUserRoleSchema), updateUserRole);
+
+// Block user
+registerRoute({
+  method: "patch",
+  path: "/api/admin/users/block/:id",
+  summary: "Block a user",
+  tags: ["Users"],
+  request: { params: userIdParamSchema },
+  responses: {
+    200: {
+      description: "User blocked successfully",
+      content: {
+        "application/json": {
+          schema: blockUserResponseSchema,
+        },
+      },
+    },
+    401: errorResponse(unauthorizedErrorSchema, "Unauthorized"),
+    403: errorResponse(forbiddenErrorSchema, "Forbidden"),
+    404: errorResponse(notFoundErrorSchema, "User not found"),
+    500: errorResponse(internalServerErrorSchema, "Internal Server Error"),
+  },
+});
+
 
 export default router;

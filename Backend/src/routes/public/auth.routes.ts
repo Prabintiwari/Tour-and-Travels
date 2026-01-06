@@ -28,6 +28,23 @@ import {
 
 const router = Router();
 
+// Auth Routes
+
+router.post("/register", validate(registerSchema), register);
+
+router.post("/verify-register", verifyRegistration);
+
+router.post("/login", validate(loginSchema), login);
+
+router.post("/logout", authenticateToken, logout);
+
+router.get("/my-profile", authenticateToken, getMe);
+
+router.delete("/:id", authenticateToken, deleteUser);
+
+// Swagger registration
+
+// register
 registerRoute({
   method: "post",
   path: "/api/auth/register",
@@ -45,8 +62,8 @@ registerRoute({
     500: errorResponse(internalServerErrorSchema, "Internal Server Error"),
   },
 });
-router.post("/register", validate(registerSchema), register);
 
+// verify-register
 registerRoute({
   method: "post",
   path: "/api/auth/verify-register",
@@ -58,8 +75,8 @@ registerRoute({
     500: errorResponse(internalServerErrorSchema, "Internal Server Error"),
   },
 });
-router.post("/verify-register", verifyRegistration);
 
+// login
 registerRoute({
   method: "post",
   path: "/api/auth/login",
@@ -77,8 +94,8 @@ registerRoute({
     500: errorResponse(internalServerErrorSchema, "Internal Server Error"),
   },
 });
-router.post("/login", validate(loginSchema), login);
 
+// logout
 registerRoute({
   method: "post",
   path: "/api/auth/logout",
@@ -91,8 +108,8 @@ registerRoute({
     500: errorResponse(internalServerErrorSchema, "Internal Server Error"),
   },
 });
-router.post("/logout", authenticateToken, logout);
 
+// my-profile
 registerRoute({
   method: "get",
   path: "/api/auth/my-profile",
@@ -110,8 +127,8 @@ registerRoute({
     500: errorResponse(internalServerErrorSchema, "Internal Server Error"),
   },
 });
-router.get("/my-profile", authenticateToken, getMe);
 
+//delete account
 registerRoute({
   method: "delete",
   path: "/api/auth/:id",
@@ -134,6 +151,5 @@ registerRoute({
     500: errorResponse(internalServerErrorSchema, "Internal Server Error"),
   },
 });
-router.delete("/:id", authenticateToken, deleteUser);
 
 export default router;
