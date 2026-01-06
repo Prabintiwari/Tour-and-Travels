@@ -24,6 +24,19 @@ import { authenticateToken } from "../../middleware/auth";
 
 const router = Router();
 
+// Tour routes
+
+router.get("/", getAllTours);
+
+router.get("/guide-pricing/default", authenticateToken, getDefaultGuidePricing);
+
+router.get("/:tourId/guide-pricing", authenticateToken, getGuidePricingForTour);
+
+router.get("/:tourId", getTourById);
+
+// Swagger registration
+
+// Get all tours
 registerRoute({
   method: "get",
   path: "/api/tour",
@@ -50,57 +63,8 @@ registerRoute({
     500: errorResponse(internalServerErrorSchema, "Internal Server Error"),
   },
 });
-router.get("/", getAllTours);
 
-registerRoute({
-  method: "get",
-  path: "/api/tour/guide-pricing/default",
-  summary: "Get default guide pricing",
-  tags: ["Tours"],
-  responses: {
-    200: {
-      description: "Get default guide pricing",
-      content: {
-        "application/json": {
-          schema: defaultGuidePricingResponseSchema,
-        },
-      },
-    },
-
-    401: errorResponse(unauthorizedErrorSchema, "Unauthorized"),
-    403: errorResponse(forbiddenErrorSchema, "Forbidden"),
-    404: errorResponse(notFoundErrorSchema, "Default pricing not found"),
-    500: errorResponse(internalServerErrorSchema, "Internal Server Error"),
-  },
-});
-router.get("/guide-pricing/default", authenticateToken, getDefaultGuidePricing);
-
-registerRoute({
-  method: "get",
-  path: "/api/tour/:tourId/guide-pricing",
-  summary: "Get guide pricing for a tour",
-  tags: ["Tours"],
-  request: {
-    params: tourParamsSchema,
-  },
-  responses: {
-    200: {
-      description: "Guide pricing for the tour",
-      content: {
-        "application/json": {
-          schema: tourGuidePricingResponseSchema,
-        },
-      },
-    },
-
-    401: errorResponse(unauthorizedErrorSchema, "Unauthorized"),
-    403: errorResponse(forbiddenErrorSchema, "Forbidden"),
-    404: errorResponse(notFoundErrorSchema, "Guide pricing not found"),
-    500: errorResponse(internalServerErrorSchema, "Internal Server Error"),
-  },
-});
-router.get("/:tourId/guide-pricing", authenticateToken, getGuidePricingForTour);
-
+// Get tour by id
 registerRoute({
   method: "get",
   path: "/api/tour/:tourId",
@@ -127,6 +91,53 @@ registerRoute({
     500: errorResponse(internalServerErrorSchema, "Internal Server Error"),
   },
 });
-router.get("/:tourId", getTourById);
 
+// Get tour guide pricing
+registerRoute({
+  method: "get",
+  path: "/api/tour/:tourId/guide-pricing",
+  summary: "Get guide pricing for a tour",
+  tags: ["Tours"],
+  request: {
+    params: tourParamsSchema,
+  },
+  responses: {
+    200: {
+      description: "Guide pricing for the tour",
+      content: {
+        "application/json": {
+          schema: tourGuidePricingResponseSchema,
+        },
+      },
+    },
+
+    401: errorResponse(unauthorizedErrorSchema, "Unauthorized"),
+    403: errorResponse(forbiddenErrorSchema, "Forbidden"),
+    404: errorResponse(notFoundErrorSchema, "Guide pricing not found"),
+    500: errorResponse(internalServerErrorSchema, "Internal Server Error"),
+  },
+});
+
+// Get default guide price
+registerRoute({
+  method: "get",
+  path: "/api/tour/guide-pricing/default",
+  summary: "Get default guide pricing",
+  tags: ["Tours"],
+  responses: {
+    200: {
+      description: "Get default guide pricing",
+      content: {
+        "application/json": {
+          schema: defaultGuidePricingResponseSchema,
+        },
+      },
+    },
+
+    401: errorResponse(unauthorizedErrorSchema, "Unauthorized"),
+    403: errorResponse(forbiddenErrorSchema, "Forbidden"),
+    404: errorResponse(notFoundErrorSchema, "Default pricing not found"),
+    500: errorResponse(internalServerErrorSchema, "Internal Server Error"),
+  },
+});
 export default router;

@@ -35,6 +35,68 @@ const router = Router();
 
 router.use(authenticateToken, AdminOnly);
 
+// Admin tour routes
+router.post(
+  "/guide-pricing/default",
+  validate(defaultGuidePricingSchema),
+  setDefaultGuidePricing
+);
+
+router.post("/", validate(createTourSchema), createTour);
+
+router.post(
+  "/:tourId",
+  validate(tourParamsSchema),
+  cloudinaryUploadFromParams("tour", "tourId").array("imageUrl", 10),
+  addTourImages
+);
+
+router.patch("/:tourId/images", validate(tourParamsSchema), removeTourImages);
+
+router.patch(
+  "/:tourId",
+  validate(tourParamsSchema),
+  validate(updateTourSchema),
+  updateTour
+);
+
+router.delete(
+  "/:tourId/guide-pricing",
+  validate(tourParamsSchema),
+  deleteTourGuidePricing
+);
+
+router.delete("/:tourId", validate(tourParamsSchema), deleteTour);
+
+// Create a new tour
+registerRoute({
+  method: "post",
+  path: "/api/admin/tour",
+  summary: "Create a new tour",
+  tags: ["Tours"],
+  request: {
+    body: {
+      content: {
+        "application/json": { schema: createTourSchema },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: "Tour created",
+      content: {
+        "application/json": { schema: tourResponseSchema },
+      },
+    },
+    400: errorResponse(badRequestErrorSchema, "Bad Request"),
+    401: errorResponse(unauthorizedErrorSchema, "Unauthorized"),
+    403: errorResponse(forbiddenErrorSchema, "Forbidden"),
+    409: errorResponse(conflictErrorSchema, "Conflict"),
+    500: errorResponse(internalServerErrorSchema, "Internal Server Error"),
+  },
+});
+
+// Set default tour guide price
 registerRoute({
   method: "post",
   path: "/api/admin/tour/guide-pricing/default",
@@ -66,40 +128,8 @@ registerRoute({
     500: errorResponse(internalServerErrorSchema, "Internal Server Error"),
   },
 });
-router.post(
-  "/guide-pricing/default",
-  validate(defaultGuidePricingSchema),
-  setDefaultGuidePricing
-);
 
-registerRoute({
-  method: "post",
-  path: "/api/admin/tour",
-  summary: "Create a new tour",
-  tags: ["Tours"],
-  request: {
-    body: {
-      content: {
-        "application/json": { schema: createTourSchema },
-      },
-    },
-  },
-  responses: {
-    200: {
-      description: "Tour created",
-      content: {
-        "application/json": { schema: tourResponseSchema },
-      },
-    },
-    400: errorResponse(badRequestErrorSchema, "Bad Request"),
-    401: errorResponse(unauthorizedErrorSchema, "Unauthorized"),
-    403: errorResponse(forbiddenErrorSchema, "Forbidden"),
-    409: errorResponse(conflictErrorSchema, "Conflict"),
-    500: errorResponse(internalServerErrorSchema, "Internal Server Error"),
-  },
-});
-router.post("/", validate(createTourSchema), createTour);
-
+// Upload images for a tour
 registerRoute({
   method: "post",
   path: "/api/admin/tour/:tourId",
@@ -146,13 +176,8 @@ registerRoute({
     500: errorResponse(internalServerErrorSchema, "Internal Server Error"),
   },
 });
-router.post(
-  "/:tourId",
-  validate(tourParamsSchema),
-  cloudinaryUploadFromParams("tour", "tourId").array("imageUrl", 10),
-  addTourImages
-);
 
+// Remove tour images
 registerRoute({
   method: "patch",
   path: "/api/admin/tour/:tourId/images",
@@ -189,8 +214,8 @@ registerRoute({
     500: errorResponse(internalServerErrorSchema, "Internal Server Error"),
   },
 });
-router.patch("/:tourId/images", validate(tourParamsSchema), removeTourImages);
 
+// Update tour
 registerRoute({
   method: "patch",
   path: "/api/admin/tour/:tourId",
@@ -217,13 +242,8 @@ registerRoute({
     500: errorResponse(internalServerErrorSchema, "Internal Server Error"),
   },
 });
-router.patch(
-  "/:tourId",
-  validate(tourParamsSchema),
-  validate(updateTourSchema),
-  updateTour
-);
 
+// Delete tour guide pricing
 registerRoute({
   method: "delete",
   path: "/api/admin/tour/:tourId/guide-pricing",
@@ -243,16 +263,12 @@ registerRoute({
     500: errorResponse(internalServerErrorSchema, "Internal Server Error"),
   },
 });
-router.delete(
-  "/:tourId/guide-pricing",
-  validate(tourParamsSchema),
-  deleteTourGuidePricing
-);
 
+// Delete tour
 registerRoute({
   method: "delete",
   path: "/api/admin/tour/:tourId",
-  summary: "Delete tour",
+  summary: "",
   tags: ["Tours"],
   request: {
     params: tourParamsSchema,
@@ -268,6 +284,4 @@ registerRoute({
     500: errorResponse(internalServerErrorSchema, "Internal Server Error"),
   },
 });
-router.delete("/:tourId", validate(tourParamsSchema), deleteTour);
-
 export default router;
