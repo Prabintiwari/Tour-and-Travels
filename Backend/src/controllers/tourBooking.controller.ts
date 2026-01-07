@@ -3,7 +3,7 @@ import { BookingStatus, GuidePricingType } from "@prisma/client";
 import { generateBookingCode } from "../utils/generateBookingCode";
 import prisma from "../config/prisma";
 import { AuthRequest } from "../middleware/auth";
-import { createBookingSchema } from "../schema";
+import { BookingQueryParams, createBookingSchema } from "../schema";
 
 // Create a new tour booking
 const createTourBooking = async (
@@ -435,87 +435,104 @@ const cancelUserTourBooking = async (
   }
 };
 
-// /**
-//  * @desc    Get all bookings (Admin)
-//  * @route   GET /api/bookings/tours/admin/all
-//  * @access  Private (Admin)
-//  */
-// const getAllTourBookings = async (
-//   req: Request,
-//   res: Response,
-//   next: NextFunction
-// ) => {
-//   try {
-//     const {
-//       status,
-//       userId,
-//       tourId,
-//       page = 1,
-//       limit = 10,
-//       startDate,
-//       endDate,
-//     } = req.query;
+// Get all bookings
 
-//     const skip = (Number(page) - 1) * Number(limit);
+const getAllTourBookings = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    console.log("object");
+    const {
+      bookingId,
+      status,
+      userId,
+      tourId,
+      scheduleId,
+      destinationId,
+      needsGuide,
+      page,
+      limit,
+      sortBy,
+      sortOrder,
+    } = req.query as unknown as BookingQueryParams;
+    console.log("2");
 
-//     const where: any = {};
-//     if (status) where.status = status as BookingStatus;
-//     if (userId) where.userId = userId as string;
-//     if (tourId) where.tourId = tourId as string;
-//     if (startDate || endDate) {
-//       where.bookingDate = {};
-//       if (startDate) where.bookingDate.gte = new Date(startDate as string);
-//       if (endDate) where.bookingDate.lte = new Date(endDate as string);
-//     }
+    const pageNumber = page ?? 1;
+    const limitNumber = limit ?? 10;
+    const skip = (pageNumber - 1) * limitNumber;
 
-//     const [bookings, total] = await Promise.all([
-//       prisma.tourBooking.findMany({
-//         where,
-//         skip,
-//         take: Number(limit),
-//         include: {
-//           user: {
-//             select: {
-//               id: true,
-//               fullName: true,
-//               email: true,
-//               phone: true,
-//             },
-//           },
-//           tour: {
-//             include: {
-//               destination: true,
-//             },
-//           },
-//           schedule: true,
-//           payment: true,
-//         },
-//         orderBy: { bookingDate: "desc" },
-//       }),
-//       prisma.tourBooking.count({ where }),
-//     ]);
+    const where: any = {};
+    if (bookingId) where.bookingId = bookingId;
+    if (status) where.status = status;
+    if (userId) where.userId = userId;
+    if (tourId) where.tourId = tourId;
+    if (destinationId) where.destinationId = destinationId;
+    if (scheduleId) where.scheduleId = scheduleId;
+    if (needsGuide) where.needsGuide = needsGuide;
 
-//     next({
-//       status: 200,
-//       success: true,
-//       data: {
-//         bookings,
-//         pagination: {
-//           total,
-//           page: Number(page),
-//           limit: Number(limit),
-//           totalPages: Math.ceil(total / Number(limit)),
-//         },
-//       },
-//     });
-//   } catch (error: any) {
-//     next({
-//       status: 500,
-//       message: "Internal server error",
-//       error: error.message,
-//     });
-//   }
-// };
+    const validSortFields = [
+      "bookingDate",
+      "cancelledAt",
+      "completedAt",
+      "updatedAt",
+    ];
+    const sortField = validSortFields.includes(sortBy as string)
+      ? (sortBy as string)
+      : "bookingDate";
+
+    const sortOrderValue = sortOrder?.toLowerCase() === "desc" ? "desc" : "asc";
+
+    const [bookings, total] = await Promise.all([
+      prisma.tourBooking.findMany({
+        where,
+        skip,
+        take: limitNumber,
+        include: {
+          user: {
+            select: {
+              id: true,
+              fullName: true,
+              email: true,
+              phone: true,
+            },
+          },
+          tour: {
+            include: {
+              destination: true,
+            },
+          },
+          schedule: true,
+          payment: true,
+        },
+        orderBy: { [sortField]: sortOrderValue } as any,
+      }),
+      prisma.tourBooking.count({ where }),
+    ]);
+
+
+    next({
+      status: 200,
+      success: true,
+      data: {
+        bookings,
+        pagination: {
+          total,
+          page: pageNumber,
+          limit: limitNumber,
+          totalPages: Math.ceil(total / limitNumber),
+        },
+      },
+    });
+  } catch (error: any) {
+    next({
+      status: 500,
+      message: error.message || "Internal server error",
+      error: error.message,
+    });
+  }
+};
 
 // /**
 //  * @desc    Get single booking by ID (Admin)
@@ -721,7 +738,7 @@ export {
   getUserTourBookings,
   getUserTourBookingById,
   cancelUserTourBooking,
-  //   getAllTourBookings,
+  getAllTourBookings,
   //   getAdminTourBookingById,
   //   updateTourBookingStatus,
   //   getTourBookingStats,

@@ -132,7 +132,7 @@ const bookingQuerySchema = z.object({
   }),
 });
 
-type BookingQueryParams = z.infer<typeof bookingParamsSchema>;
+type BookingQueryParams = z.infer<typeof bookingQuerySchema>;
 
 const bookingParamsSchema = z.object({
   bookingId: z.string().min(1).openapi({ example: "booking_123abc" }),

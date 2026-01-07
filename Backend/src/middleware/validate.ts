@@ -14,9 +14,7 @@ function validateMiddleware(
 ) {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
-      console.log(`Validating ${type}:`, req[type]);
-      const validated = await schema.parseAsync(req[type]);
-      console.log(`Validated ${type}:`, validated);
+      
       next();
     } catch (error) {
       if (error instanceof ZodError) {

@@ -43,9 +43,6 @@ registerRoute({
   path: "/api/tour",
   summary: "List of tours",
   tags: ["Tours"],
-  request: {
-    query: tourQuerySchema,
-  },
   responses: {
     200: {
       description: "List of tours",
