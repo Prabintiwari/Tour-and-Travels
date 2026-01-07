@@ -56,6 +56,54 @@ const createBookingSchema = z
     }
   );
 
+const updateBookingSchema = z
+  .object({
+    numberOfParticipants: z.coerce.number().positive().int().optional(),
+
+    needsGuide: z.boolean().optional(),
+
+    numberOfGuideNeeds: z.coerce.number().positive().int().optional(),
+
+    guidePricingType: z.nativeEnum(GuidePricingType).optional(),
+  })
+  .refine(
+    (data) => {
+      if (data.needsGuide === true) {
+        return data.guidePricingType !== undefined;
+      }
+      return true;
+    },
+    {
+      message: "Guide pricing type must be selected if guide is needed",
+      path: ["guidePricingType"],
+    }
+  )
+  .refine(
+    (data) => {
+      if (
+        data.needsGuide === true &&
+        data.guidePricingType === GuidePricingType.PER_DAY
+      ) {
+        return data.numberOfGuideNeeds !== undefined;
+      }
+      return true;
+    },
+    {
+      message:
+        "Number of guides needed must be at least 1 when pricing is PER_DAY",
+      path: ["numberOfGuideNeeds"],
+    }
+  );
+
+const updateBookingStatusSchema = z
+  .object({
+    status: z.nativeEnum(BookingStatus).openapi({
+      example: BookingStatus.CANCELLED,
+      description: "New booking status",
+    }),
+  })
+  .openapi("UpdateBookingStatusRequest");
+
 const tourBookingResponseSchema = z.object({
   id: z.string().openapi({ example: "booking_123abc" }),
   bookingCode: z.string().openapi({ example: "BK-20260107-001" }),
@@ -82,7 +130,20 @@ const tourBookingResponseSchema = z.object({
   completedAt: z.string().nullable().optional(),
   updatedAt: z.string(),
 });
-const tourBookingListResponseSchema = paginatedResponse(tourBookingResponseSchema);
+const tourBookingListResponseSchema = paginatedResponse(
+  tourBookingResponseSchema
+);
+
+const bookingStatsResponseSchema = z
+  .object({
+    totalBookings: z.number().openapi({ example: 120 }),
+    pendingBookings: z.number().openapi({ example: 25 }),
+    confirmedBookings: z.number().openapi({ example: 60 }),
+    cancelledBookings: z.number().openapi({ example: 20 }),
+    completedBookings: z.number().openapi({ example: 15 }),
+    totalRevenue: z.number().openapi({ example: 250000 }),
+  })
+  .openapi("BookingStatsResponse");
 
 const bookingQuerySchema = z.object({
   bookingId: z.string().optional().openapi({
@@ -97,13 +158,10 @@ const bookingQuerySchema = z.object({
     .string()
     .optional()
     .openapi({ example: "sched_456def", description: "Filter by schedule ID" }),
-  destinationId: z
-    .string()
-    .optional()
-    .openapi({
-      example: "destination_123ghi",
-      description: "Filter by destination ID",
-    }),
+  destinationId: z.string().optional().openapi({
+    example: "destination_123ghi",
+    description: "Filter by destination ID",
+  }),
   userId: z
     .string()
     .optional()
@@ -140,9 +198,12 @@ const bookingParamsSchema = z.object({
 
 export {
   createBookingSchema,
+  updateBookingSchema,
+  updateBookingStatusSchema,
   tourBookingResponseSchema,
   bookingQuerySchema,
   tourBookingListResponseSchema,
+  bookingStatsResponseSchema,
   BookingQueryParams,
   bookingParamsSchema,
 };

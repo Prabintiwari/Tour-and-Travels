@@ -1,21 +1,54 @@
 import { Router } from "express";
 import { AdminOnly, authenticateToken } from "../../middleware/auth";
 import { validate } from "../../middleware/validate";
-import { bookingQuerySchema, tourBookingListResponseSchema } from "../../schema";
-import { getAllTourBookings } from "../../controllers/tourBooking.controller";
+import {
+  bookingParamsSchema,
+  bookingQuerySchema,
+  bookingStatsResponseSchema,
+  tourBookingListResponseSchema,
+  tourBookingResponseSchema,
+  updateBookingSchema,
+  updateBookingStatusSchema,
+} from "../../schema";
+import {
+  getAdminTourBookingById,
+  getAllTourBookings,
+  getTourBookingStats,
+  updateTourBookingStatus,
+} from "../../controllers/tourBooking.controller";
 import { registerRoute } from "../../utils/openapi.utils";
-import { errorResponse, forbiddenErrorSchema, internalServerErrorSchema, notFoundErrorSchema, unauthorizedErrorSchema } from "../../schema/common.schema";
+import {
+  errorResponse,
+  forbiddenErrorSchema,
+  internalServerErrorSchema,
+  notFoundErrorSchema,
+  unauthorizedErrorSchema,
+} from "../../schema/common.schema";
 
 const router = Router();
 router.use(authenticateToken, AdminOnly);
 // Admin tour booking routes
 
-// Get all tour booking
 router.get("/", validate.query(bookingQuerySchema), getAllTourBookings);
+
+router.patch(
+  "/:bookingId",
+  validate.params(bookingParamsSchema),
+  validate.body(updateBookingStatusSchema),
+  updateTourBookingStatus
+);
+
+router.get("/booking-stats", getTourBookingStats);
+
+router.get(
+  "/:bookingId",
+  validate.params(bookingParamsSchema),
+  getAdminTourBookingById
+);
 
 /* Swagger registration */
 
-// Get all tours
+// Get all tour booking
 registerRoute({
   method: "get",
   path: "/api/admin/tour-booking",
@@ -40,4 +73,92 @@ registerRoute({
     500: errorResponse(internalServerErrorSchema, "Internal Server Error"),
   },
 });
+
+// Get  tours booking by id
+registerRoute({
+  method: "get",
+  path: "/api/admin/tour-booking/{bookingId}",
+  summary: "Get tour booking by id",
+  security: [{ bearerAuth: [] }],
+  tags: ["Bookings"],
+  request: { params: bookingParamsSchema },
+  responses: {
+    200: {
+      description: "Get tour booking by id",
+      content: {
+        "application/json": {
+          schema: tourBookingResponseSchema,
+        },
+      },
+    },
+    401: errorResponse(unauthorizedErrorSchema, "Unauthorized"),
+
+    403: errorResponse(forbiddenErrorSchema, "Forbidden"),
+
+    404: errorResponse(notFoundErrorSchema, "Not Found"),
+
+    500: errorResponse(internalServerErrorSchema, "Internal Server Error"),
+  },
+});
+
+// Update tours booking by id
+registerRoute({
+  method: "patch",
+  path: "/api/admin/tour-booking/{bookingId}",
+  summary: "Update tour booking by id",
+  security: [{ bearerAuth: [] }],
+  tags: ["Bookings"],
+  request: {
+    params: bookingParamsSchema,
+    body: {
+      content: {
+        "application/json": {
+          schema: updateBookingStatusSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: "Update tour booking by id",
+      content: {
+        "application/json": {
+          schema: tourBookingResponseSchema,
+        },
+      },
+    },
+    401: errorResponse(unauthorizedErrorSchema, "Unauthorized"),
+
+    403: errorResponse(forbiddenErrorSchema, "Forbidden"),
+
+    404: errorResponse(notFoundErrorSchema, "Not Found"),
+
+    500: errorResponse(internalServerErrorSchema, "Internal Server Error"),
+  },
+});
+
+// Get tour booking stats
+registerRoute({
+  method: "get",
+  path: "/api/admin/tour-booking/booking-stats",
+  summary: "Get tour booking statistics",
+  description:
+    "Returns overall booking statistics including counts by status and total revenue",
+  tags: ["Bookings"],
+  security: [{ bearerAuth: [] }],
+  responses: {
+    200: {
+      description: "Booking statistics retrieved successfully",
+      content: {
+        "application/json": {
+          schema: bookingStatsResponseSchema,
+        },
+      },
+    },
+    401: errorResponse(unauthorizedErrorSchema, "Unauthorized"),
+    403: errorResponse(forbiddenErrorSchema, "Forbidden"),
+    500: errorResponse(internalServerErrorSchema, "Internal Server Error"),
+  },
+});
+
 export default router;

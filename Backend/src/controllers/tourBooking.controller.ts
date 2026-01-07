@@ -227,7 +227,7 @@ const createTourBooking = async (
   } catch (error: any) {
     next({
       status: 500,
-      message: "Internal server error",
+      message: error.message || "Internal server error",
       error: error.message,
     });
   }
@@ -285,7 +285,7 @@ const getUserTourBookings = async (
   } catch (error: any) {
     next({
       status: 500,
-      message: "Internal server error",
+      message: error.message || "Internal server error",
       error: error.message,
     });
   }
@@ -340,7 +340,7 @@ const getUserTourBookingById = async (
   } catch (error: any) {
     next({
       status: 500,
-      message: "Internal server error",
+      message: error.message || "Internal server error",
       error: error.message,
     });
   }
@@ -429,14 +429,13 @@ const cancelUserTourBooking = async (
   } catch (error: any) {
     next({
       status: 500,
-      message: "Internal server error",
+      message: error.message || "Internal server error",
       error: error.message,
     });
   }
 };
 
 // Get all bookings
-
 const getAllTourBookings = async (
   req: Request,
   res: Response,
@@ -511,7 +510,6 @@ const getAllTourBookings = async (
       prisma.tourBooking.count({ where }),
     ]);
 
-
     next({
       status: 200,
       success: true,
@@ -534,204 +532,193 @@ const getAllTourBookings = async (
   }
 };
 
-// /**
-//  * @desc    Get single booking by ID (Admin)
-//  * @route   GET /api/bookings/tours/admin/:id
-//  * @access  Private (Admin)
-//  */
-// const getAdminTourBookingById = async (
-//   req: Request,
-//   res: Response,
-//   next: NextFunction
-// ) => {
-//   try {
-//     const { id } = req.params;
+//  Get single booking by ID
+const getAdminTourBookingById = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { bookingId } = req.params;
 
-//     const booking = await prisma.tourBooking.findUnique({
-//       where: { id },
-//       include: {
-//         user: {
-//           select: {
-//             id: true,
-//             fullName: true,
-//             email: true,
-//             phone: true,
-//             address: true,
-//             city: true,
-//             country: true,
-//           },
-//         },
-//         tour: {
-//           include: {
-//             destination: true,
-//             itineraries: {
-//               orderBy: { day: "asc" },
-//             },
-//           },
-//         },
-//         schedule: true,
-//         payment: true,
-//       },
-//     });
+    const booking = await prisma.tourBooking.findUnique({
+      where: { id: bookingId },
+      include: {
+        user: {
+          select: {
+            id: true,
+            fullName: true,
+            email: true,
+            phone: true,
+            address: true,
+            city: true,
+            country: true,
+          },
+        },
+        tour: {
+          include: {
+            destination: true,
+            itineraries: {
+              orderBy: { day: "asc" },
+            },
+          },
+        },
+        schedule: true,
+        payment: true,
+      },
+    });
 
-//     if (!booking) {
-//       return next({
-//         status: 404,
-//         success: false,
-//         message: "Booking not found",
-//       });
-//     }
+    if (!booking) {
+      return next({
+        status: 404,
+        success: false,
+        message: "Booking not found",
+      });
+    }
 
-//     next({ status: 200, success: true, data: booking });
-//   } catch (error: any) {
-//     next({
-//       status: 500,
-//       message: "Internal server error",
-//       error: error.message,
-//     });
-//   }
-// };
+    next({ status: 200, success: true, data: booking });
+  } catch (error: any) {
+    next({
+      status: 500,
+      message: error.message || "Internal server error",
+      error: error.message,
+    });
+  }
+};
 
-// /**
-//  * @desc    Update booking status (Admin)
-//  * @route   PATCH /api/bookings/tours/admin/:id/status
-//  * @access  Private (Admin)
-//  */
-// const updateTourBookingStatus = async (
-//   req: Request,
-//   res: Response,
-//   next: NextFunction
-// ) => {
-//   try {
-//     const { id } = req.params;
-//     const { status } = req.body;
+// Update booking status
+const updateTourBookingStatus = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { bookingId } = req.params;
+    const { status } = req.body;
 
-//     const booking = await prisma.tourBooking.findUnique({
-//       where: { id },
-//     });
+    const booking = await prisma.tourBooking.findUnique({
+      where: { id: bookingId },
+    });
 
-//     if (!booking) {
-//       return next({
-//         status: 404,
-//         success: false,
-//         message: "Booking not found",
-//       });
-//     }
+    if (!booking) {
+      return next({
+        status: 404,
+        success: false,
+        message: "Booking not found",
+      });
+    }
 
-//     const updateData: any = { status };
+    const updateData: any = { status };
 
-//     if (status === BookingStatus.CANCELLED) {
-//       updateData.cancelledAt = new Date();
-//     } else if (status === BookingStatus.COMPLETED) {
-//       updateData.completedAt = new Date();
-//     }
+    if (status === BookingStatus.CANCELLED) {
+      updateData.cancelledAt = new Date();
+    } else if (status === BookingStatus.COMPLETED) {
+      updateData.completedAt = new Date();
+    }
 
-//     const updatedBooking = await prisma.$transaction(async (tx) => {
-//       const updated = await tx.tourBooking.update({
-//         where: { id },
-//         data: updateData,
-//         include: {
-//           user: {
-//             select: {
-//               id: true,
-//               fullName: true,
-//               email: true,
-//             },
-//           },
-//           tour: true,
-//           schedule: true,
-//         },
-//       });
+    const updatedBooking = await prisma.$transaction(async (tx) => {
+      const updated = await tx.tourBooking.update({
+        where: { id: bookingId },
+        data: updateData,
+        include: {
+          user: {
+            select: {
+              id: true,
+              fullName: true,
+              email: true,
+            },
+          },
+          tour: true,
+          schedule: true,
+        },
+      });
 
-//       // If cancelling, release seats
-//       if (
-//         status === BookingStatus.CANCELLED &&
-//         booking.status !== BookingStatus.CANCELLED
-//       ) {
-//         await tx.tourSchedule.update({
-//           where: { id: booking.scheduleId },
-//           data: {
-//             currentBookings: {
-//               decrement: booking.numberOfParticipants,
-//             },
-//           },
-//         });
-//       }
+      // If cancelling, release seats back to schedule
+      if (
+        status === BookingStatus.CANCELLED &&
+        booking.status !== BookingStatus.CANCELLED
+      ) {
+        await tx.tourSchedule.update({
+          where: { id: booking.scheduleId },
+          data: {
+            currentBookings: {
+              decrement: booking.numberOfParticipants,
+            },
+          },
+        });
+      }
 
-//       return updated;
-//     });
+      return updated;
+    });
 
-//     next({
-//       status: 200,
-//       success: true,
-//       message: "Booking status updated successfully",
-//       data: updatedBooking,
-//     });
-//   } catch (error: any) {
-//     next({
-//       status: 500,
-//       message: "Internal server error",
-//       error: error.message,
-//     });
-//   }
-// };
+    next({
+      status: 200,
+      success: true,
+      message: "Booking status updated successfully",
+      data: updatedBooking,
+    });
+  } catch (error: any) {
+    next({
+      status: 500,
+      message: error.message || "Internal server error",
+      error: error.message,
+    });
+  }
+};
 
-// /**
-//  * @desc    Get booking statistics (Admin)
-//  * @route   GET /api/bookings/tours/admin/stats
-//  * @access  Private (Admin)
-//  */
-// const getTourBookingStats = async (
-//   req: Request,
-//   res: Response,
-//   next: NextFunction
-// ) => {
-//   try {
-//     const [
-//       totalBookings,
-//       pendingBookings,
-//       confirmedBookings,
-//       cancelledBookings,
-//       completedBookings,
-//       totalRevenue,
-//     ] = await Promise.all([
-//       prisma.tourBooking.count(),
-//       prisma.tourBooking.count({ where: { status: BookingStatus.PENDING } }),
-//       prisma.tourBooking.count({ where: { status: BookingStatus.CONFIRMED } }),
-//       prisma.tourBooking.count({ where: { status: BookingStatus.CANCELLED } }),
-//       prisma.tourBooking.count({ where: { status: BookingStatus.COMPLETED } }),
-//       prisma.tourBooking.aggregate({
-//         where: {
-//           status: {
-//             in: [BookingStatus.CONFIRMED, BookingStatus.COMPLETED],
-//           },
-//         },
-//         _sum: {
-//           totalPrice: true,
-//         },
-//       }),
-//     ]);
+// Get booking statistics
 
-//     next({
-//       status: 200,
-//       success: true,
-//       data: {
-//         totalBookings,
-//         pendingBookings,
-//         confirmedBookings,
-//         cancelledBookings,
-//         completedBookings,
-//         totalRevenue: totalRevenue._sum.totalPrice || 0,
-//       },
-//     });
-//   } catch (error: any) {
-//     next({
-//       status: 500,
-//       message: "Internal server error",
-//       error: error.message,
-//     });
-//   }
-// };
+const getTourBookingStats = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const [
+      totalBookings,
+      pendingBookings,
+      confirmedBookings,
+      cancelledBookings,
+      completedBookings,
+      totalRevenue,
+    ] = await Promise.all([
+      prisma.tourBooking.count(),
+      prisma.tourBooking.count({ where: { status: BookingStatus.PENDING } }),
+      prisma.tourBooking.count({ where: { status: BookingStatus.CONFIRMED } }),
+      prisma.tourBooking.count({ where: { status: BookingStatus.CANCELLED } }),
+      prisma.tourBooking.count({ where: { status: BookingStatus.COMPLETED } }),
+      prisma.tourBooking.aggregate({
+        where: {
+          status: {
+            in: [BookingStatus.CONFIRMED, BookingStatus.COMPLETED],
+          },
+        },
+        _sum: {
+          totalPrice: true,
+        },
+      }),
+    ]);
+
+    next({
+      status: 200,
+      success: true,
+      data: {
+        totalBookings,
+        pendingBookings,
+        confirmedBookings,
+        cancelledBookings,
+        completedBookings,
+        totalRevenue: totalRevenue._sum.totalPrice || 0,
+      },
+    });
+  } catch (error: any) {
+    next({
+      status: 500,
+      message: error.message || "Internal server error",
+      error: error.message,
+    });
+  }
+};
 
 export {
   createTourBooking,
@@ -739,7 +726,7 @@ export {
   getUserTourBookingById,
   cancelUserTourBooking,
   getAllTourBookings,
-  //   getAdminTourBookingById,
-  //   updateTourBookingStatus,
-  //   getTourBookingStats,
+  getAdminTourBookingById,
+  updateTourBookingStatus,
+    getTourBookingStats,
 };

@@ -1,3 +1,4 @@
+
 import { Router } from "express";
 import {
   addTourImages,
@@ -31,6 +32,7 @@ import {
 import { validate } from "../../middleware/validate";
 import z from "zod";
 import { cloudinaryUploadFromParams } from "../../middleware/upload";
+import { Param } from "@prisma/client/runtime/library";
 const router = Router();
 
 router.use(authenticateToken, AdminOnly);
@@ -222,6 +224,7 @@ registerRoute({
   summary: "Update tour",
   tags: ["Tours"],
   request: {
+    params: tourParamsSchema,
     body: {
       content: {
         "application/json": { schema: updateTourSchema },
