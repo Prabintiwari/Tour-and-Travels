@@ -346,8 +346,7 @@ const getUserTourBookingById = async (
   }
 };
 
-//  * @desc    Cancel user's own booking
-//  * @route   PATCH /api/bookings/tours/:id/cancel
+// Cancel user's own booking
 const cancelUserTourBooking = async (
   req: AuthRequest,
   res: Response,

@@ -222,6 +222,7 @@ const getAllTours = async (
   next: NextFunction
 ) => {
   try {
+    console.log("1");
     const {
       page,
       limit,
@@ -233,6 +234,7 @@ const getAllTours = async (
       search,
       discountedOnly,
     } = req.query;
+    console.log("object");
 
     const pageNumber = page ?? 1;
     const limitNumber = limit ?? 10;
@@ -241,7 +243,8 @@ const getAllTours = async (
 
     if (destinationId) filters.destinationId = destinationId;
     if (difficultyLevel) filters.difficultyLevel = difficultyLevel;
-    if (isFeatured === true) filters.isFeatured = true;
+    if (isFeatured===true) filters.isFeatured = true;
+    if (isFeatured===false) filters.isFeatured = false;
     if (discountedOnly === "true") filters.discountActive = true;
 
     // Search in title or description

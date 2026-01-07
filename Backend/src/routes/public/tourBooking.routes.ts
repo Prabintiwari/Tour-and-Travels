@@ -1,127 +1,164 @@
 import { Router } from "express";
 import { authenticateToken } from "../../middleware/auth";
 import { validate } from "../../middleware/validate";
-import { createBookingSchema } from "../../schema";
-import { cancelUserTourBooking, createTourBooking, getUserTourBookingById, getUserTourBookings } from "../../controllers/tourBooking.controller";
+import {
+  bookingParamsSchema,
+  createBookingSchema,
+  tourBookingResponseSchema,
+} from "../../schema";
+import {
+  cancelUserTourBooking,
+  createTourBooking,
+  getUserTourBookingById,
+  getUserTourBookings,
+} from "../../controllers/tourBooking.controller";
+import { registerRoute } from "../../utils/openapi.utils";
+import {
+  badRequestErrorSchema,
+  conflictErrorSchema,
+  errorResponse,
+  forbiddenErrorSchema,
+  internalServerErrorSchema,
+  notFoundErrorSchema,
+  unauthorizedErrorSchema,
+} from "../../schema/common.schema";
 
-const router = Router()
+const router = Router();
 
-/**
- * @swagger
- * /api/tour-bookings:
- *   post:
- *     summary: Create a new booking
- *     tags: [Bookings]
- *     security:
- *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/CreateBookingSchema'
- *     responses:
- *       201:
- *         description: Booking created successfully
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/BookingResponse'
- *       400:
- *         description: Invalid input or insufficient seats
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: Insufficient seats available
- *       401:
- *         description: Unauthorized
- *       404:
- *         description: Tour or schedule not found
- *       422:
- *         description: Validation error
- */
-router.post("/",authenticateToken,validate.body(createBookingSchema),createTourBooking)
+// Tour booking routes
+router.post(
+  "/",
+  authenticateToken,
+  validate.body(createBookingSchema),
+  createTourBooking
+);
 
-/**
- * @swagger
- * /api/tour-bookings/my-bookings:
- *   get:
- *     summary: Get all bookings for the authenticated user
- *     tags: [Bookings]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: List of user's bookings
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/Booking'
- *       401:
- *         description: Unauthorized
- */
-router.get("/my-booking",authenticateToken,getUserTourBookings)
-/**
- * @swagger
- * /api/tour-bookings/:bookingId:
- *   get:
- *     summary: Get booking by ID
- *     tags: [Bookings]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *         description: Booking ID
- *     responses:
- *       200:
- *         description: Booking details
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Booking'
- *       401:
- *         description: Unauthorized
- *       404:
- *         description: Booking not found
- */
-router.get("/my-booking/:bookingId",authenticateToken,getUserTourBookingById)
-/**
- * @swagger
- * /api/tour-bookings/my-booking/:bookingId/cancel:
- *   patch:
- *     summary: Cancel my booking
- *     tags: [Bookings]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: bookingId
- *         required: true
- *         schema:
- *           type: string
- *         description: Booking ID
- *     responses:
- *       200:
- *         description: Booking details
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Booking'
- *       401:
- *         description: Unauthorized
- *       404:
- *         description: Booking not found
- */
-router.patch("/my-booking/:bookingId/cancel",authenticateToken,cancelUserTourBooking)
+router.get("/my-booking", authenticateToken, getUserTourBookings);
 
-export default router
+router.get(
+  "/my-booking/:bookingId",
+  authenticateToken,
+  validate.params(bookingParamsSchema),
+  getUserTourBookingById
+);
+
+router.patch(
+  "/my-booking/:bookingId/cancel",
+  authenticateToken,
+  validate.params(bookingParamsSchema),
+  cancelUserTourBooking
+);
+
+// Swagger registration
+
+// Create a new tour booking
+registerRoute({
+  method: "post",
+  path: "/api/tour-booking",
+  summary: "Create a new booking",
+  tags: ["Bookings"],
+  security: [{ bearerAuth: [] }],
+  request: {
+    body: { content: { "application/json": { schema: createBookingSchema } } },
+  },
+  responses: {
+    201: {
+      description: "Booking created successfully",
+      content: { "application/json": { schema: tourBookingResponseSchema } },
+    },
+    400: errorResponse(badRequestErrorSchema, "Bad Request"),
+    401: errorResponse(unauthorizedErrorSchema, "Unauthorized"),
+    403: errorResponse(forbiddenErrorSchema, "Forbidden"),
+    409: errorResponse(conflictErrorSchema, "Conflict"),
+    500: errorResponse(internalServerErrorSchema, "Internal Server Error"),
+  },
+});
+
+// Get user tour booking
+registerRoute({
+  method: "get",
+  path: "/api/tour-booking/my-booking",
+  summary: "Get user tour booking ",
+  security: [{ bearerAuth: [] }],
+  tags: ["Bookings"],
+  request: {
+    params: bookingParamsSchema,
+  },
+  responses: {
+    200: {
+      description: "Tour bookings details",
+      content: {
+        "application/json": {
+          schema: tourBookingResponseSchema,
+        },
+      },
+    },
+    401: errorResponse(unauthorizedErrorSchema, "Unauthorized"),
+
+    403: errorResponse(forbiddenErrorSchema, "Forbidden"),
+
+    404: errorResponse(notFoundErrorSchema, "Not Found"),
+
+    500: errorResponse(internalServerErrorSchema, "Internal Server Error"),
+  },
+});
+
+// Get user tour booking by id
+registerRoute({
+  method: "get",
+  path: "/api/tour-booking/my-booking/{bookingId}",
+  summary: "Get tour booking by Id",
+  security: [{ bearerAuth: [] }],
+  tags: ["Bookings"],
+  request: {
+    params: bookingParamsSchema,
+  },
+  responses: {
+    200: {
+      description: "Tour bookings details",
+      content: {
+        "application/json": {
+          schema: tourBookingResponseSchema,
+        },
+      },
+    },
+    401: errorResponse(unauthorizedErrorSchema, "Unauthorized"),
+
+    403: errorResponse(forbiddenErrorSchema, "Forbidden"),
+
+    404: errorResponse(notFoundErrorSchema, "Not Found"),
+
+    500: errorResponse(internalServerErrorSchema, "Internal Server Error"),
+  },
+});
+
+// Cancel user tour booking by id
+registerRoute({
+  method: "patch",
+  path: "/api/tour-booking/my-booking/{bookingId}/cancel",
+  summary: "Cancel tour booking by Id",
+  tags: ["Bookings"],
+  security: [{ bearerAuth: [] }],
+  request: {
+    params: bookingParamsSchema,
+  },
+  responses: {
+    200: {
+      description: "Cancel Tour bookings",
+      content: {
+        "application/json": {
+          schema: tourBookingResponseSchema,
+        },
+      },
+    },
+    401: errorResponse(unauthorizedErrorSchema, "Unauthorized"),
+
+    403: errorResponse(forbiddenErrorSchema, "Forbidden"),
+
+    404: errorResponse(notFoundErrorSchema, "Not Found"),
+
+    500: errorResponse(internalServerErrorSchema, "Internal Server Error"),
+  },
+});
+
+export default router;
