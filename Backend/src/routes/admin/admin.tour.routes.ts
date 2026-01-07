@@ -38,35 +38,35 @@ router.use(authenticateToken, AdminOnly);
 // Admin tour routes
 router.post(
   "/guide-pricing/default",
-  validate(defaultGuidePricingSchema),
+  validate.body(defaultGuidePricingSchema),
   setDefaultGuidePricing
 );
 
-router.post("/", validate(createTourSchema), createTour);
+router.post("/", validate.body(createTourSchema), createTour);
 
 router.post(
   "/:tourId",
-  validate(tourParamsSchema),
+  validate.params(tourParamsSchema),
   cloudinaryUploadFromParams("tour", "tourId").array("imageUrl", 10),
   addTourImages
 );
 
-router.patch("/:tourId/images", validate(tourParamsSchema), removeTourImages);
+router.patch("/:tourId/images", validate.params(tourParamsSchema), removeTourImages);
 
 router.patch(
   "/:tourId",
-  validate(tourParamsSchema),
-  validate(updateTourSchema),
+  validate.params(tourParamsSchema),
+  validate.body(updateTourSchema),
   updateTour
 );
 
 router.delete(
   "/:tourId/guide-pricing",
-  validate(tourParamsSchema),
+  validate.params(tourParamsSchema),
   deleteTourGuidePricing
 );
 
-router.delete("/:tourId", validate(tourParamsSchema), deleteTour);
+router.delete("/:tourId", validate.params(tourParamsSchema), deleteTour);
 
 // Create a new tour
 registerRoute({
@@ -132,7 +132,7 @@ registerRoute({
 // Upload images for a tour
 registerRoute({
   method: "post",
-  path: "/api/admin/tour/:tourId",
+  path: "/api/admin/tour/{tourId}",
   summary: "Upload images for a tour",
   tags: ["Tours"],
   request: {
@@ -180,7 +180,7 @@ registerRoute({
 // Remove tour images
 registerRoute({
   method: "patch",
-  path: "/api/admin/tour/:tourId/images",
+  path: "/api/admin/tour/{tourId}/images",
   summary: "Remove tour images",
   tags: ["Tours"],
   request: {
@@ -218,7 +218,7 @@ registerRoute({
 // Update tour
 registerRoute({
   method: "patch",
-  path: "/api/admin/tour/:tourId",
+  path: "/api/admin/tour/{tourId}",
   summary: "Update tour",
   tags: ["Tours"],
   request: {
@@ -246,7 +246,7 @@ registerRoute({
 // Delete tour guide pricing
 registerRoute({
   method: "delete",
-  path: "/api/admin/tour/:tourId/guide-pricing",
+  path: "/api/admin/tour/{tourId}/guide-pricing",
   summary: "Delete tour guide pricing",
   tags: ["Tours"],
   request: {
@@ -267,8 +267,8 @@ registerRoute({
 // Delete tour
 registerRoute({
   method: "delete",
-  path: "/api/admin/tour/:tourId",
-  summary: "",
+  path: "/api/admin/tour/{tourId}",
+  summary: "Delete tour",
   tags: ["Tours"],
   request: {
     params: tourParamsSchema,

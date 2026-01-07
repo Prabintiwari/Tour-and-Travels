@@ -1,6 +1,5 @@
 import z from "zod";
 import { extendZodWithOpenApi } from "@asteasolutions/zod-to-openapi";
-import { paginatedResponse } from "./common.schema";
 extendZodWithOpenApi(z);
 
 const registerSchema = z.object({

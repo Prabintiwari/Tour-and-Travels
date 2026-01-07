@@ -1,7 +1,13 @@
 import { Request, Response, NextFunction } from "express";
 import prisma from "../config/prisma";
-import { createItinerarySchema, updateItinerarySchema } from "../schema";
-import { ActivityType } from "../types/activity.types";
+import {
+  activitySchema,
+  activityType,
+  createItinerarySchema,
+  itineraryIdParamSchema,
+  tourParamsSchema,
+  updateItinerarySchema,
+} from "../schema";
 
 // CREATE ITINERARY
 const createItinerary = async (
@@ -10,7 +16,7 @@ const createItinerary = async (
   next: NextFunction
 ) => {
   try {
-    const validateData = createItinerarySchema.parse(req.body);
+    const validateData = req.body;
 
     // Verify tour exists
     const tour = await prisma.tour.findUnique({
@@ -56,7 +62,7 @@ const createItinerary = async (
         day: validateData.day,
         title: validateData.title,
         description: validateData.description,
-        activities: (validateData.activities as ActivityType[]) || [],
+        activities: (validateData.activities as activityType[]) || [],
         accommodationType: validateData.accommodationType,
         mealInclusions: validateData.mealInclusions,
       },
@@ -181,7 +187,7 @@ const updateItinerary = async (
 ) => {
   try {
     const { itineraryId } = req.params;
-    const validateData = updateItinerarySchema.parse(req.body);
+    const validateData = req.body;
 
     // Verify itinerary exists
     const existingItinerary = await prisma.itinerary.findUnique({
@@ -236,7 +242,7 @@ const updateItinerary = async (
     const updatedItinerary = await prisma.itinerary.update({
       where: { id: itineraryId },
       data: {
-        ...validateData
+        ...validateData,
       },
       include: {
         tour: {
@@ -325,7 +331,7 @@ const addActivity = async (req: Request, res: Response, next: NextFunction) => {
       return;
     }
 
-    const newActivity: ActivityType = { time, activity, location };
+    const newActivity: activityType = { time, activity, location };
 
     const updatedItinerary = await prisma.itinerary.update({
       where: { id: itineraryId },
@@ -394,7 +400,7 @@ const removeActivity = async (
     const updatedItinerary = await prisma.itinerary.update({
       where: { id: itineraryId },
       data: {
-        activities: updatedActivities as ActivityType[],
+        activities: updatedActivities as activityType[],
       },
     });
 

@@ -17,7 +17,7 @@ import {
   getAllUsers,
   getUserById,
   updateUserRole,
-} from "../../controllers/admin.controller";
+} from "../../controllers/admin.user.controller";
 import { deleteUser } from "../../controllers/auth.controller";
 import { AdminOnly, authenticateToken } from "../../middleware/auth";
 import {
@@ -38,29 +38,34 @@ router.use(authenticateToken, AdminOnly);
 // Admin user routes
 
 router.patch(
-  "/update-profile/:id",
+  "/update-profile/:userId",
   cloudinaryUpload("users/profile").single("profileImage"),
-  validate(updateUserSchema),
+  validate.params(userIdParamSchema),
+  validate.body(updateUserSchema),
   updateUserDetails
 );
 
 router.get("/", getAllUsers);
 
-router.get("/:id", getUserById);
+router.get("/:userId", validate.params(userIdParamSchema), getUserById);
 
-router.delete("/:id", deleteUser);
+router.delete("/:userId", validate.params(userIdParamSchema), deleteUser);
 
-router.patch("/block/:id", blockUser);
+router.patch("/block/:userId", validate.params(userIdParamSchema), blockUser);
 
-router.patch("/:id/role", validate(updateUserRoleSchema), updateUserRole);
-
+router.patch(
+  "/:id/role",
+  validate.params(userIdParamSchema),
+  validate.body(updateUserRoleSchema),
+  updateUserRole
+);
 
 // Swagger registration
 
 // update user details
 registerRoute({
   method: "patch",
-  path: "/api/admin/users/:id",
+  path: "/api/admin/users/{userId}",
   summary: "Update user info",
   tags: ["Users"],
   request: {
@@ -115,7 +120,7 @@ registerRoute({
 // Get user by id
 registerRoute({
   method: "get",
-  path: "/api/admin/users/:id",
+  path: "/api/admin/users/{userId}",
   summary: "Get user by ID",
   tags: ["Users"],
   request: { params: userIdParamSchema },
@@ -134,7 +139,7 @@ registerRoute({
 // Delete user
 registerRoute({
   method: "delete",
-  path: "/api/admin/users/:id",
+  path: "/api/admin/users/{userId}",
   summary: "Delete user",
   tags: ["Users"],
   request: { params: userIdParamSchema },
@@ -157,7 +162,7 @@ registerRoute({
 // update user role
 registerRoute({
   method: "patch",
-  path: "/api/admin/users/:id/role",
+  path: "/api/admin/users/{userId}/role",
   summary: "Update user role",
   tags: ["Users"],
   request: {
@@ -190,7 +195,7 @@ registerRoute({
 // Block user
 registerRoute({
   method: "patch",
-  path: "/api/admin/users/block/:id",
+  path: "/api/admin/users/block/{userId}",
   summary: "Block a user",
   tags: ["Users"],
   request: { params: userIdParamSchema },
@@ -209,6 +214,5 @@ registerRoute({
     500: errorResponse(internalServerErrorSchema, "Internal Server Error"),
   },
 });
-
 
 export default router;

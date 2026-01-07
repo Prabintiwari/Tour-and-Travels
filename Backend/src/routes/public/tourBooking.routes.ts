@@ -44,7 +44,7 @@ const router = Router()
  *       422:
  *         description: Validation error
  */
-router.post("/",authenticateToken,validate(createBookingSchema),createTourBooking)
+router.post("/",authenticateToken,validate.body(createBookingSchema),createTourBooking)
 
 /**
  * @swagger

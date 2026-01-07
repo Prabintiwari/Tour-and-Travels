@@ -1,10 +1,10 @@
 import { Request, Response, NextFunction } from "express";
 import {
   createTourScheduleSchema,
+  getTourSchedulesQuerySchema,
   updateTourScheduleSchema,
 } from "../schema";
 import prisma from "../config/prisma";
-import { getTourSchedulesQuerySchema } from "../types/tourSchedules.types";
 
 //Create a new tour schedule
 const createTourSchedule = async (
@@ -101,7 +101,7 @@ const createTourSchedule = async (
 
 //Get all tour schedules with filters
 const getTourSchedules = async (
-  req: Request<{}, {}, {}, getTourSchedulesQuerySchema>,
+  req: Request,
   res: Response,
   next: NextFunction
 ) => {
@@ -111,11 +111,18 @@ const getTourSchedules = async (
       startDate,
       endDate,
       isActive,
-      page = "1",
-      limit = "10",
-    } = req.query;
+      page,
+      limit,
+      minPrice,
+      maxPrice,
+      availableSeatsMin,
+      sortBy,
+      sortOrder,
+    } = req.query as unknown as getTourSchedulesQuerySchema;
 
-    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const pageNumber = page ?? 1;
+    const limitNumber = limit ?? 10;
+    const skip = (pageNumber - 1) * limitNumber;
 
     const filters: any = {};
 
@@ -134,13 +141,34 @@ const getTourSchedules = async (
     if (endDate) {
       filters.endDate = { lte: new Date(endDate) };
     }
+    if (minPrice || maxPrice) {
+      filters.price = {};
+      if (minPrice) filters.price.gte = minPrice;
+      if (maxPrice) filters.price.lte = maxPrice;
+    }
+    if (availableSeatsMin) {
+      filters.availableSeatsMin = { gte: availableSeatsMin };
+    }
+    const validSortFields = [
+      "startDate",
+      "endDate",
+      "price",
+      "availableSeats",
+      "createdAt",
+    ];
+
+    const sortField = validSortFields.includes(sortBy as string)
+      ? (sortBy as string)
+      : "createdAt";
+
+    const sortOrderValue = sortOrder?.toLowerCase() === "desc" ? "desc" : "asc";
 
     const [schedules, total] = await Promise.all([
       prisma.tourSchedule.findMany({
         where: filters,
         skip,
-        take: parseInt(limit),
-        orderBy: { startDate: "asc" },
+        take: limitNumber,
+        orderBy: { [sortField]: sortOrderValue },
         include: {
           tour: {
             select: {
@@ -172,10 +200,10 @@ const getTourSchedules = async (
       data: {
         schedules,
         pagination: {
-          page,
-          limit,
+          pageNumber,
+          limitNumber,
           total,
-          totalPages: Math.ceil(total / parseInt(limit)),
+          totalPages: Math.ceil(total / limitNumber),
         },
       },
     });
@@ -249,7 +277,7 @@ const updateTourSchedule = async (
 ) => {
   try {
     const { tourScheduleId } = req.params;
-    const validatedData = updateTourScheduleSchema.parse(req.body);
+    const validatedData = req.body;
 
     // Check if schedule exists
     const existingSchedule = await prisma.tourSchedule.findUnique({

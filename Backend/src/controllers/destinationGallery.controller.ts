@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import prisma from "../config/prisma";
 import cloudinary from "../config/cloudinary";
-import GetAllDestinationsQuery from "../types/Destinations.types";
+import { destinationIdParamSchema, DestinationQueryParams } from "../schema";
 
 // Create gallery for a destination (or add images if already exists)
 const createOrUpdateGallery = async (
@@ -165,20 +165,22 @@ const getGalleryByDestination = async (
 
 // Get all galleries with pagination
 const getAllGalleries = async (
-  req: Request<{}, {}, {}, GetAllDestinationsQuery>,
+  req: Request<{}, {}, {}, DestinationQueryParams>,
   res: Response,
   next: NextFunction
 ) => {
   try {
     const {
-      page = "1",
-      limit = "10",
+      page,
+      limit,
       search,
       sortBy = "createdAt",
       order = "desc",
     } = req.query;
 
-    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const pageNumber = page ?? 1;
+    const limitNumber = limit ?? 10;
+    const skip = (pageNumber - 1) * limitNumber;
 
     const filters: any = {};
 
@@ -201,7 +203,7 @@ const getAllGalleries = async (
     const galleries = await prisma.destinationGallery.findMany({
       where: filters,
       skip,
-      take: parseInt(limit as string),
+      take: limitNumber,
       include: {
         destination: {
           select: {
@@ -228,10 +230,10 @@ const getAllGalleries = async (
       data: {
         enrichedGalleries,
         pagination: {
-          page: parseInt(page),
-          limit: parseInt(limit),
+          page: pageNumber,
+          limit: limitNumber,
           total,
-          pages: Math.ceil(total / parseInt(limit)),
+          pages: Math.ceil(total / limitNumber),
         },
       },
     });

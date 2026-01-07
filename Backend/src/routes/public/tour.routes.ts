@@ -21,12 +21,13 @@ import {
   unauthorizedErrorSchema,
 } from "../../schema/common.schema";
 import { authenticateToken } from "../../middleware/auth";
+import { validate } from "../../middleware/validate";
 
 const router = Router();
 
 // Tour routes
 
-router.get("/", getAllTours);
+router.get("/",validate.query(tourQuerySchema), getAllTours);
 
 router.get("/guide-pricing/default", authenticateToken, getDefaultGuidePricing);
 
@@ -67,7 +68,7 @@ registerRoute({
 // Get tour by id
 registerRoute({
   method: "get",
-  path: "/api/tour/:tourId",
+  path: "/api/tour/{tourId}",
   summary: "Get tour by Id",
   tags: ["Tours"],
   request: {
@@ -95,7 +96,7 @@ registerRoute({
 // Get tour guide pricing
 registerRoute({
   method: "get",
-  path: "/api/tour/:tourId/guide-pricing",
+  path: "/api/tour/{tourId}/guide-pricing",
   summary: "Get guide pricing for a tour",
   tags: ["Tours"],
   request: {

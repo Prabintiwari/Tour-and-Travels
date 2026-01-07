@@ -1,24 +1,32 @@
-import { NextFunction, Request, Response } from "express";
-import * as z from "zod";
+// middleware/validate.ts
+import { Request, Response, NextFunction } from "express";
+import { ZodObject, ZodError } from "zod";
 
-const validate = (schema: z.ZodSchema<any>) => (req: Request, res: Response, next: NextFunction) => {
-  try {
-    schema.parse(req.body);
-    next();
-  } catch (error: unknown) {
-    if (error instanceof z.ZodError) {
-      const prettifyError = error.flatten();
-      return res.status(400).json({
-        success: false,
-        message: "Validation failed",
-        error: prettifyError.fieldErrors,
-      });
-    }
-
-    return res.status(500).json({
-      success: false,
-      message: "Unexpected error",
-    });
-  }
+export const validate = {
+  body: (schema: ZodObject) => validateMiddleware("body", schema),
+  query: (schema: ZodObject) => validateMiddleware("query", schema),
+  params: (schema: ZodObject) => validateMiddleware("params", schema),
 };
-export { validate };
+
+function validateMiddleware(
+  type: "body" | "query" | "params",
+  schema: ZodObject
+) {
+  return async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      req[type] = await schema.parseAsync(req[type]);
+      next();
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({
+          message: "Validation failed",
+          errors: error.issues.map((err: any) => ({
+            field: err.path.join("."),
+            message: err.message,
+          })),
+        });
+      }
+      next(error);
+    }
+  };
+}

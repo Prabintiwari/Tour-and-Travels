@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { loginSchema, registerSchema } from "../schema";
+import { loginSchema, registerSchema, userIdParamSchema } from "../schema";
 import prisma from "../config/prisma";
 import bcrypt from "bcryptjs";
 import generateOTP from "../utils/generateOtp";
@@ -11,7 +11,7 @@ import welcomeEmail from "../templets/userEmailTemplet/WelcomeEmail";
 // user register
 const register = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const validatedData = registerSchema.parse(req.body);
+    const validatedData = req.body;
     let tempUser;
 
     // Check if user exists
@@ -219,8 +219,9 @@ const login = async (req: Request, res: Response, next: NextFunction) => {
 // my profile
 const getMe = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
+    const { userId } = req.params;
     const user = await prisma.user.findUnique({
-      where: { id: req.id },
+      where: { id: userId },
       select: {
         id: true,
         email: true,
@@ -250,7 +251,7 @@ const logout = (req: Request, res: Response, next: NextFunction) => {
 // delete user
 const deleteUser = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = req.params.id;
+    const { userId } = req.params;
     const existingUser = await prisma.user.findUnique({
       where: { id: userId },
     });

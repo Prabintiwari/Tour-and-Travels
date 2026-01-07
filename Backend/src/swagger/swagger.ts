@@ -22,7 +22,9 @@ export const generateOpenApiDocument = () => {
       { name: 'Users', description: 'User management' },
       { name: 'Tours', description: 'Tour management' },
       { name: 'Destinations', description: 'Destination management' },
-      { name: 'Bookings', description: 'Booking management' },
+      { name: 'Itineraries', description: 'Itinerary management' },
+      { name: 'Tour Schedule', description: 'Tour Schedule management' },
+      { name: 'Bookings', description: 'Tour Booking management' },
     ],
   });
 

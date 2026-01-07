@@ -5,7 +5,6 @@ import generateOTP from "../utils/generateOtp";
 import { transporter } from "../utils/emailServices";
 import Password_Reset_OTP from "../templets/userEmailTemplet/forgot_password_otp";
 import passwordResetSuccessEmail from "../templets/userEmailTemplet/passwordResetSuccessfully";
-import { updateUserSchema } from "../schema";
 
 // update user details
 const updateUserDetails = async (
@@ -14,9 +13,9 @@ const updateUserDetails = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.params.id;
+    const { userId } = req.params;
 
-    const validatedData = updateUserSchema.parse(req.body);
+    const validatedData = req.body;
 
     const existingUser = await prisma.user.findUnique({
       where: { id: userId },
@@ -322,9 +321,9 @@ const resetPassword = async (
 };
 
 export {
-    updateUserDetails,
-    forgotPassword,
-    resendOtp,
-    verifyOtp,
-    resetPassword,
+  updateUserDetails,
+  forgotPassword,
+  resendOtp,
+  verifyOtp,
+  resetPassword,
 };

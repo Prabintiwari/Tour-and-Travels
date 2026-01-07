@@ -3,40 +3,74 @@ import {
   getAllGalleries,
   getGalleryByDestination,
 } from "../../controllers/destinationGallery.controller";
+import { registerRoute } from "../../utils/openapi.utils";
+import { destinationGalleryResponseSchema, destinationIdParamSchema } from "../../schema";
+import { errorResponse, forbiddenErrorSchema, internalServerErrorSchema, notFoundErrorSchema, unauthorizedErrorSchema } from "../../schema/common.schema";
+import { validate } from "../../middleware/validate";
 
 const router = Router();
 
-/**
- * @swagger
- * /api/destination-gallery:
- *   get:
- *     summary: Retrieve all galleries
- *     description: Fetches all available destination galleries
- *     responses:
- *       200:
- *         description: Successfully retrieved all galleries
- */
+
+// Destination routes
 router.get("/", getAllGalleries);
 
-/**
- * @swagger
- * /api/destination-gallery/{destinationId}:
- *   get:
- *     summary: Retrieve gallery by destination ID
- *     description: Fetches gallery collection for a specific destination
- *     parameters:
- *       - in: path
- *         name: destinationId
- *         required: true
- *         schema:
- *           type: string
- *         description: The unique identifier of the destination
- *     responses:
- *       200:
- *         description: Successfully retrieved destination gallery
- *       404:
- *         description: Destination gallery not found
- */
-router.get("/:destinationId", getGalleryByDestination);
+router.get("/:destinationId",validate.params(destinationIdParamSchema), getGalleryByDestination);
 
+// Swagger registration
+
+// Get all gallery
+registerRoute({
+  method: "get",
+  path: "/api/destination-gallery",
+  summary: "List of Destinations gallery",
+  tags: ["Destinations"],
+  request: {
+    query: destinationIdParamSchema,
+  },
+  responses: {
+    200: {
+      description: "List of destination-gallery",
+      content: {
+        "application/json": {
+          schema: destinationGalleryResponseSchema,
+        },
+      },
+    },
+    401: errorResponse(unauthorizedErrorSchema, "Unauthorized"),
+
+    403: errorResponse(forbiddenErrorSchema, "Forbidden"),
+
+    404: errorResponse(notFoundErrorSchema, "Not Found"),
+
+    500: errorResponse(internalServerErrorSchema, "Internal Server Error"),
+  },
+});
+
+// Get gallery by destination Id
+registerRoute({
+  method: "get",
+  path: "/api/destination-gallery/{destinationId}",
+  summary: "List of Destinations gallery by id",
+  tags: ["Destinations"],
+  request: {
+    query: destinationIdParamSchema,
+  },
+  responses: {
+    200: {
+      description: "List of destination-gallery by id",
+      content: {
+        "application/json": {
+          schema: destinationGalleryResponseSchema,
+        },
+      },
+    },
+    401: errorResponse(unauthorizedErrorSchema, "Unauthorized"),
+
+    403: errorResponse(forbiddenErrorSchema, "Forbidden"),
+
+    404: errorResponse(notFoundErrorSchema, "Not Found"),
+
+    500: errorResponse(internalServerErrorSchema, "Internal Server Error"),
+  },
+});
 export default router;

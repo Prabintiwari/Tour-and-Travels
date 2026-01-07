@@ -1,9 +1,12 @@
 import { Request, Response, NextFunction } from "express";
-import { destinationSchema } from "../schema";
+import {
+  destinationIdParamSchema,
+  DestinationQueryParams,
+  destinationSchema,
+  getAllDestinationsQuerySchema,
+} from "../schema";
 import prisma from "../config/prisma";
 import cloudinary from "../config/cloudinary";
-import GetAllDestinationsQuery from "../types/Destinations.types";
-
 
 // Create a new destination
 const createDestination = async (
@@ -74,10 +77,10 @@ const getDestinationById = async (
   next: NextFunction
 ) => {
   try {
-    const id = req.params.id;
+    const { destinationId } = req.params;
 
     const destination = await prisma.destination.findUnique({
-      where: { id },
+      where: { id: destinationId },
       include: {
         tours: {
           where: { isActive: true },
@@ -120,7 +123,7 @@ const getDestinationById = async (
 
     // Increment views
     await prisma.destination.update({
-      where: { id },
+      where: { id: destinationId },
       data: { views: { increment: 1 } },
     });
 
@@ -140,22 +143,15 @@ const getDestinationById = async (
 
 // Get all destinations with filtering and pagination
 const getAllDestinations = async (
-  req: Request<{}, {}, {}, GetAllDestinationsQuery>,
+  req: Request<{}, {}, {}, DestinationQueryParams>,
   res: Response,
   next: NextFunction
 ) => {
   try {
-    const {
-      page = "1",
-      limit = "10",
-      region,
-      search,
-      sortBy = "createdAt",
-      order = "desc",
-    } = req.query;
+    const { page, limit, region, search, sortBy, order } = req.query;
 
-    const pageNumber = parseInt(page, 10);
-    const limitNumber = parseInt(limit, 10);
+    const pageNumber = page ?? 1;
+    const limitNumber = limit ?? 10;
     const skip = (pageNumber - 1) * limitNumber;
 
     // Build Prisma filter
@@ -179,7 +175,7 @@ const getAllDestinations = async (
       ? (sortBy as any)
       : "createdAt";
 
-    const sortOrder = order.toLowerCase() === "asc" ? "asc" : "desc";
+    const sortOrder = order?.toLowerCase() === "asc" ? "asc" : "desc";
 
     const destinations = await prisma.destination.findMany({
       where: filters,
@@ -312,11 +308,13 @@ const updateDestination = async (
   next: NextFunction
 ) => {
   try {
-    const id = req.params.id;
-    const validatedData = destinationSchema.parse(req.body);
+    const { destinationId } = req.params;
+    const validatedData = req.body;
 
     // Check if destination exists
-    const destination = await prisma.destination.findUnique({ where: { id } });
+    const destination = await prisma.destination.findUnique({
+      where: { id: destinationId },
+    });
     if (!destination) {
       return next({
         status: 404,
@@ -363,7 +361,7 @@ const updateDestination = async (
     };
 
     const updatedDestination = await prisma.destination.update({
-      where: { id },
+      where: { id: destinationId },
       data: updatedData,
     });
 
@@ -389,9 +387,11 @@ const deleteDestination = async (
   next: NextFunction
 ) => {
   try {
-    const { id } = req.params;
+    const { destinationId } = req.params;
 
-    const destination = await prisma.destination.findUnique({ where: { id } });
+    const destination = await prisma.destination.findUnique({
+      where: { id: destinationId },
+    });
     if (!destination) {
       return next({
         status: 404,
@@ -403,7 +403,7 @@ const deleteDestination = async (
     // Check if destination has active tours
     const activeTours = await prisma.tour.findMany({
       where: {
-        destinationId: id,
+        destinationId: destinationId,
         isActive: true,
       },
     });
@@ -424,7 +424,7 @@ const deleteDestination = async (
     }
 
     // Delete destination (cascade will handle related data)
-    await prisma.destination.delete({ where: { id } });
+    await prisma.destination.delete({ where: { id: destinationId } });
 
     next({
       status: 200,
@@ -448,10 +448,10 @@ const getDestinationStats = async (
   next: NextFunction
 ) => {
   try {
-    const id = req.params.id;
+    const { destinationId } = req.params;
 
     const destination = await prisma.destination.findUnique({
-      where: { id },
+      where: { id: destinationId },
     });
 
     if (!destination) {
@@ -464,22 +464,24 @@ const getDestinationStats = async (
 
     const [toursCount, reviewsCount, bookingsCount, totalViews] =
       await Promise.all([
-        prisma.tour.count({ where: { destinationId: id, isActive: true } }),
-        prisma.tourReview.count({ where: { destinationId: id } }),
+        prisma.tour.count({
+          where: { destinationId: destinationId, isActive: true },
+        }),
+        prisma.tourReview.count({ where: { destinationId: destinationId } }),
         prisma.tourBooking.count({
           where: {
-            destinationId: id,
+            destinationId,
             status: "COMPLETED",
           },
         }),
         prisma.destination.findUnique({
-          where: { id },
+          where: { id: destinationId },
           select: { views: true },
         }),
       ]);
 
     const reviews = await prisma.tourReview.findMany({
-      where: { destinationId: id },
+      where: { id: destinationId },
       select: { rating: true },
     });
 

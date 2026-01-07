@@ -7,6 +7,9 @@ export * from "./user.schema";
 // Destination
 export * from "./destination.schema";
 
+// Destination gallery
+export * from "./destination.gallery.schema"
+
 // Tour
 export * from "./tour.schema";
 

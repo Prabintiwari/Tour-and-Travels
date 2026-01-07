@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import prisma from "../config/prisma";
 import { AuthRequest } from "../middleware/auth";
+import { updateUserRoleSchema, userIdParamSchema } from "../schema";
 
 // get all user
 const getAllUsers = async (req: Request, res: Response, next: NextFunction) => {
@@ -23,9 +24,9 @@ const getAllUsers = async (req: Request, res: Response, next: NextFunction) => {
 };
 
 // get user by id
-const getUserById = async (req: Request, res: Response, next: NextFunction)=>{
+const getUserById = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = req.params.id;
+    const { userId } = req.params;
     const user = await prisma.user.findUnique({
       where: { id: userId },
       select: {
@@ -43,11 +44,16 @@ const getUserById = async (req: Request, res: Response, next: NextFunction)=>{
     }
 
     next({ status: 200, success: true, data: { user } });
-  } catch (error:any) {
+  } catch (error: any) {
     console.error("Update role error:", error);
-    next({ status: 500, success: false, message: "Internal server error",error: error.message, });
+    next({
+      status: 500,
+      success: false,
+      message: "Internal server error",
+      error: error.message,
+    });
   }
-}
+};
 // update user role
 const updateUserRole = async (
   req: AuthRequest,
@@ -56,7 +62,7 @@ const updateUserRole = async (
 ) => {
   try {
     const { role } = req.body;
-    const userId = req.params.id;
+    const { userId } = req.params;
 
     // Cannot change own role
     if (req.id === userId) {
@@ -92,7 +98,7 @@ const updateUserRole = async (
 // delete user
 const blockUser = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = req.params.id;
+    const { userId } = req.params;
     const existingUser = await prisma.user.findUnique({
       where: { id: userId },
     });
@@ -110,4 +116,4 @@ const blockUser = async (req: Request, res: Response, next: NextFunction) => {
   }
 };
 
-export { getAllUsers,getUserById, updateUserRole, blockUser };
+export { getAllUsers, getUserById, updateUserRole, blockUser };
