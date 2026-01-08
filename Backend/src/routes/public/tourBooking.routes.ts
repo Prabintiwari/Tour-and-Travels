@@ -41,6 +41,7 @@ router.patch(
   "/my-booking/:bookingId/reschedule",
   authenticateToken,
   validate.params(bookingParamsSchema),
+  validate.body(rescheduleBookingSchema),
   rescheduleTourBooking
 );
 
