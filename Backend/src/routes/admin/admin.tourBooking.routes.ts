@@ -101,11 +101,11 @@ registerRoute({
   },
 });
 
-// Update tours booking by id
+// Update tours booking status by id
 registerRoute({
   method: "patch",
   path: "/api/admin/tour-booking/{bookingId}",
-  summary: "Update tour booking by id",
+  summary: "Update tour booking status by id",
   security: [{ bearerAuth: [] }],
   tags: ["Bookings"],
   request: {

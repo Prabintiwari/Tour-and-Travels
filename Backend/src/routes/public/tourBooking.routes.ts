@@ -5,12 +5,14 @@ import {
   bookingParamsSchema,
   createBookingSchema,
   tourBookingResponseSchema,
+  updateBookingSchema,
 } from "../../schema";
 import {
   cancelUserTourBooking,
   createTourBooking,
   getUserTourBookingById,
   getUserTourBookings,
+  updateTourBooking,
 } from "../../controllers/tourBooking.controller";
 import { registerRoute } from "../../utils/openapi.utils";
 import {
@@ -31,6 +33,14 @@ router.post(
   authenticateToken,
   validate.body(createBookingSchema),
   createTourBooking
+);
+
+router.patch(
+  "/my-booking/:bookingId",
+  authenticateToken,
+  validate.params(bookingParamsSchema),
+  validate.body(createBookingSchema),
+  updateTourBooking
 );
 
 router.get("/my-booking", authenticateToken, getUserTourBookings);
@@ -64,6 +74,32 @@ registerRoute({
   responses: {
     201: {
       description: "Booking created successfully",
+      content: { "application/json": { schema: tourBookingResponseSchema } },
+    },
+    400: errorResponse(badRequestErrorSchema, "Bad Request"),
+    401: errorResponse(unauthorizedErrorSchema, "Unauthorized"),
+    403: errorResponse(forbiddenErrorSchema, "Forbidden"),
+    409: errorResponse(conflictErrorSchema, "Conflict"),
+    500: errorResponse(internalServerErrorSchema, "Internal Server Error"),
+  },
+});
+
+// Update a tour booking
+registerRoute({
+  method: "patch",
+  path: "/api/tour-booking/my-booking/{bookingId}",
+  summary: "Update a user tour booking",
+  tags: ["Bookings"],
+  security: [{ bearerAuth: [] }],
+  request: {
+    params: bookingParamsSchema,
+    body: {
+      content: { "application/json": { schema: updateBookingSchema } },
+    },
+  },
+  responses: {
+    201: {
+      description: "Booking updated successfully",
       content: { "application/json": { schema: tourBookingResponseSchema } },
     },
     400: errorResponse(badRequestErrorSchema, "Bad Request"),

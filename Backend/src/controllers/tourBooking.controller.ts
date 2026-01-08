@@ -3,7 +3,9 @@ import { BookingStatus, GuidePricingType } from "@prisma/client";
 import { generateBookingCode } from "../utils/generateBookingCode";
 import prisma from "../config/prisma";
 import { AuthRequest } from "../middleware/auth";
-import { BookingQueryParams, createBookingSchema } from "../schema";
+import {
+  BookingQueryParams,
+} from "../schema";
 
 // Create a new tour booking
 const createTourBooking = async (
@@ -21,7 +23,7 @@ const createTourBooking = async (
       });
     }
 
-    const validateData = createBookingSchema.parse(req.body);
+    const validateData = req.body;
 
     /* Verify tour */
     const tour = await prisma.tour.findUnique({
@@ -355,7 +357,6 @@ const cancelUserTourBooking = async (
   try {
     const userId = req.id;
     const { bookingId } = req.params;
-    console.log(userId, bookingId);
 
     const booking = await prisma.tourBooking.findFirst({
       where: {
@@ -586,7 +587,269 @@ const getAdminTourBookingById = async (
   }
 };
 
-// Update booking status
+// update tour booking
+const updateTourBooking = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const validateData = req.body;
+    const userId = req.id;
+    const { bookingId } = req.params;
+
+    // Fetch existing booking
+    const booking = await prisma.tourBooking.findFirst({
+      where: {
+        id: bookingId,
+        userId,
+      },
+      include: {
+        schedule: true,
+        tour: true,
+      },
+    });
+
+    if (!booking) {
+      return next({
+        status: 404,
+        success: false,
+        message: "Booking not found",
+      });
+    }
+
+    // Only allow updates for PENDING bookings
+    if (booking.status !== BookingStatus.PENDING) {
+      return next({
+        status: 400,
+        success: false,
+        message: "Only pending bookings can be updated",
+      });
+    }
+
+    // Calculate participant difference for seat availability
+    const participantDifference = validateData.numberOfParticipants
+      ? validateData.numberOfParticipants - booking.numberOfParticipants
+      : 0;
+
+    // Check seat availability if participants are increasing
+    if (participantDifference > 0) {
+      const schedule = await prisma.tourSchedule.findUnique({
+        where: { id: booking.scheduleId },
+      });
+
+      if (!schedule) {
+        return next({
+          status: 404,
+          success: false,
+          message: "Schedule not found",
+        });
+      }
+
+      const availableSeats = schedule.availableSeats - schedule.currentBookings;
+
+      if (availableSeats < participantDifference) {
+        return next({
+          status: 400,
+          success: false,
+          message: `Only ${availableSeats} seats available`,
+        });
+      }
+    }
+
+    // Min/Max participants validation
+    const newParticipants =
+      validateData.numberOfParticipants ?? booking.numberOfParticipants;
+
+    if (
+      booking.tour.minParticipants &&
+      newParticipants < booking.tour.minParticipants
+    ) {
+      return next({
+        status: 400,
+        success: false,
+        message: `Minimum ${booking.tour.minParticipants} participants required`,
+      });
+    }
+
+    if (
+      booking.tour.maxParticipants &&
+      newParticipants > booking.tour.maxParticipants
+    ) {
+      return next({
+        status: 400,
+        success: false,
+        message: `Maximum ${booking.tour.maxParticipants} participants allowed`,
+      });
+    }
+
+    /* RECALCULATE GUIDE PRICING IF NEEDED */
+    let guideSnapshot = {
+      guidePricingType: booking.guidePricingType,
+      guidePriceAtBooking: booking.guidePriceAtBooking,
+      guideMinimumCharge: booking.guideMinimumCharge,
+      guideTotalPrice: booking.guideTotalPrice,
+      numberOfGuides: booking.numberOfGuides,
+    };
+
+    const needsGuide = validateData.needsGuide ?? booking.needsGuide;
+    const guidePricingType =
+      validateData.guidePricingType ?? booking.guidePricingType;
+    const numberOfGuideNeeds =
+      validateData.numberOfGuideNeeds ?? booking.numberOfGuides;
+
+    // Recalculate if guide requirements changed
+    if (
+      needsGuide &&
+      (validateData.needsGuide !== undefined ||
+        validateData.numberOfParticipants !== undefined ||
+        validateData.guidePricingType !== undefined ||
+        validateData.numberOfGuideNeeds !== undefined)
+    ) {
+      // Fetch guide pricing
+      let tourGuidePricing = await prisma.tourGuidePricing.findFirst({
+        where: { tourId: booking.tourId, isActive: true },
+      });
+
+      if (!tourGuidePricing) {
+        tourGuidePricing = await prisma.tourGuidePricing.findFirst({
+          where: { isDefault: true, isActive: true },
+        });
+      }
+
+      if (!tourGuidePricing) {
+        return next({
+          status: 404,
+          success: false,
+          message: "Active tour guide pricing not found",
+        });
+      }
+
+      let guideTotalPrice = 0;
+      let guidePriceAtBooking = 0;
+
+      switch (guidePricingType) {
+        case GuidePricingType.PER_DAY:
+          guideTotalPrice =
+            (tourGuidePricing.pricePerDay ?? 0) *
+            (numberOfGuideNeeds ?? 1) *
+            booking.tour.numberOfDays;
+          guidePriceAtBooking = tourGuidePricing.pricePerDay ?? 0;
+          break;
+
+        case GuidePricingType.PER_PERSON:
+          guideTotalPrice =
+            (tourGuidePricing.pricePerPerson ?? 0) * newParticipants;
+          guidePriceAtBooking = tourGuidePricing.pricePerPerson ?? 0;
+          break;
+
+        case GuidePricingType.PER_GROUP:
+          guideTotalPrice = tourGuidePricing.pricePerGroup ?? 0;
+          guidePriceAtBooking = tourGuidePricing.pricePerGroup ?? 0;
+          break;
+
+        default:
+          return next({
+            status: 400,
+            success: false,
+            message: "Invalid guide pricing type selected",
+          });
+      }
+
+      // Minimum charge protection
+      if (
+        tourGuidePricing.minimumCharge &&
+        guideTotalPrice < tourGuidePricing.minimumCharge
+      ) {
+        guideTotalPrice = tourGuidePricing.minimumCharge;
+      }
+
+      guideSnapshot = {
+        guidePricingType: guidePricingType,
+        guidePriceAtBooking: guidePriceAtBooking,
+        guideMinimumCharge: tourGuidePricing.minimumCharge ?? null,
+        guideTotalPrice: guideTotalPrice,
+        numberOfGuides: numberOfGuideNeeds,
+      };
+    } else if (!needsGuide) {
+      // Reset guide pricing if guide is not needed
+      guideSnapshot = {
+        guidePricingType: null,
+        guidePriceAtBooking: 0,
+        guideMinimumCharge: null,
+        guideTotalPrice: 0,
+        numberOfGuides: null,
+      };
+    }
+
+    /* RECALCULATE TOTAL PRICE */
+    const tourPriceAtBooking =
+      booking.schedule.price ?? booking.tour.finalTourPrice;
+    const totalPrice =
+      tourPriceAtBooking + (guideSnapshot.guideTotalPrice ?? 0);
+    const pricePerParticipantAtBooking = totalPrice / newParticipants;
+
+    /* UPDATE TRANSACTION */
+    const updatedBooking = await prisma.$transaction(async (tx) => {
+      // Update booking
+      const updated = await tx.tourBooking.update({
+        where: { id: bookingId },
+        data: {
+          numberOfParticipants: newParticipants,
+          needsGuide: needsGuide,
+          numberOfGuides: guideSnapshot.numberOfGuides,
+          guidePricingType: guideSnapshot.guidePricingType,
+          guidePriceAtBooking: guideSnapshot.guidePriceAtBooking,
+          guideMinimumCharge: guideSnapshot.guideMinimumCharge,
+          guideTotalPrice: guideSnapshot.guideTotalPrice,
+          totalPrice: totalPrice,
+          pricePerParticipantAtBooking: pricePerParticipantAtBooking,
+        },
+        include: {
+          tour: { include: { destination: true } },
+          schedule: true,
+          user: {
+            select: { id: true, fullName: true, email: true, phone: true },
+          },
+        },
+      });
+
+      // Update schedule bookings if participants changed
+      if (participantDifference !== 0) {
+        await tx.tourSchedule.update({
+          where: { id: booking.scheduleId },
+          data: {
+            currentBookings: { increment: participantDifference },
+          },
+        });
+      }
+
+      return updated;
+    });
+
+    next({
+      status: 200,
+      success: true,
+      message: "Booking updated successfully",
+      data: {
+        booking: updatedBooking,
+        priceRecalculated:
+          validateData.needsGuide !== undefined ||
+          validateData.numberOfParticipants !== undefined,
+          message:
+          "The total price is based on the selected schedule price and any guide fees. The tour's final price is the base tour price, which may differ from the schedule-specific pricing.",
+      },
+    });
+  } catch (error: any) {
+    next({
+      status: 500,
+      message: error.message || "Internal server error",
+      error: error.message,
+    });
+  }
+};
+
+// Update booking status (admin)
 const updateTourBookingStatus = async (
   req: Request,
   res: Response,
@@ -667,7 +930,6 @@ const updateTourBookingStatus = async (
 };
 
 // Get booking statistics
-
 const getTourBookingStats = async (
   req: Request,
   res: Response,
@@ -727,6 +989,7 @@ export {
   cancelUserTourBooking,
   getAllTourBookings,
   getAdminTourBookingById,
+  updateTourBooking,
   updateTourBookingStatus,
-    getTourBookingStats,
+  getTourBookingStats,
 };
