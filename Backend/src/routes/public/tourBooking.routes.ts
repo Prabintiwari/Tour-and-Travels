@@ -4,6 +4,7 @@ import { validate } from "../../middleware/validate";
 import {
   bookingParamsSchema,
   createBookingSchema,
+  rescheduleBookingSchema,
   tourBookingResponseSchema,
   updateBookingSchema,
 } from "../../schema";
@@ -12,6 +13,7 @@ import {
   createTourBooking,
   getUserTourBookingById,
   getUserTourBookings,
+  rescheduleTourBooking,
   updateTourBooking,
 } from "../../controllers/tourBooking.controller";
 import { registerRoute } from "../../utils/openapi.utils";
@@ -36,27 +38,34 @@ router.post(
 );
 
 router.patch(
+  "/my-booking/:bookingId/reschedule",
+  authenticateToken,
+  validate.params(bookingParamsSchema),
+  rescheduleTourBooking
+);
+
+router.patch(
   "/my-booking/:bookingId",
   authenticateToken,
   validate.params(bookingParamsSchema),
-  validate.body(createBookingSchema),
+  validate.body(updateBookingSchema),
   updateTourBooking
 );
 
 router.get("/my-booking", authenticateToken, getUserTourBookings);
-
-router.get(
-  "/my-booking/:bookingId",
-  authenticateToken,
-  validate.params(bookingParamsSchema),
-  getUserTourBookingById
-);
 
 router.patch(
   "/my-booking/:bookingId/cancel",
   authenticateToken,
   validate.params(bookingParamsSchema),
   cancelUserTourBooking
+);
+
+router.get(
+  "/my-booking/:bookingId",
+  authenticateToken,
+  validate.params(bookingParamsSchema),
+  getUserTourBookingById
 );
 
 // Swagger registration
@@ -74,6 +83,32 @@ registerRoute({
   responses: {
     201: {
       description: "Booking created successfully",
+      content: { "application/json": { schema: tourBookingResponseSchema } },
+    },
+    400: errorResponse(badRequestErrorSchema, "Bad Request"),
+    401: errorResponse(unauthorizedErrorSchema, "Unauthorized"),
+    403: errorResponse(forbiddenErrorSchema, "Forbidden"),
+    409: errorResponse(conflictErrorSchema, "Conflict"),
+    500: errorResponse(internalServerErrorSchema, "Internal Server Error"),
+  },
+});
+
+// Reschedule a user tour booking
+registerRoute({
+  method: "patch",
+  path: "/api/tour-booking/my-booking/{bookingId}/reschedule",
+  summary: "reschedule a user tour booking",
+  tags: ["Bookings"],
+  security: [{ bearerAuth: [] }],
+  request: {
+    params: bookingParamsSchema,
+    body: {
+      content: { "application/json": { schema: rescheduleBookingSchema } },
+    },
+  },
+  responses: {
+    201: {
+      description: "Booking updated successfully",
       content: { "application/json": { schema: tourBookingResponseSchema } },
     },
     400: errorResponse(badRequestErrorSchema, "Bad Request"),

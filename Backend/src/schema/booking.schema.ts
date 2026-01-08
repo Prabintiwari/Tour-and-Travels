@@ -104,6 +104,13 @@ const updateBookingStatusSchema = z
   })
   .openapi("UpdateBookingStatusRequest");
 
+  const rescheduleBookingSchema = z.object({
+  newScheduleId: z.string().openapi({
+    example: "schedule_123abc",
+  }),
+});
+
+
 const tourBookingResponseSchema = z.object({
   id: z.string().openapi({ example: "booking_123abc" }),
   bookingCode: z.string().openapi({ example: "BK-20260107-001" }),
@@ -200,6 +207,7 @@ export {
   createBookingSchema,
   updateBookingSchema,
   updateBookingStatusSchema,
+  rescheduleBookingSchema,
   tourBookingResponseSchema,
   bookingQuerySchema,
   tourBookingListResponseSchema,
