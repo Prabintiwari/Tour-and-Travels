@@ -695,12 +695,7 @@ const canReviewTour = async (
   }
 };
 
-
-/**
- * Get all reviews (admin)
- * @route GET /api/admin/reviews
- * @access Private (Admin)
- */
+// Get all reviews 
 const getAllReviews = async (
   req: Request,
   res: Response,
@@ -717,6 +712,7 @@ const getAllReviews = async (
       sortBy,
       sortOrder,
     } = req.query as unknown as ReviewQueryParams;
+
     const pageNumber = page ?? 1;
     const limitNumber = limit ?? 10;
     const skip = (pageNumber - 1) * limitNumber;
@@ -797,11 +793,7 @@ const getAllReviews = async (
   }
 };
 
-/**
- * Delete any review (admin)
- * @route DELETE /api/admin/reviews/:reviewId
- * @access Private (Admin)
- */
+// Delete any review (admin)
 const adminDeleteReview = async (
   req: Request,
   res: Response,
@@ -839,7 +831,6 @@ const adminDeleteReview = async (
 /**
  * Get review statistics (admin)
  * @route GET /api/admin/reviews/statistics
- * @access Private (Admin)
  */
 const getReviewStatistics = async (
   req: Request,
@@ -917,7 +908,6 @@ const getReviewStatistics = async (
 /**
  * Bulk delete reviews (admin)
  * @route POST /api/admin/reviews/bulk-delete
- * @access Private (Admin)
  */
 const bulkDeleteReviews = async (
   req: Request,
