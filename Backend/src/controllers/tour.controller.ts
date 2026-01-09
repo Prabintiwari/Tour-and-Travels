@@ -222,7 +222,6 @@ const getAllTours = async (
   next: NextFunction
 ) => {
   try {
-    console.log("1");
     const {
       page,
       limit,
@@ -234,7 +233,6 @@ const getAllTours = async (
       search,
       discountedOnly,
     } = req.query;
-    console.log("object");
 
     const pageNumber = page ?? 1;
     const limitNumber = limit ?? 10;
