@@ -1,19 +1,127 @@
-// src/controllers/tourReview.controller.ts
 import { Request, Response, NextFunction } from "express";
 import prisma from "../config/prisma";
 import {
-  createTourReviewSchema,
   updateTourReviewSchema,
   reviewQuerySchema,
   ReviewQueryParams,
+  ReviewIdQueryParams,
 } from "../schema";
 import { AuthRequest } from "../middleware/auth";
+import { BookingStatus } from "@prisma/client";
 
-/**
- * Get all reviews for a tour
- * @route GET /api/tours/:tourId/reviews
- * @access Public
- */
+// Create a tour review
+const createReview = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const userId = req.id;
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Authentication required",
+      });
+    }
+
+    const validatedData = req.body;
+
+    // Validate tour exists
+    const tour = await prisma.tour.findUnique({
+      where: { id: validatedData.tourId },
+    });
+
+    if (!tour) {
+      return next({ status: 404, success: false, message: "Tour not found" });
+    }
+
+    // Validate destination exists
+    const destination = await prisma.destination.findUnique({
+      where: { id: tour.destinationId },
+    });
+
+    if (!destination) {
+      return next({
+        status: 404,
+        success: false,
+        message: "Destination not found",
+      });
+    }
+
+    // Check if user has completed a booking for this tour
+    const completedBooking = await prisma.tourBooking.findFirst({
+      where: {
+        userId,
+        tourId: validatedData.tourId,
+        status: BookingStatus.COMPLETED,
+      },
+    });
+
+    if (!completedBooking) {
+      return res.status(403).json({
+        success: false,
+        message: "You can only review tours you have completed",
+      });
+    }
+
+    // Check if review already exists
+    const existingReview = await prisma.tourReview.findUnique({
+      where: {
+        tourId_userId: {
+          tourId: validatedData.tourId,
+          userId,
+        },
+      },
+    });
+
+    if (existingReview) {
+      return res.status(409).json({
+        success: false,
+        message:
+          "You have already reviewed this tour. You can update your existing review instead.",
+      });
+    }
+
+    // Create review
+    const review = await prisma.tourReview.create({
+      data: {
+        ...validatedData,
+        userId,
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            fullName: true,
+            profileImage: true,
+          },
+        },
+        tour: {
+          select: {
+            id: true,
+            title: true,
+          },
+        },
+      },
+    });
+
+    res.status(201).json({
+      success: true,
+      message: "Review created successfully",
+      data: {
+        review,
+      },
+    });
+  } catch (error: any) {
+    next({
+      status: 500,
+      message: error.message || "Internal server error",
+      error: error.message,
+    });
+  }
+};
+
+// Get all reviews for a tour
 const getTourReviews = async (
   req: Request,
   res: Response,
@@ -22,7 +130,7 @@ const getTourReviews = async (
   try {
     const { tourId } = req.params;
     const { page, limit, rating, sortBy, sortOrder } =
-      req.query as unknown as ReviewQueryParams;
+      req.query as unknown as ReviewIdQueryParams;
 
     const pageNumber = page ?? 1;
     const limitNumber = limit ?? 10;
@@ -34,10 +142,7 @@ const getTourReviews = async (
     });
 
     if (!tour) {
-      return res.status(404).json({
-        success: false,
-        message: "Tour not found",
-      });
+      return next({ status: 404, success: false, message: "Tour not found" });
     }
 
     // Build filter
@@ -95,20 +200,11 @@ const getTourReviews = async (
       "5": allReviews.filter((r) => r.rating === 5).length,
     };
 
-    res.status(200).json({
+    next({
+      status: 200,
       success: true,
       data: {
-        reviews: reviews.map((review) => ({
-          id: review.id,
-          userId: review.userId,
-          tourId: review.tourId,
-          destinationId: review.destinationId,
-          rating: review.rating,
-          comment: review.comment,
-          user: review.user,
-          createdAt: review.createdAt.toISOString(),
-          updatedAt: review.updatedAt.toISOString(),
-        })),
+        reviews: reviews,
         pagination: {
           total,
           page: pageNumber,
@@ -122,8 +218,12 @@ const getTourReviews = async (
         },
       },
     });
-  } catch (error) {
-    next(error);
+  } catch (error: any) {
+    next({
+      status: 500,
+      message: error.message || "Internal server error",
+      error: error.message,
+    });
   }
 };
 
@@ -169,13 +269,11 @@ const getReviewById = async (
     });
 
     if (!review) {
-      return res.status(404).json({
-        success: false,
-        message: "Review not found",
-      });
+      return next({ status: 404, success: false, message: "Review not found" });
     }
 
-    res.status(200).json({
+    next({
+      status: 200,
       success: true,
       data: {
         id: review.id,
@@ -191,8 +289,12 @@ const getReviewById = async (
         updatedAt: review.updatedAt.toISOString(),
       },
     });
-  } catch (error) {
-    next(error);
+  } catch (error: any) {
+    next({
+      status: 500,
+      message: error.message || "Internal server error",
+      error: error.message,
+    });
   }
 };
 
@@ -221,7 +323,8 @@ const getDestinationReviews = async (
     });
 
     if (!destination) {
-      return res.status(404).json({
+      return next({
+        status: 404,
         success: false,
         message: "Destination not found",
       });
@@ -277,7 +380,8 @@ const getDestinationReviews = async (
         ? allReviews.reduce((sum, r) => sum + r.rating, 0) / totalReviews
         : 0;
 
-    res.status(200).json({
+    next({
+      status: 200,
       success: true,
       data: {
         reviews,
@@ -293,143 +397,16 @@ const getDestinationReviews = async (
         },
       },
     });
-  } catch (error) {
-    next(error);
+  } catch (error: any) {
+    next({
+      status: 500,
+      message: error.message || "Internal server error",
+      error: error.message,
+    });
   }
 };
 
 // ==================== USER ENDPOINTS ====================
-
-/**
- * Create a tour review (authenticated user)
- * @route POST /api/reviews
- * @access Private (User)
- */
-const createReview = async (
-  req: AuthRequest,
-  res: Response,
-  next: NextFunction
-) => {
-  try {
-    const userId = req.id;
-    if (!userId) {
-      return res.status(401).json({
-        success: false,
-        message: "Authentication required",
-      });
-    }
-
-    const validatedData = createTourReviewSchema.parse(req.body);
-
-    // Validate tour exists
-    const tour = await prisma.tour.findUnique({
-      where: { id: validatedData.tourId },
-    });
-
-    if (!tour) {
-      return res.status(404).json({
-        success: false,
-        message: "Tour not found",
-      });
-    }
-
-    // Validate destination exists
-    const destination = await prisma.destination.findUnique({
-      where: { id: validatedData.destinationId },
-    });
-
-    if (!destination) {
-      return res.status(404).json({
-        success: false,
-        message: "Destination not found",
-      });
-    }
-
-    // Check if tour belongs to destination
-    if (tour.destinationId !== validatedData.destinationId) {
-      return res.status(400).json({
-        success: false,
-        message: "Tour does not belong to the specified destination",
-      });
-    }
-
-    // Check if user has completed a booking for this tour
-    const completedBooking = await prisma.tourBooking.findFirst({
-      where: {
-        userId,
-        tourId: validatedData.tourId,
-        status: "COMPLETED",
-      },
-    });
-
-    if (!completedBooking) {
-      return res.status(403).json({
-        success: false,
-        message: "You can only review tours you have completed",
-      });
-    }
-
-    // Check if review already exists
-    const existingReview = await prisma.tourReview.findUnique({
-      where: {
-        tourId_userId: {
-          tourId: validatedData.tourId,
-          userId,
-        },
-      },
-    });
-
-    if (existingReview) {
-      return res.status(409).json({
-        success: false,
-        message:
-          "You have already reviewed this tour. You can update your existing review instead.",
-      });
-    }
-
-    // Create review
-    const review = await prisma.tourReview.create({
-      data: {
-        ...validatedData,
-        userId,
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            fullName: true,
-            profileImage: true,
-          },
-        },
-        tour: {
-          select: {
-            id: true,
-            title: true,
-          },
-        },
-      },
-    });
-
-    res.status(201).json({
-      success: true,
-      message: "Review created successfully",
-      data: {
-        id: review.id,
-        userId: review.userId,
-        tourId: review.tourId,
-        destinationId: review.destinationId,
-        rating: review.rating,
-        comment: review.comment,
-        user: review.user,
-        tour: review.tour,
-        createdAt: review.createdAt.toISOString(),
-        updatedAt: review.updatedAt.toISOString(),
-      },
-    });
-  } catch (error) {
-    next(error);
-  }
-};
 
 /**
  * Update own review
@@ -469,10 +446,7 @@ const updateReview = async (
     });
 
     if (!existingReview) {
-      return res.status(404).json({
-        success: false,
-        message: "Review not found",
-      });
+      return next({ status: 404, success: false, message: "Review not found" });
     }
 
     if (existingReview.userId !== userId) {
@@ -503,7 +477,8 @@ const updateReview = async (
       },
     });
 
-    res.status(200).json({
+    next({
+      status: 200,
       success: true,
       message: "Review updated successfully",
       data: {
@@ -519,8 +494,12 @@ const updateReview = async (
         updatedAt: review.updatedAt.toISOString(),
       },
     });
-  } catch (error) {
-    next(error);
+  } catch (error: any) {
+    next({
+      status: 500,
+      message: error.message || "Internal server error",
+      error: error.message,
+    });
   }
 };
 
@@ -551,10 +530,7 @@ const deleteReview = async (
     });
 
     if (!existingReview) {
-      return res.status(404).json({
-        success: false,
-        message: "Review not found",
-      });
+      return next({ status: 404, success: false, message: "Review not found" });
     }
 
     if (existingReview.userId !== userId) {
@@ -568,12 +544,17 @@ const deleteReview = async (
       where: { id: reviewId },
     });
 
-    res.status(200).json({
+    next({
+      status: 200,
       success: true,
       message: "Review deleted successfully",
     });
-  } catch (error) {
-    next(error);
+  } catch (error: any) {
+    next({
+      status: 500,
+      message: error.message || "Internal server error",
+      error: error.message,
+    });
   }
 };
 
@@ -641,7 +622,8 @@ const getUserReviews = async (
       take: limitNumber,
     });
 
-    res.status(200).json({
+    next({
+      status: 200,
       success: true,
       data: {
         reviews,
@@ -653,8 +635,12 @@ const getUserReviews = async (
         },
       },
     });
-  } catch (error) {
-    next(error);
+  } catch (error: any) {
+    next({
+      status: 500,
+      message: error.message || "Internal server error",
+      error: error.message,
+    });
   }
 };
 
@@ -689,7 +675,8 @@ const canReviewTour = async (
     });
 
     if (!completedBooking) {
-      return res.status(200).json({
+      return next({
+        status: 200,
         success: true,
         data: {
           canReview: false,
@@ -709,7 +696,8 @@ const canReviewTour = async (
     });
 
     if (existingReview) {
-      return res.status(200).json({
+      return next({
+        status: 200,
         success: true,
         data: {
           canReview: false,
@@ -723,15 +711,20 @@ const canReviewTour = async (
       });
     }
 
-    res.status(200).json({
+    next({
+      status: 200,
       success: true,
       data: {
         canReview: true,
         reason: "You can review this tour",
       },
     });
-  } catch (error) {
-    next(error);
+  } catch (error: any) {
+    next({
+      status: 500,
+      message: error.message || "Internal server error",
+      error: error.message,
+    });
   }
 };
 
@@ -816,7 +809,8 @@ const getAllReviews = async (
       take: limitNumber,
     });
 
-    res.status(200).json({
+    next({
+      status: 200,
       success: true,
       data: {
         reviews,
@@ -828,8 +822,12 @@ const getAllReviews = async (
         },
       },
     });
-  } catch (error) {
-    next(error);
+  } catch (error: any) {
+    next({
+      status: 500,
+      message: error.message || "Internal server error",
+      error: error.message,
+    });
   }
 };
 
@@ -851,22 +849,24 @@ const adminDeleteReview = async (
     });
 
     if (!review) {
-      return res.status(404).json({
-        success: false,
-        message: "Review not found",
-      });
+      return next({ status: 404, success: false, message: "Review not found" });
     }
 
     await prisma.tourReview.delete({
       where: { id: reviewId },
     });
 
-    res.status(200).json({
+    next({
+      status: 200,
       success: true,
       message: "Review deleted successfully",
     });
-  } catch (error) {
-    next(error);
+  } catch (error: any) {
+    next({
+      status: 500,
+      message: error.message || "Internal server error",
+      error: error.message,
+    });
   }
 };
 
@@ -925,7 +925,8 @@ const getReviewStatistics = async (
         return acc;
       }, {});
 
-    res.status(200).json({
+    next({
+      status: 200,
       success: true,
       data: {
         totalReviews,
@@ -938,8 +939,12 @@ const getReviewStatistics = async (
         },
       },
     });
-  } catch (error) {
-    next(error);
+  } catch (error: any) {
+    next({
+      status: 500,
+      message: error.message || "Internal server error",
+      error: error.message,
+    });
   }
 };
 
@@ -971,15 +976,20 @@ const bulkDeleteReviews = async (
       },
     });
 
-    res.status(200).json({
+    next({
+      status: 200,
       success: true,
       message: `${result.count} review(s) deleted successfully`,
       data: {
         deletedCount: result.count,
       },
     });
-  } catch (error) {
-    next(error);
+  } catch (error: any) {
+    next({
+      status: 500,
+      message: error.message || "Internal server error",
+      error: error.message,
+    });
   }
 };
 

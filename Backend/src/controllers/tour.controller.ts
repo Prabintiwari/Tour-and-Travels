@@ -127,7 +127,7 @@ const createTour = async (req: Request, res: Response, next: NextFunction) => {
   } catch (error: any) {
     next({
       status: 500,
-      message: "Internal server error",
+      message: error.message || "Internal server error",
       error: error.message,
     });
   }
@@ -209,7 +209,7 @@ const getTourById = async (req: Request, res: Response, next: NextFunction) => {
   } catch (error: any) {
     next({
       status: 500,
-      message: "Internal server error",
+      message: error.message || "Internal server error",
       error: error.message,
     });
   }
@@ -241,8 +241,8 @@ const getAllTours = async (
 
     if (destinationId) filters.destinationId = destinationId;
     if (difficultyLevel) filters.difficultyLevel = difficultyLevel;
-    if (isFeatured===true) filters.isFeatured = true;
-    if (isFeatured===false) filters.isFeatured = false;
+    if (isFeatured === true) filters.isFeatured = true;
+    if (isFeatured === false) filters.isFeatured = false;
     if (discountedOnly === "true") filters.discountActive = true;
 
     // Search in title or description
@@ -336,7 +336,7 @@ const getAllTours = async (
   } catch (error: any) {
     next({
       status: 500,
-      message: "Internal server error",
+      message: error.message || "Internal server error",
       error: error.message,
     });
   }
@@ -476,7 +476,7 @@ const updateTour = async (req: Request, res: Response, next: NextFunction) => {
   } catch (error: any) {
     next({
       status: 500,
-      message: "Internal server error",
+      message: error.message || "Internal server error",
       error: error.message,
     });
   }
@@ -516,7 +516,7 @@ const deleteTour = async (req: Request, res: Response, next: NextFunction) => {
   } catch (error: any) {
     next({
       status: 500,
-      message: "Internal server error",
+      message: error.message || "Internal server error",
       error: error.message,
     });
   }
@@ -572,7 +572,7 @@ const addTourImages = async (
   } catch (error: any) {
     next({
       status: 500,
-      message: "Internal server error",
+      message: error.message || "Internal server error",
       error: error.message,
     });
   }
@@ -655,7 +655,7 @@ const removeTourImages = async (
   } catch (error: any) {
     next({
       status: 500,
-      message: "Internal server error",
+      message: error.message || "Internal server error",
       error: error.message,
     });
   }
@@ -690,7 +690,7 @@ const getGuidePricingForTour = async (
   } catch (error: any) {
     next({
       status: 500,
-      message: "Internal server error",
+      message: error.message || "Internal server error",
       error: error.message,
     });
   }
@@ -750,7 +750,7 @@ const setDefaultGuidePricing = async (
   } catch (error: any) {
     next({
       status: 500,
-      message: "Internal server error",
+      message: error.message || "Internal server error",
       error: error.message,
     });
   }
@@ -782,7 +782,7 @@ const getDefaultGuidePricing = async (
   } catch (error: any) {
     next({
       status: 500,
-      message: "Internal server error",
+      message: error.message || "Internal server error",
       error: error.message,
     });
   }
@@ -828,7 +828,7 @@ const deleteTourGuidePricing = async (
   } catch (error: any) {
     next({
       status: 500,
-      message: "Internal server error",
+      message: error.message || "Internal server error",
       error: error.message,
     });
   }

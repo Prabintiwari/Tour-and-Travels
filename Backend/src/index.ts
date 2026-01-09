@@ -17,6 +17,7 @@ import destinationGalleryRoute from "./routes/public/destination.gallery.routes.
 import itineraryRoute from "./routes/public/itinerary.routes";
 import tourScheduleRoute from "./routes/public/tourSchedule.routes";
 import tourBookingRoute from "./routes/public/tourBooking.routes";
+import tourReviewRoute from "./routes/public/tourReview.routes";
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -46,6 +47,7 @@ app.use("/api/tour", tourRoute);
 app.use("/api/itinerary", itineraryRoute);
 app.use("/api/tour-schedule", tourScheduleRoute);
 app.use("/api/tour-booking", tourBookingRoute);
+app.use("/api/tour-review", tourReviewRoute);
 app.use(responseHandler);
 
 app.get("/", (req: Request, res: Response) => {
