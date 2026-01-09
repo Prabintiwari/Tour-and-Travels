@@ -1,13 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import prisma from "../config/prisma";
 import cloudinary from "../config/cloudinary";
-import {
-  createTourSchema,
-  defaultGuidePricingSchema,
-  tourParamsSchema,
-  TourQueryParams,
-  updateTourSchema,
-} from "../schema";
+import { createTourSchema, TourQueryParams } from "../schema";
 
 import {
   calculateDiscountAmount,
@@ -17,7 +11,7 @@ import {
 // CREATE TOUR WITH OPTIONAL GUIDE PRICING AND DISCOUNT
 const createTour = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const validatedData = createTourSchema.parse(req.body);
+    const validatedData = req.body;
 
     // Check if destination exists
     const destination = await prisma.destination.findUnique({

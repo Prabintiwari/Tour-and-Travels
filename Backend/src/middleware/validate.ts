@@ -1,4 +1,3 @@
-// middleware/validate.ts
 import { Request, Response, NextFunction } from "express";
 import { ZodObject, ZodError } from "zod";
 
@@ -10,11 +9,12 @@ export const validate = {
 
 function validateMiddleware(
   type: "body" | "query" | "params",
-  schema: ZodObject
+  schema: ZodObject<any>
 ) {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
-      
+      const data = req[type];
+      schema.parse(data);
       next();
     } catch (error) {
       if (error instanceof ZodError) {

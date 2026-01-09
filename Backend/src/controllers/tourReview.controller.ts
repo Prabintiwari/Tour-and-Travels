@@ -18,10 +18,17 @@ const createReview = async (
   try {
     const userId = req.id;
     if (!userId) {
-      return res.status(401).json({
+      return next({
+        status: 401,
         success: false,
         message: "Authentication required",
       });
+    }
+
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+
+    if (!user) {
+      return next({ status: 404, success: false, message: "User not found!" });
     }
 
     const validatedData = req.body;
@@ -85,8 +92,11 @@ const createReview = async (
     // Create review
     const review = await prisma.tourReview.create({
       data: {
-        ...validatedData,
-        userId,
+        rating: validatedData.rating,
+        comment: validatedData.comment,
+        userId: userId,
+        tourId: tour.id,
+        destinationId: tour.destinationId,
       },
       include: {
         user: {
@@ -105,7 +115,8 @@ const createReview = async (
       },
     });
 
-    res.status(201).json({
+    next({
+      status: 201,
       success: true,
       message: "Review created successfully",
       data: {
@@ -227,11 +238,7 @@ const getTourReviews = async (
   }
 };
 
-/**
- * Get a single review by ID
- * @route GET /api/reviews/:reviewId
- * @access Public
- */
+// Get a single review by ID
 const getReviewById = async (
   req: Request,
   res: Response,
@@ -275,19 +282,7 @@ const getReviewById = async (
     next({
       status: 200,
       success: true,
-      data: {
-        id: review.id,
-        userId: review.userId,
-        tourId: review.tourId,
-        destinationId: review.destinationId,
-        rating: review.rating,
-        comment: review.comment,
-        user: review.user,
-        tour: review.tour,
-        destination: review.destination,
-        createdAt: review.createdAt.toISOString(),
-        updatedAt: review.updatedAt.toISOString(),
-      },
+      data: review,
     });
   } catch (error: any) {
     next({
@@ -298,11 +293,7 @@ const getReviewById = async (
   }
 };
 
-/**
- * Get reviews by destination
- * @route GET /api/destinations/:destinationId/reviews
- * @access Public
- */
+//Get reviews by destination
 const getDestinationReviews = async (
   req: Request,
   res: Response,
@@ -311,7 +302,7 @@ const getDestinationReviews = async (
   try {
     const { destinationId } = req.params;
     const { page, limit, rating, sortBy, sortOrder } =
-      req.query as unknown as ReviewQueryParams;
+      req.query as unknown as ReviewIdQueryParams;
 
     const pageNumber = page ?? 1;
     const limitNumber = limit ?? 10;
@@ -406,13 +397,7 @@ const getDestinationReviews = async (
   }
 };
 
-// ==================== USER ENDPOINTS ====================
-
-/**
- * Update own review
- * @route PUT /api/reviews/:reviewId
- * @access Private (User)
- */
+// Update own review
 const updateReview = async (
   req: AuthRequest,
   res: Response,
@@ -421,15 +406,15 @@ const updateReview = async (
   try {
     const userId = req.id;
     const { reviewId } = req.params;
+    const validatedData = req.body;
 
     if (!userId) {
-      return res.status(401).json({
+      return next({
+        status: 401,
         success: false,
         message: "Authentication required",
       });
     }
-
-    const validatedData = updateTourReviewSchema.parse(req.body);
 
     // Check if there's actually data to update
     if (!validatedData.rating && !validatedData.comment) {
@@ -482,16 +467,7 @@ const updateReview = async (
       success: true,
       message: "Review updated successfully",
       data: {
-        id: review.id,
-        userId: review.userId,
-        tourId: review.tourId,
-        destinationId: review.destinationId,
-        rating: review.rating,
-        comment: review.comment,
-        user: review.user,
-        tour: review.tour,
-        createdAt: review.createdAt.toISOString(),
-        updatedAt: review.updatedAt.toISOString(),
+        review,
       },
     });
   } catch (error: any) {
@@ -503,11 +479,7 @@ const updateReview = async (
   }
 };
 
-/**
- * Delete own review
- * @route DELETE /api/reviews/:reviewId
- * @access Private (User)
- */
+//Delete own review
 const deleteReview = async (
   req: AuthRequest,
   res: Response,
@@ -518,7 +490,8 @@ const deleteReview = async (
     const { reviewId } = req.params;
 
     if (!userId) {
-      return res.status(401).json({
+      return next({
+        status: 401,
         success: false,
         message: "Authentication required",
       });
@@ -558,11 +531,7 @@ const deleteReview = async (
   }
 };
 
-/**
- * Get current user's reviews
- * @route GET /api/user/reviews
- * @access Private (User)
- */
+// Get current user's reviews
 const getUserReviews = async (
   req: AuthRequest,
   res: Response,
@@ -570,15 +539,16 @@ const getUserReviews = async (
 ) => {
   try {
     const userId = req.id;
-    const { page, limit, rating, sortBy, sortOrder } = reviewQuerySchema.parse(
-      req.query
+    const { page, limit, rating, sortBy, sortOrder } = (
+      req.query as unknown as ReviewIdQueryParams
     );
     const pageNumber = page ?? 1;
     const limitNumber = limit ?? 10;
     const skip = (pageNumber - 1) * limitNumber;
 
     if (!userId) {
-      return res.status(401).json({
+      return next({
+        status: 401,
         success: false,
         message: "Authentication required",
       });
@@ -644,11 +614,7 @@ const getUserReviews = async (
   }
 };
 
-/**
- * Check if user can review a tour
- * @route GET /api/tours/:tourId/can-review
- * @access Private (User)
- */
+// Check if user can review a tour
 const canReviewTour = async (
   req: AuthRequest,
   res: Response,
@@ -659,7 +625,8 @@ const canReviewTour = async (
     const { tourId } = req.params;
 
     if (!userId) {
-      return res.status(401).json({
+      return next({
+        status: 401,
         success: false,
         message: "Authentication required",
       });
@@ -670,7 +637,7 @@ const canReviewTour = async (
       where: {
         userId,
         tourId,
-        status: "COMPLETED",
+        status: BookingStatus.COMPLETED,
       },
     });
 
@@ -697,11 +664,11 @@ const canReviewTour = async (
 
     if (existingReview) {
       return next({
-        status: 200,
+        status: 201,
         success: true,
         data: {
           canReview: false,
-          reason: "You have already reviewed this tour",
+          reason: "You have already reviewed this tour. You can only update existing review.",
           existingReview: {
             id: existingReview.id,
             rating: existingReview.rating,
@@ -728,7 +695,6 @@ const canReviewTour = async (
   }
 };
 
-// ==================== ADMIN ENDPOINTS ====================
 
 /**
  * Get all reviews (admin)

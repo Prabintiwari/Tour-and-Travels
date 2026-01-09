@@ -56,6 +56,7 @@ registerRoute({
   path: "/api/admin/destinations",
   summary: "Create a new destination",
   tags: ["Destinations"],
+  security: [{ bearerAuth: [] }],
   request: {
     body: {
       content: {
@@ -84,6 +85,7 @@ registerRoute({
   path: "/api/admin/destinations/{destinationId}",
   summary: "Update destination",
   tags: ["Destinations"],
+  security: [{ bearerAuth: [] }],
   request: {
     body: {
       content: {
@@ -112,6 +114,7 @@ registerRoute({
   path: "/api/admin/destinations/{destinationId}",
   summary: "Delete destination",
   tags: ["Destinations"],
+  security: [{ bearerAuth: [] }],
   request: {
     params: destinationIdParamSchema,
   },

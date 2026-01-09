@@ -367,7 +367,7 @@ model TourReview {
   tour                  Tour @relation(fields: [tourId], references: [id], onDelete: Cascade)
   destinationId         String   @db.ObjectId
   destination           Destination @relation(fields: [destinationId], references: [id], onDelete: Cascade)
-  rating                Int // 1-5
+  rating                Float // 1-5
   comment               String?
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt

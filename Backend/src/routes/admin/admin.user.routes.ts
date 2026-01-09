@@ -68,6 +68,7 @@ registerRoute({
   path: "/api/admin/users/{userId}",
   summary: "Update user info",
   tags: ["Users"],
+  security: [{ bearerAuth: [] }],
   request: {
     params: userIdParamSchema,
     body: {
@@ -123,6 +124,7 @@ registerRoute({
   path: "/api/admin/users/{userId}",
   summary: "Get user by ID",
   tags: ["Users"],
+  security: [{ bearerAuth: [] }],
   request: { params: userIdParamSchema },
   responses: {
     200: {
@@ -142,6 +144,7 @@ registerRoute({
   path: "/api/admin/users/{userId}",
   summary: "Delete user",
   tags: ["Users"],
+  security: [{ bearerAuth: [] }],
   request: { params: userIdParamSchema },
   responses: {
     200: {
@@ -165,6 +168,7 @@ registerRoute({
   path: "/api/admin/users/{userId}/role",
   summary: "Update user role",
   tags: ["Users"],
+  security: [{ bearerAuth: [] }],
   request: {
     params: userIdParamSchema,
     body: {
@@ -198,6 +202,7 @@ registerRoute({
   path: "/api/admin/users/block/{userId}",
   summary: "Block a user",
   tags: ["Users"],
+  security: [{ bearerAuth: [] }],
   request: { params: userIdParamSchema },
   responses: {
     200: {

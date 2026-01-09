@@ -1,4 +1,3 @@
-
 import { Router } from "express";
 import {
   addTourImages,
@@ -53,7 +52,11 @@ router.post(
   addTourImages
 );
 
-router.patch("/:tourId/images", validate.params(tourParamsSchema), removeTourImages);
+router.patch(
+  "/:tourId/images",
+  validate.params(tourParamsSchema),
+  removeTourImages
+);
 
 router.patch(
   "/:tourId",
@@ -76,6 +79,7 @@ registerRoute({
   path: "/api/admin/tour",
   summary: "Create a new tour",
   tags: ["Tours"],
+  security: [{ bearerAuth: [] }],
   request: {
     body: {
       content: {
@@ -104,6 +108,7 @@ registerRoute({
   path: "/api/admin/tour/guide-pricing/default",
   summary: "Set default guide pricing",
   tags: ["Tours"],
+  security: [{ bearerAuth: [] }],
   request: {
     body: {
       content: {
@@ -137,6 +142,7 @@ registerRoute({
   path: "/api/admin/tour/{tourId}",
   summary: "Upload images for a tour",
   tags: ["Tours"],
+  security: [{ bearerAuth: [] }],
   request: {
     params: tourParamsSchema,
     body: {
@@ -185,6 +191,7 @@ registerRoute({
   path: "/api/admin/tour/{tourId}/images",
   summary: "Remove tour images",
   tags: ["Tours"],
+  security: [{ bearerAuth: [] }],
   request: {
     params: tourParamsSchema,
     body: {
@@ -223,6 +230,7 @@ registerRoute({
   path: "/api/admin/tour/{tourId}",
   summary: "Update tour",
   tags: ["Tours"],
+  security: [{ bearerAuth: [] }],
   request: {
     params: tourParamsSchema,
     body: {
@@ -252,6 +260,7 @@ registerRoute({
   path: "/api/admin/tour/{tourId}/guide-pricing",
   summary: "Delete tour guide pricing",
   tags: ["Tours"],
+  security: [{ bearerAuth: [] }],
   request: {
     params: tourParamsSchema,
   },
@@ -273,6 +282,7 @@ registerRoute({
   path: "/api/admin/tour/{tourId}",
   summary: "Delete tour",
   tags: ["Tours"],
+  security: [{ bearerAuth: [] }],
   request: {
     params: tourParamsSchema,
   },

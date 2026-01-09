@@ -6,11 +6,15 @@ extendZodWithOpenApi(z);
 
 const createTourReviewSchema = z
   .object({
-     tourId: z.string().min(1, "Tour ID is required"),
-    rating: z.number().int().min(1).max(5).openapi({
-      description: "Rating from 1 to 5",
-      example: 5,
-    }),
+    tourId: z.string().min(1, "Tour ID is required"),
+    rating: z
+      .number()
+      .min(1)
+      .max(5)
+      .openapi({
+        description: "Rating from 1 to 5",
+        example: 5,
+      }),
     comment: z.string().min(10).max(1000).optional().openapi({
       description: "Review comment",
       example:
@@ -21,9 +25,9 @@ const createTourReviewSchema = z
 
 const updateTourReviewSchema = z
   .object({
-    rating: z.number().int().min(1).max(5).optional().openapi({
-      description: "Rating from 1 to 5",
-      example: 4,
+    rating: z.number().min(1).max(5).optional().openapi({
+      description: "Rating from 1 to 5, rounded to 1 decimal place",
+      example: 4.0,
     }),
     comment: z.string().min(10).max(1000).optional().openapi({
       description: "Review comment",
@@ -102,7 +106,10 @@ const reviewIdQuerySchema = z.object({
     example: "asc",
     description: "Sort order",
   }),
-})
+});
+const reviewIdParamsSchema = z.object({
+  reviewId: z.string().min(1).openapi({ example: "review_123abc" }),
+});
 
 type CreateTourReviewInput = z.infer<typeof createTourReviewSchema>;
 type UpdateTourReviewInput = z.infer<typeof updateTourReviewSchema>;
@@ -120,4 +127,5 @@ export {
   ReviewQueryParams,
   reviewIdQuerySchema,
   ReviewIdQueryParams,
+  reviewIdParamsSchema,
 };

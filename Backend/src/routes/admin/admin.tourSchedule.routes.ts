@@ -15,7 +15,14 @@ import {
   updateTourSchedule,
 } from "../../controllers/tourSchedule.controller";
 import { registerRoute } from "../../utils/openapi.utils";
-import { badRequestErrorSchema, conflictErrorSchema, errorResponse, forbiddenErrorSchema, internalServerErrorSchema, unauthorizedErrorSchema } from "../../schema/common.schema";
+import {
+  badRequestErrorSchema,
+  conflictErrorSchema,
+  errorResponse,
+  forbiddenErrorSchema,
+  internalServerErrorSchema,
+  unauthorizedErrorSchema,
+} from "../../schema/common.schema";
 
 const router = Router();
 
@@ -44,6 +51,7 @@ registerRoute({
   path: "/api/admin/tour-schedule",
   summary: "Create a new tour schedule",
   tags: ["Tour Schedule"],
+  security: [{ bearerAuth: [] }],
   request: {
     body: {
       content: {
@@ -72,6 +80,7 @@ registerRoute({
   path: "/api/admin/tour-schedule/{tourScheduleId}",
   summary: "Update a  tour schedule",
   tags: ["Tour Schedule"],
+  security: [{ bearerAuth: [] }],
   request: {
     body: {
       content: {
@@ -100,6 +109,7 @@ registerRoute({
   path: "/api/admin/tour-schedule/{tourScheduleId}",
   summary: "Delete tour",
   tags: ["Tour Schedule"],
+  security: [{ bearerAuth: [] }],
   request: {
     params: tourScheduleIdParamSchema,
   },

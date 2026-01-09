@@ -120,12 +120,14 @@ registerRoute({
     500: errorResponse(internalServerErrorSchema, "Internal Server Error"),
   },
 });
+
 // Delete gallery
 registerRoute({
   method: "delete",
   path: "/api/admin/destination-gallery/{destinationId}",
   summary: "Delete destination gallery by Id",
   tags: ["Destinations"],
+  security: [{ bearerAuth: [] }],
   request: {
     params: destinationIdParamSchema,
   },
