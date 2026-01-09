@@ -79,6 +79,25 @@ const updateUserResponseSchema = z
   })
   .openapi("UpdateUserResponse");
 
+ const forgotPasswordSchema = z.object({
+  email: z.string().email(),
+});
+ const resendOtpSchema = z.object({
+  email: z.string().email(),
+});
+
+ const verifyOtpSchema = z.object({
+  email: z.string().email(),
+  otp: z.string().length(6),
+});
+
+ const resetPasswordSchema = z.object({
+  email: z.string().email(),
+  newPassword: z.string().min(8),
+  confirmPassword: z.string().min(8),
+});
+
+
 const updateUserRoleResponseSchema = z
   .object({
     id: z.string().openapi({ example: "user_123abc" }),
@@ -108,6 +127,10 @@ export {
   userListResponseSchema,
   updateUserResponseSchema,
   updateUserRoleResponseSchema,
+  forgotPasswordSchema,
+  resendOtpSchema,
+  verifyOtpSchema,
+  resetPasswordSchema,
   blockUserResponseSchema,
   userIdParamSchema,
   UserIdParamSchema,

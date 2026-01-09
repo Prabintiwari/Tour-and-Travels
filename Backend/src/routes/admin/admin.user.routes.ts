@@ -73,7 +73,7 @@ registerRoute({
     params: userIdParamSchema,
     body: {
       content: {
-        "application/json": {
+        "multipart/form-data": {
           schema: updateUserSchema,
         },
       },

@@ -60,7 +60,7 @@ registerRoute({
   request: {
     body: {
       content: {
-        "application/json": { schema: destinationSchema },
+        "multipart/form-data": { schema: destinationSchema },
       },
     },
   },
@@ -89,7 +89,7 @@ registerRoute({
   request: {
     body: {
       content: {
-        "application/json": { schema: updateDestinationSchema },
+        "multipart/form-data": { schema: updateDestinationSchema },
       },
     },
   },
