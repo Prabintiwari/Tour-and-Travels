@@ -7,14 +7,10 @@ extendZodWithOpenApi(z);
 const createTourReviewSchema = z
   .object({
     tourId: z.string().min(1, "Tour ID is required"),
-    rating: z
-      .number()
-      .min(1)
-      .max(5)
-      .openapi({
-        description: "Rating from 1 to 5",
-        example: 5,
-      }),
+    rating: z.number().min(1).max(5).openapi({
+      description: "Rating from 1 to 5",
+      example: 5,
+    }),
     comment: z.string().min(10).max(1000).optional().openapi({
       description: "Review comment",
       example:
@@ -107,14 +103,59 @@ const reviewIdQuerySchema = z.object({
     description: "Sort order",
   }),
 });
+
+const reviewStatisticsQuerySchema = z.object({
+  tourId: z.string().optional().openapi({
+    example: "tour_123abc",
+    description: "Filter by tour ID",
+  }),
+  destinationId: z.string().optional().openapi({
+    example: "dest_123abc",
+    description: "Filter by destination ID",
+  }),
+});
+
 const reviewIdParamsSchema = z.object({
   reviewId: z.string().min(1).openapi({ example: "review_123abc" }),
 });
+const reviewStatisticsResponseSchema = z
+  .object({
+    success: z.literal(true),
+    data: z.object({
+      totalReviews: z.number().int().nonnegative(),
+      averageRating: z.number().min(0).max(5),
+      ratingDistribution: z.object({
+        "1": z.number().int(),
+        "2": z.number().int(),
+        "3": z.number().int(),
+        "4": z.number().int(),
+        "5": z.number().int(),
+      }),
+      reviewsByMonth: z.record(z.string(), z.number().int()),
+      filters: z.object({
+        tourId: z.string().nullable(),
+        destinationId: z.string().nullable(),
+      }),
+    }),
+  })
+  .openapi("ReviewStatisticsResponse");
+
+const bulkDeleteReviewSchema = z
+  .object({
+    reviewIds: z
+      .array(z.string().min(1))
+      .min(1, "At least one reviewId is required")
+      .openapi({
+        example: ["69578dba3760fd1ae30948e5", "69578dba3760fd1ae30948e6"],
+      }),
+  })
+  .openapi("BulkDeleteReview");
 
 type CreateTourReviewInput = z.infer<typeof createTourReviewSchema>;
 type UpdateTourReviewInput = z.infer<typeof updateTourReviewSchema>;
 type ReviewQueryParams = z.infer<typeof reviewQuerySchema>;
 type ReviewIdQueryParams = z.infer<typeof reviewIdQuerySchema>;
+type reviewStatisticsQueryParams = z.infer<typeof reviewStatisticsQuerySchema>;
 
 export {
   createTourReviewSchema,
@@ -128,4 +169,8 @@ export {
   reviewIdQuerySchema,
   ReviewIdQueryParams,
   reviewIdParamsSchema,
+  bulkDeleteReviewSchema,
+  reviewStatisticsQuerySchema,
+  reviewStatisticsQueryParams,
+  reviewStatisticsResponseSchema,
 };

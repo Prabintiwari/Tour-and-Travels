@@ -41,21 +41,6 @@ router.post(
   createReview
 );
 
-router.patch(
-  "/:reviewId",
-  authenticateToken,
-  validate.params(reviewIdParamsSchema),
-  validate.body(updateTourReviewSchema),
-  updateReview
-);
-
-router.delete(
-  "/:reviewId",
-  authenticateToken,
-  validate.params(reviewIdParamsSchema),
-  deleteReview
-);
-
 router.get(
   "/tour/:tourId/can-review",
   authenticateToken,
@@ -86,6 +71,21 @@ router.get(
 );
 
 router.get("/:reviewId", validate.params(reviewIdParamsSchema), getReviewById);
+
+router.patch(
+  "/:reviewId",
+  authenticateToken,
+  validate.params(reviewIdParamsSchema),
+  validate.body(updateTourReviewSchema),
+  updateReview
+);
+
+router.delete(
+  "/:reviewId",
+  authenticateToken,
+  validate.params(reviewIdParamsSchema),
+  deleteReview
+);
 
 // Swagger registration
 
@@ -127,7 +127,7 @@ registerRoute({
     },
   },
   responses: {
-    201: {
+    200: {
       description: "Review updated successfully",
       content: { "application/json": { schema: tourReviewResponseSchema } },
     },
@@ -150,8 +150,8 @@ registerRoute({
     params: tourParamsSchema,
   },
   responses: {
-    201: {
-      description: "Review updated successfully",
+    200: {
+      description: "Check if user can review a tour",
       content: { "application/json": { schema: tourReviewResponseSchema } },
     },
     400: errorResponse(badRequestErrorSchema, "Bad Request"),

@@ -1,10 +1,9 @@
 import { Request, Response, NextFunction } from "express";
 import prisma from "../config/prisma";
 import {
-  updateTourReviewSchema,
-  reviewQuerySchema,
   ReviewQueryParams,
   ReviewIdQueryParams,
+  reviewStatisticsQueryParams,
 } from "../schema";
 import { AuthRequest } from "../middleware/auth";
 import { BookingStatus } from "@prisma/client";
@@ -197,19 +196,30 @@ const getTourReviews = async (
       select: { rating: true },
     });
 
-    const totalReviews = allReviews.length;
+    const totalReviews = reviews.length;
+
     const averageRating =
       totalReviews > 0
-        ? allReviews.reduce((sum, r) => sum + r.rating, 0) / totalReviews
+        ? reviews.reduce((sum, r) => sum + r.rating, 0) / totalReviews
         : 0;
 
-    const ratingDistribution = {
-      "1": allReviews.filter((r) => r.rating === 1).length,
-      "2": allReviews.filter((r) => r.rating === 2).length,
-      "3": allReviews.filter((r) => r.rating === 3).length,
-      "4": allReviews.filter((r) => r.rating === 4).length,
-      "5": allReviews.filter((r) => r.rating === 5).length,
+    // Initialize distribution
+    const ratingDistribution: Record<string, number> = {
+      "1": 0,
+      "2": 0,
+      "3": 0,
+      "4": 0,
+      "5": 0,
     };
+
+    // Bucket ratings (handles decimals like 4.5)
+    reviews.forEach((r) => {
+      const bucket = Math.floor(r.rating);
+
+      if (bucket >= 1 && bucket <= 5) {
+        ratingDistribution[bucket.toString()]++;
+      }
+    });
 
     next({
       status: 200,
@@ -539,9 +549,8 @@ const getUserReviews = async (
 ) => {
   try {
     const userId = req.id;
-    const { page, limit, rating, sortBy, sortOrder } = (
-      req.query as unknown as ReviewIdQueryParams
-    );
+    const { page, limit, rating, sortBy, sortOrder } =
+      req.query as unknown as ReviewIdQueryParams;
     const pageNumber = page ?? 1;
     const limitNumber = limit ?? 10;
     const skip = (pageNumber - 1) * limitNumber;
@@ -668,7 +677,8 @@ const canReviewTour = async (
         success: true,
         data: {
           canReview: false,
-          reason: "You have already reviewed this tour. You can only update existing review.",
+          reason:
+            "You have already reviewed this tour. You can only update existing review.",
           existingReview: {
             id: existingReview.id,
             rating: existingReview.rating,
@@ -695,7 +705,7 @@ const canReviewTour = async (
   }
 };
 
-// Get all reviews 
+// Get all reviews
 const getAllReviews = async (
   req: Request,
   res: Response,
@@ -828,17 +838,15 @@ const adminDeleteReview = async (
   }
 };
 
-/**
- * Get review statistics (admin)
- * @route GET /api/admin/reviews/statistics
- */
+// Get review statistics (admin)
 const getReviewStatistics = async (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
   try {
-    const { tourId, destinationId } = req.query;
+    const { tourId, destinationId } =
+      req.query as unknown as reviewStatisticsQueryParams;
 
     const where: any = {};
     if (tourId) {
@@ -857,18 +865,29 @@ const getReviewStatistics = async (
     });
 
     const totalReviews = reviews.length;
+
     const averageRating =
       totalReviews > 0
         ? reviews.reduce((sum, r) => sum + r.rating, 0) / totalReviews
         : 0;
 
-    const ratingDistribution = {
-      "1": reviews.filter((r) => r.rating === 1).length,
-      "2": reviews.filter((r) => r.rating === 2).length,
-      "3": reviews.filter((r) => r.rating === 3).length,
-      "4": reviews.filter((r) => r.rating === 4).length,
-      "5": reviews.filter((r) => r.rating === 5).length,
+    // Initialize distribution
+    const ratingDistribution: Record<string, number> = {
+      "1": 0,
+      "2": 0,
+      "3": 0,
+      "4": 0,
+      "5": 0,
     };
+
+    // Bucket ratings
+    reviews.forEach((r) => {
+      const bucket = Math.floor(r.rating);
+
+      if (bucket >= 1 && bucket <= 5) {
+        ratingDistribution[bucket.toString()]++;
+      }
+    });
 
     // Reviews by month (last 6 months)
     const now = new Date();

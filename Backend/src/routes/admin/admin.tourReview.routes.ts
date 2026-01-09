@@ -1,9 +1,10 @@
 import { Router } from "express";
 import { AdminOnly, authenticateToken } from "../../middleware/auth";
 import {
-    adminDeleteReview,
+  adminDeleteReview,
   getAllReviews,
   getReviewById,
+  getReviewStatistics,
 } from "../../controllers/tourReview.controller";
 import { registerRoute } from "../../utils/openapi.utils";
 import {
@@ -15,7 +16,10 @@ import {
   unauthorizedErrorSchema,
 } from "../../schema/common.schema";
 import {
+  bulkDeleteReviewSchema,
   reviewIdParamsSchema,
+  reviewStatisticsQuerySchema,
+  reviewStatisticsResponseSchema,
   tourReviewResponseSchema,
   tourReviewsListResponseSchema,
 } from "../../schema";
@@ -28,6 +32,17 @@ router.use(authenticateToken, AdminOnly);
 // Admin tour review routes
 
 router.get("/", getAllReviews);
+
+router.get(
+  "/statistics",
+  validate.query(reviewStatisticsQuerySchema),
+  getReviewStatistics
+);
+router.delete(
+  "/bulk-delete",
+  validate.body(bulkDeleteReviewSchema),
+  adminDeleteReview
+);
 router.delete(
   "/:reviewId",
   validate.params(reviewIdParamsSchema),
@@ -60,6 +75,30 @@ registerRoute({
   },
 });
 
+// Get review statistics
+registerRoute({
+  method: "get",
+  path: "/api/admin/tour-review/statistics",
+  summary: "List of review statistics",
+  tags: ["Tour Review"],
+  security: [{ bearerAuth: [] }],
+  responses: {
+    200: {
+      description: "Get all Review statistics successfully",
+      content: {
+        "application/json": {
+          schema: reviewStatisticsResponseSchema,
+        },
+      },
+    },
+    400: errorResponse(badRequestErrorSchema, "Bad Request"),
+    401: errorResponse(unauthorizedErrorSchema, "Unauthorized"),
+    403: errorResponse(forbiddenErrorSchema, "Forbidden"),
+    409: errorResponse(conflictErrorSchema, "Conflict"),
+    500: errorResponse(internalServerErrorSchema, "Internal Server Error"),
+  },
+});
+
 // Delete reviews by ID
 registerRoute({
   method: "delete",
@@ -73,6 +112,30 @@ registerRoute({
   responses: {
     200: {
       description: "Review deleted successfully",
+    },
+    400: errorResponse(badRequestErrorSchema, "Bad Request"),
+    401: errorResponse(unauthorizedErrorSchema, "Unauthorized"),
+    403: errorResponse(forbiddenErrorSchema, "Forbidden"),
+    409: errorResponse(conflictErrorSchema, "Conflict"),
+    500: errorResponse(internalServerErrorSchema, "Internal Server Error"),
+  },
+});
+
+// Bulk Delete reviews
+registerRoute({
+  method: "delete",
+  path: "/api/admin/tour-review/{reviewId}",
+  summary: "Bulk Delete review ",
+  tags: ["Tour Review"],
+  security: [{ bearerAuth: [] }],
+  request: {
+    body: {
+      content: { "application/json": { schema: bulkDeleteReviewSchema } },
+    },
+  },
+  responses: {
+    200: {
+      description: "Review's deleted successfully",
     },
     400: errorResponse(badRequestErrorSchema, "Bad Request"),
     401: errorResponse(unauthorizedErrorSchema, "Unauthorized"),
