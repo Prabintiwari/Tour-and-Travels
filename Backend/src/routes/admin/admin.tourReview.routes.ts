@@ -38,7 +38,7 @@ router.get(
   validate.query(reviewStatisticsQuerySchema),
   getReviewStatistics
 );
-router.delete(
+router.post(
   "/bulk-delete",
   validate.body(bulkDeleteReviewSchema),
   adminDeleteReview
@@ -123,8 +123,8 @@ registerRoute({
 
 // Bulk Delete reviews
 registerRoute({
-  method: "delete",
-  path: "/api/admin/tour-review/{reviewId}",
+  method: "post",
+  path: "/api/admin/tour-review/bulk-delete",
   summary: "Bulk Delete review ",
   tags: ["Tour Review"],
   security: [{ bearerAuth: [] }],
