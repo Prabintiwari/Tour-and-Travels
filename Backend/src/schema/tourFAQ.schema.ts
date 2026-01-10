@@ -65,6 +65,10 @@ const tourFAQsListResponseSchema = paginatedResponse(
   tourFAQResponseSchema
 ).openapi("TourFAQsListResponse");
 
+const tourFAQIdParamsSchema = z.object({
+  tourFAQId: z.string().min(1).openapi({ example: "tourFAQ_123abc" }),
+});
+
 type CreateTourFAQInput = z.infer<typeof createTourFAQSchema>;
 type UpdateTourFAQInput = z.infer<typeof updateTourFAQSchema>;
 
@@ -73,6 +77,7 @@ export {
   updateTourFAQSchema,
   tourFAQResponseSchema,
   tourFAQsListResponseSchema,
+  tourFAQIdParamsSchema,
   CreateTourFAQInput,
   UpdateTourFAQInput,
 };
