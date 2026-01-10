@@ -24,3 +24,6 @@ export * from "./booking.schema";
 
 // Tour Review
 export * from "./tourReview.schema";
+
+// Tour FAQ
+export * from "./tourFAQ.schema";
