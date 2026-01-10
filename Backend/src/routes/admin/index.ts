@@ -7,6 +7,7 @@ import adminItineraryRoutes from "./admin.itinerary.routes";
 import adminTourScheduleRoutes from "./admin.tourSchedule.routes";
 import adminTourBookingRoutes from "./admin.tourBooking.routes";
 import adminTourReviewRoutes from "./admin.tourReview.routes";
+import adminFAQRoutes from "./admin.tourFAQ.routes";
 
 const router = Router();
 
@@ -18,5 +19,6 @@ router.use("/itinerary", adminItineraryRoutes);
 router.use("/tour-schedule", adminTourScheduleRoutes);
 router.use("/tour-booking", adminTourBookingRoutes);
 router.use("/tour-review", adminTourReviewRoutes);
+router.use("/Faqs", adminFAQRoutes);
 
 export default router;

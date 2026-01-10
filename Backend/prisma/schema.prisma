@@ -380,18 +380,22 @@ model TourReview {
 
 // ==================== TOUR FAQ ====================
 model TourFAQ {
-  id                    String   @id @default(auto()) @map("_id") @db.ObjectId
-  tourId                String   @db.ObjectId
-  tour                  Tour @relation(fields: [tourId], references: [id], onDelete: Cascade)
-  question              String
-  answer                String
-  isActive              Boolean  @default(true)
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  id                   String   @id @default(auto()) @map("_id") @db.ObjectId
+  tourId               String   @db.ObjectId
+  tour                 Tour     @relation(fields: [tourId], references: [id], onDelete: Cascade)
 
-  @@index([tourId])
-  @@index([isActive])
+  question             String
+  questionLower        String
+
+  answer               String
+  isActive             Boolean  @default(true)
+
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@unique([tourId, questionLower])
 }
+
 
 // ==================== CUSTOM ITINERARY ====================
 model CustomItinerary {

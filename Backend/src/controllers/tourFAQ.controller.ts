@@ -1,16 +1,12 @@
 import { Request, Response, NextFunction } from "express";
 import { z } from "zod";
-import { createTourFAQSchema, updateTourFAQSchema } from "../schema";
+import { updateTourFAQSchema } from "../schema";
 import prisma from "../config/prisma";
 
-/**
- * Create a new FAQ - Admin
- * @route POST /api/admin/faqs
- * @access Private (Admin)
- */
+// Create a new FAQ - Admin
 const createFAQ = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const validatedData = createTourFAQSchema.parse(req.body);
+    const validatedData = req.body;
 
     // Validate tour exists
     const tour = await prisma.tour.findUnique({
@@ -18,35 +14,45 @@ const createFAQ = async (req: Request, res: Response, next: NextFunction) => {
     });
 
     if (!tour) {
-      return res.status(404).json({
-        success: false,
-        message: "Tour not found",
-      });
+      return next({ status: 404, success: false, message: "Tour not found" });
     }
 
     // Check for duplicate question
-    const existingFAQ = await prisma.tourFAQ.findFirst({
+    if (!validatedData.question) {
+      return next({
+        status: 400,
+        success: false,
+        message: "Question is required",
+      });
+    }
+
+    const normalizedQuestion = validatedData.question.trim().toLowerCase();
+
+    const existingFAQ = await prisma.tourFAQ.findUnique({
       where: {
-        tourId: validatedData.tourId,
-        question: {
-          equals: validatedData.question,
-          mode: "insensitive",
+        tourId_questionLower: {
+          tourId: validatedData.tourId,
+          questionLower: normalizedQuestion,
         },
       },
     });
 
     if (existingFAQ) {
-      return res.status(409).json({
+      next({
+        status: 400,
         success: false,
         message: "A FAQ with this question already exists for this tour",
-        data: {
-          existingFAQId: existingFAQ.id,
-        },
       });
     }
 
     const faq = await prisma.tourFAQ.create({
-      data: validatedData,
+      data: {
+        tourId: validatedData.tourId,
+        question: validatedData.question,
+        questionLower: validatedData.question.toLowerCase(),
+        answer: validatedData.answer,
+        isActive: validatedData.isActive,
+      },
       include: {
         tour: {
           select: {
@@ -57,30 +63,25 @@ const createFAQ = async (req: Request, res: Response, next: NextFunction) => {
       },
     });
 
-    res.status(201).json({
+    next({
+      status: 201,
       success: true,
       message: "FAQ created successfully",
       data: {
-        id: faq.id,
-        tourId: faq.tourId,
-        question: faq.question,
-        answer: faq.answer,
-        isActive: faq.isActive,
-        tour: faq.tour,
-        createdAt: faq.createdAt.toISOString(),
-        updatedAt: faq.updatedAt.toISOString(),
+        faq,
       },
     });
-  } catch (error) {
-    next(error);
+  } catch (error: any) {
+    next({
+      status: 500,
+      message: error.message || "Internal server error",
+      error: error.message,
+    });
   }
 };
 
-/**
- * Get all active FAQs for a tour
- * @route GET /api/tours/:tourId/faqs
- * @access Public
- */
+//Get all active FAQs for a tour
+// /api/tours/:tourId/faqs
 const getTourFAQs = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { tourId } = req.params;
@@ -91,10 +92,7 @@ const getTourFAQs = async (req: Request, res: Response, next: NextFunction) => {
     });
 
     if (!tour) {
-      return res.status(404).json({
-        success: false,
-        message: "Tour not found",
-      });
+      return next({ status: 404, success: false, message: "Tour not found" });
     }
 
     const faqs = await prisma.tourFAQ.findMany({
@@ -107,23 +105,20 @@ const getTourFAQs = async (req: Request, res: Response, next: NextFunction) => {
       },
     });
 
-    res.status(200).json({
+    next({
+      status: 200,
       success: true,
       data: {
-        faqs: faqs.map((faq) => ({
-          id: faq.id,
-          tourId: faq.tourId,
-          question: faq.question,
-          answer: faq.answer,
-          isActive: faq.isActive,
-          createdAt: faq.createdAt.toISOString(),
-          updatedAt: faq.updatedAt.toISOString(),
-        })),
+        faqs,
         total: faqs.length,
       },
     });
-  } catch (error) {
-    next(error);
+  } catch (error: any) {
+    next({
+      status: 500,
+      message: error.message || "Internal server error",
+      error: error.message,
+    });
   }
 };
 
@@ -150,13 +145,15 @@ const getFAQById = async (req: Request, res: Response, next: NextFunction) => {
     });
 
     if (!faq || !faq.isActive) {
-      return res.status(404).json({
+      return next({
+        status: 404,
         success: false,
         message: "FAQ not found or inactive",
       });
     }
 
-    res.status(200).json({
+    next({
+      status: 200,
       success: true,
       data: {
         id: faq.id,
@@ -169,8 +166,12 @@ const getFAQById = async (req: Request, res: Response, next: NextFunction) => {
         updatedAt: faq.updatedAt.toISOString(),
       },
     });
-  } catch (error) {
-    next(error);
+  } catch (error: any) {
+    next({
+      status: 500,
+      message: error.message || "Internal server error",
+      error: error.message,
+    });
   }
 };
 
@@ -230,7 +231,8 @@ const searchFAQs = async (req: Request, res: Response, next: NextFunction) => {
       take: limit,
     });
 
-    res.status(200).json({
+    next({
+      status: 200,
       success: true,
       data: {
         faqs,
@@ -243,8 +245,12 @@ const searchFAQs = async (req: Request, res: Response, next: NextFunction) => {
         searchQuery,
       },
     });
-  } catch (error) {
-    next(error);
+  } catch (error: any) {
+    next({
+      status: 500,
+      message: error.message || "Internal server error",
+      error: error.message,
+    });
   }
 };
 
@@ -270,10 +276,7 @@ const getAllTourFAQs = async (
     });
 
     if (!tour) {
-      return res.status(404).json({
-        success: false,
-        message: "Tour not found",
-      });
+      return next({ status: 404, success: false, message: "Tour not found" });
     }
 
     const where: any = { tourId };
@@ -295,7 +298,8 @@ const getAllTourFAQs = async (
       inactive: faqs.filter((f) => !f.isActive).length,
     };
 
-    res.status(200).json({
+    next({
+      status: 200,
       success: true,
       data: {
         faqs: faqs.map((faq) => ({
@@ -310,8 +314,12 @@ const getAllTourFAQs = async (
         stats,
       },
     });
-  } catch (error) {
-    next(error);
+  } catch (error: any) {
+    next({
+      status: 500,
+      message: error.message || "Internal server error",
+      error: error.message,
+    });
   }
 };
 
@@ -377,7 +385,8 @@ const getAllFAQs = async (req: Request, res: Response, next: NextFunction) => {
       inactive: allFAQs.filter((f) => !f.isActive).length,
     };
 
-    res.status(200).json({
+    next({
+      status: 200,
       success: true,
       data: {
         faqs,
@@ -390,8 +399,12 @@ const getAllFAQs = async (req: Request, res: Response, next: NextFunction) => {
         stats,
       },
     });
-  } catch (error) {
-    next(error);
+  } catch (error: any) {
+    next({
+      status: 500,
+      message: error.message || "Internal server error",
+      error: error.message,
+    });
   }
 };
 
@@ -427,18 +440,16 @@ const getAdminFAQById = async (
     });
 
     if (!faq) {
-      return res.status(404).json({
-        success: false,
-        message: "FAQ not found",
-      });
+      return next({ status: 404, success: false, message: "FAQ not found" });
     }
 
-    res.status(200).json({
-      success: true,
-      data: faq,
+    next({ status: 200, success: true, data: faq });
+  } catch (error: any) {
+    next({
+      status: 500,
+      message: error.message || "Internal server error",
+      error: error.message,
     });
-  } catch (error) {
-    next(error);
   }
 };
 
@@ -469,10 +480,7 @@ const updateFAQ = async (req: Request, res: Response, next: NextFunction) => {
     });
 
     if (!existingFAQ) {
-      return res.status(404).json({
-        success: false,
-        message: "FAQ not found",
-      });
+      return next({ status: 404, success: false, message: "FAQ not found" });
     }
 
     // Check for duplicate question if question is being updated
@@ -494,7 +502,8 @@ const updateFAQ = async (req: Request, res: Response, next: NextFunction) => {
       });
 
       if (duplicateFAQ) {
-        return res.status(409).json({
+        return next({
+          status: 409,
           success: false,
           message: "A FAQ with this question already exists for this tour",
         });
@@ -514,7 +523,8 @@ const updateFAQ = async (req: Request, res: Response, next: NextFunction) => {
       },
     });
 
-    res.status(200).json({
+    next({
+      status: 200,
       success: true,
       message: "FAQ updated successfully",
       data: {
@@ -528,8 +538,12 @@ const updateFAQ = async (req: Request, res: Response, next: NextFunction) => {
         updatedAt: faq.updatedAt.toISOString(),
       },
     });
-  } catch (error) {
-    next(error);
+  } catch (error: any) {
+    next({
+      status: 500,
+      message: error.message || "Internal server error",
+      error: error.message,
+    });
   }
 };
 
@@ -551,10 +565,7 @@ const toggleFAQStatus = async (
     });
 
     if (!existingFAQ) {
-      return res.status(404).json({
-        success: false,
-        message: "FAQ not found",
-      });
+      return next({ status: 404, success: false, message: "FAQ not found" });
     }
 
     const faq = await prisma.tourFAQ.update({
@@ -564,7 +575,8 @@ const toggleFAQStatus = async (
       },
     });
 
-    res.status(200).json({
+    next({
+      status: 200,
       success: true,
       message: `FAQ ${faq.isActive ? "activated" : "deactivated"} successfully`,
       data: {
@@ -573,8 +585,12 @@ const toggleFAQStatus = async (
         updatedAt: faq.updatedAt.toISOString(),
       },
     });
-  } catch (error) {
-    next(error);
+  } catch (error: any) {
+    next({
+      status: 500,
+      message: error.message || "Internal server error",
+      error: error.message,
+    });
   }
 };
 
@@ -592,22 +608,20 @@ const deleteFAQ = async (req: Request, res: Response, next: NextFunction) => {
     });
 
     if (!existingFAQ) {
-      return res.status(404).json({
-        success: false,
-        message: "FAQ not found",
-      });
+      return next({ status: 404, success: false, message: "FAQ not found" });
     }
 
     await prisma.tourFAQ.delete({
       where: { id: faqId },
     });
 
-    res.status(200).json({
-      success: true,
-      message: "FAQ deleted successfully",
+    next({ status: 200, success: true, message: "FAQ deleted successfully" });
+  } catch (error: any) {
+    next({
+      status: 500,
+      message: error.message || "Internal server error",
+      error: error.message,
     });
-  } catch (error) {
-    next(error);
   }
 };
 
@@ -638,10 +652,7 @@ const bulkCreateFAQs = async (
     });
 
     if (!tour) {
-      return res.status(404).json({
-        success: false,
-        message: "Tour not found",
-      });
+      return next({ status: 404, success: false, message: "Tour not found" });
     }
 
     // Validate each FAQ
@@ -666,6 +677,7 @@ const bulkCreateFAQs = async (
           data: {
             tourId,
             question: faq.question,
+            questionLower: faq.question.toLowerCase(),
             answer: faq.answer,
             isActive: faq.isActive ?? true,
           },
@@ -673,7 +685,8 @@ const bulkCreateFAQs = async (
       )
     );
 
-    res.status(201).json({
+    next({
+      status: 201,
       success: true,
       message: `${createdFAQs.length} FAQ(s) created successfully`,
       data: {
@@ -681,8 +694,12 @@ const bulkCreateFAQs = async (
         count: createdFAQs.length,
       },
     });
-  } catch (error) {
-    next(error);
+  } catch (error: any) {
+    next({
+      status: 500,
+      message: error.message || "Internal server error",
+      error: error.message,
+    });
   }
 };
 
@@ -731,7 +748,8 @@ const bulkUpdateFAQs = async (
       })
     );
 
-    res.status(200).json({
+    next({
+      status: 200,
       success: true,
       message: `${updatedFAQs.length} FAQ(s) updated successfully`,
       data: {
@@ -739,8 +757,12 @@ const bulkUpdateFAQs = async (
         count: updatedFAQs.length,
       },
     });
-  } catch (error) {
-    next(error);
+  } catch (error: any) {
+    next({
+      status: 500,
+      message: error.message || "Internal server error",
+      error: error.message,
+    });
   }
 };
 
@@ -772,15 +794,20 @@ const bulkDeleteFAQs = async (
       },
     });
 
-    res.status(200).json({
+    next({
+      status: 200,
       success: true,
       message: `${result.count} FAQ(s) deleted successfully`,
       data: {
         deletedCount: result.count,
       },
     });
-  } catch (error) {
-    next(error);
+  } catch (error: any) {
+    next({
+      status: 500,
+      message: error.message || "Internal server error",
+      error: error.message,
+    });
   }
 };
 
@@ -807,10 +834,7 @@ const reorderFAQs = async (req: Request, res: Response, next: NextFunction) => {
     });
 
     if (!tour) {
-      return res.status(404).json({
-        success: false,
-        message: "Tour not found",
-      });
+      return next({ status: 404, success: false, message: "Tour not found" });
     }
 
     // Verify all FAQs belong to this tour
@@ -840,7 +864,8 @@ const reorderFAQs = async (req: Request, res: Response, next: NextFunction) => {
       )
     );
 
-    res.status(200).json({
+    next({
+      status: 200,
       success: true,
       message: "FAQs reordered successfully",
       data: {
@@ -848,8 +873,12 @@ const reorderFAQs = async (req: Request, res: Response, next: NextFunction) => {
         note: 'Consider adding an "order" field to the schema for better sorting',
       },
     });
-  } catch (error) {
-    next(error);
+  } catch (error: any) {
+    next({
+      status: 500,
+      message: error.message || "Internal server error",
+      error: error.message,
+    });
   }
 };
 
@@ -870,14 +899,16 @@ const copyFAQs = async (req: Request, res: Response, next: NextFunction) => {
     ]);
 
     if (!sourceTour) {
-      return res.status(404).json({
+      return next({
+        status: 404,
         success: false,
         message: "Source tour not found",
       });
     }
 
     if (!targetTour) {
-      return res.status(404).json({
+      return next({
+        status: 404,
         success: false,
         message: "Target tour not found",
       });
@@ -892,7 +923,8 @@ const copyFAQs = async (req: Request, res: Response, next: NextFunction) => {
     const sourceFAQs = await prisma.tourFAQ.findMany({ where });
 
     if (sourceFAQs.length === 0) {
-      return res.status(404).json({
+      return next({
+        status: 404,
         success: false,
         message: "No FAQs found in source tour",
       });
@@ -905,6 +937,7 @@ const copyFAQs = async (req: Request, res: Response, next: NextFunction) => {
           data: {
             tourId: targetTourId,
             question: faq.question,
+            questionLower: faq.question.toLowerCase(),
             answer: faq.answer,
             isActive: faq.isActive,
           },
@@ -912,7 +945,8 @@ const copyFAQs = async (req: Request, res: Response, next: NextFunction) => {
       )
     );
 
-    res.status(201).json({
+    next({
+      status: 201,
       success: true,
       message: `${copiedFAQs.length} FAQ(s) copied successfully`,
       data: {
@@ -922,8 +956,12 @@ const copyFAQs = async (req: Request, res: Response, next: NextFunction) => {
         faqs: copiedFAQs,
       },
     });
-  } catch (error) {
-    next(error);
+  } catch (error: any) {
+    next({
+      status: 500,
+      message: error.message || "Internal server error",
+      error: error.message,
+    });
   }
 };
 
@@ -994,7 +1032,8 @@ const getFAQStatistics = async (
       })
     );
 
-    res.status(200).json({
+    next({
+      status: 200,
       success: true,
       data: {
         totalFAQs,
@@ -1009,25 +1048,29 @@ const getFAQStatistics = async (
         },
       },
     });
-  } catch (error) {
-    next(error);
+  } catch (error: any) {
+    next({
+      status: 500,
+      message: error.message || "Internal server error",
+      error: error.message,
+    });
   }
 };
 export {
-    createFAQ,
-    getTourFAQs,
-    getFAQById,
-    searchFAQs,
-    getAllTourFAQs,
-    getAllFAQs,
-    getAdminFAQById,
-    updateFAQ,
-    toggleFAQStatus,
-    deleteFAQ,
-    bulkCreateFAQs,
-    bulkUpdateFAQs,
-    bulkDeleteFAQs,
-    reorderFAQs,
-    copyFAQs,
-    getFAQStatistics,
+  createFAQ,
+  getTourFAQs,
+  getFAQById,
+  searchFAQs,
+  getAllTourFAQs,
+  getAllFAQs,
+  getAdminFAQById,
+  updateFAQ,
+  toggleFAQStatus,
+  deleteFAQ,
+  bulkCreateFAQs,
+  bulkUpdateFAQs,
+  bulkDeleteFAQs,
+  reorderFAQs,
+  copyFAQs,
+  getFAQStatistics,
 };
