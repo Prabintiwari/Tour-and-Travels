@@ -49,7 +49,7 @@ app.use("/api/itinerary", itineraryRoute);
 app.use("/api/tour-schedule", tourScheduleRoute);
 app.use("/api/tour-booking", tourBookingRoute);
 app.use("/api/tour-review", tourReviewRoute);
-app.use("/api/Faqs", tourFAQSRoute);
+app.use("/api/faqs", tourFAQSRoute);
 app.use(responseHandler);
 
 app.get("/", (req: Request, res: Response) => {

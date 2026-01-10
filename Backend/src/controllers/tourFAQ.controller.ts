@@ -81,7 +81,6 @@ const createFAQ = async (req: Request, res: Response, next: NextFunction) => {
 };
 
 //Get all active FAQs for a tour
-// /api/tours/:tourId/faqs
 const getTourFAQs = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { tourId } = req.params;
@@ -122,11 +121,7 @@ const getTourFAQs = async (req: Request, res: Response, next: NextFunction) => {
   }
 };
 
-/**
- * Get a single FAQ by ID
- * @route GET /api/faqs/:faqId
- * @access Public
- */
+//Get a single FAQ by ID
 const getFAQById = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { faqId } = req.params;
@@ -155,16 +150,7 @@ const getFAQById = async (req: Request, res: Response, next: NextFunction) => {
     next({
       status: 200,
       success: true,
-      data: {
-        id: faq.id,
-        tourId: faq.tourId,
-        question: faq.question,
-        answer: faq.answer,
-        isActive: faq.isActive,
-        tour: faq.tour,
-        createdAt: faq.createdAt.toISOString(),
-        updatedAt: faq.updatedAt.toISOString(),
-      },
+      data: { faq },
     });
   } catch (error: any) {
     next({
@@ -175,11 +161,7 @@ const getFAQById = async (req: Request, res: Response, next: NextFunction) => {
   }
 };
 
-/**
- * Search FAQs across all tours
- * @route GET /api/faqs/search
- * @access Public
- */
+//Search FAQs across all tours
 const searchFAQs = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { query: searchQuery, tourId } = req.query;
@@ -253,8 +235,6 @@ const searchFAQs = async (req: Request, res: Response, next: NextFunction) => {
     });
   }
 };
-
-// ==================== ADMIN ENDPOINTS ====================
 
 /**
  * Get all FAQs for a tour (including inactive) - Admin

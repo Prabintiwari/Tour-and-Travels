@@ -1,25 +1,37 @@
 import { Router } from "express";
-import { getAllFAQs } from "../../controllers/tourFAQ.controller";
+import {  getFAQById, getTourFAQs, searchFAQs } from "../../controllers/tourFAQ.controller";
 import { registerRoute } from "../../utils/openapi.utils";
-import { tourFAQsListResponseSchema } from "../../schema";
-import { badRequestErrorSchema, conflictErrorSchema, errorResponse, forbiddenErrorSchema, internalServerErrorSchema, unauthorizedErrorSchema } from "../../schema/common.schema";
+import { tourFAQIdParamsSchema, tourFAQsListResponseSchema, tourParamsSchema } from "../../schema";
+import {
+  badRequestErrorSchema,
+  conflictErrorSchema,
+  errorResponse,
+  forbiddenErrorSchema,
+  internalServerErrorSchema,
+  unauthorizedErrorSchema,
+} from "../../schema/common.schema";
+import { validate } from "../../middleware/validate";
 
-const router = Router()
+const router = Router();
 
-router.get("/",getAllFAQs)
+router.get("/search", searchFAQs);
 
+router.get("/tours/:tourId", getTourFAQs);
+
+router.get("/:faqId",validate.params(tourFAQIdParamsSchema), getFAQById);
 
 // Swagger registration
 
-// Get all faqs
+// Get tour faqs by tourId
 registerRoute({
   method: "get",
-  path: "/api/Faqs",
-  summary: "Get all Tour Faqs",
+  path: "/api/faqs/tours/{tourId}",
+  summary: "Get all active FAQs for a tour",
   tags: ["FAQS"],
+  request: { params: tourParamsSchema },
   responses: {
     200: {
-      description: "Get all Tour Faqs",
+      description: "Get all active FAQs for a tour",
       content: {
         "application/json": { schema: tourFAQsListResponseSchema },
       },
@@ -32,4 +44,26 @@ registerRoute({
   },
 });
 
-export default router
+// Get faqs by Id
+registerRoute({
+  method: "get",
+  path: "/api/faqs/{faqId}",
+  summary: "Get active FAQs by Id",
+  tags: ["FAQS"],
+  request: { params: tourFAQIdParamsSchema },
+  responses: {
+    200: {
+      description: "Get active FAQs by Id",
+      content: {
+        "application/json": { schema: tourFAQsListResponseSchema },
+      },
+    },
+    400: errorResponse(badRequestErrorSchema, "Bad Request"),
+    401: errorResponse(unauthorizedErrorSchema, "Unauthorized"),
+    403: errorResponse(forbiddenErrorSchema, "Forbidden"),
+    409: errorResponse(conflictErrorSchema, "Conflict"),
+    500: errorResponse(internalServerErrorSchema, "Internal Server Error"),
+  },
+});
+
+export default router;

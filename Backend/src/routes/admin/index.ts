@@ -19,6 +19,6 @@ router.use("/itinerary", adminItineraryRoutes);
 router.use("/tour-schedule", adminTourScheduleRoutes);
 router.use("/tour-booking", adminTourBookingRoutes);
 router.use("/tour-review", adminTourReviewRoutes);
-router.use("/Faqs", adminFAQRoutes);
+router.use("/faqs", adminFAQRoutes);
 
 export default router;

@@ -66,7 +66,7 @@ const tourFAQsListResponseSchema = paginatedResponse(
 ).openapi("TourFAQsListResponse");
 
 const tourFAQIdParamsSchema = z.object({
-  tourFAQId: z.string().min(1).openapi({ example: "tourFAQ_123abc" }),
+  faqId: z.string().min(1).openapi({ example: "Faq_123abc" }),
 });
 
 type CreateTourFAQInput = z.infer<typeof createTourFAQSchema>;

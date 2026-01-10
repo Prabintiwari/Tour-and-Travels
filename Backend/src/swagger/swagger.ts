@@ -26,6 +26,7 @@ export const generateOpenApiDocument = () => {
       { name: 'Tour Schedule', description: 'Tour Schedule management' },
       { name: 'Bookings', description: 'Tour Booking management' },
       { name: 'Tour Review', description: 'Tour Review management' },
+      { name: 'FAQS', description: 'FAQS management' },
     ],
   });
 

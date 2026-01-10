@@ -1,7 +1,11 @@
 import { Router } from "express";
 import { validate } from "../../middleware/validate";
-import { createTourFAQSchema, tourFAQResponseSchema } from "../../schema";
-import { createFAQ } from "../../controllers/tourFAQ.controller";
+import {
+  createTourFAQSchema,
+  tourFAQResponseSchema,
+  tourFAQsListResponseSchema,
+} from "../../schema";
+import { createFAQ, getAllFAQs } from "../../controllers/tourFAQ.controller";
 import { AdminOnly, authenticateToken } from "../../middleware/auth";
 import { registerRoute } from "../../utils/openapi.utils";
 import {
@@ -20,12 +24,14 @@ router.use(authenticateToken, AdminOnly);
 
 router.post("/", validate.body(createTourFAQSchema), createFAQ);
 
+router.get("/", getAllFAQs);
+
 // Swagger registration
 
 // Create a new tour faqs
 registerRoute({
   method: "post",
-  path: "/api/admin/Faqs",
+  path: "/api/admin/faqs",
   summary: "Create a new tour faqs",
   tags: ["FAQS"],
   security: [{ bearerAuth: [] }],
@@ -41,6 +47,28 @@ registerRoute({
       description: "Tour Faqs created",
       content: {
         "application/json": { schema: tourFAQResponseSchema },
+      },
+    },
+    400: errorResponse(badRequestErrorSchema, "Bad Request"),
+    401: errorResponse(unauthorizedErrorSchema, "Unauthorized"),
+    403: errorResponse(forbiddenErrorSchema, "Forbidden"),
+    409: errorResponse(conflictErrorSchema, "Conflict"),
+    500: errorResponse(internalServerErrorSchema, "Internal Server Error"),
+  },
+});
+
+// Get all faqs
+registerRoute({
+  method: "get",
+  path: "/api/admin/faqs",
+  summary: "Get all Tour Faqs",
+  tags: ["FAQS"],
+  security: [{ bearerAuth: [] }],
+  responses: {
+    200: {
+      description: "Get all Tour Faqs",
+      content: {
+        "application/json": { schema: tourFAQsListResponseSchema },
       },
     },
     400: errorResponse(badRequestErrorSchema, "Bad Request"),
