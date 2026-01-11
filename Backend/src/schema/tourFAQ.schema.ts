@@ -65,12 +65,57 @@ const tourFAQsListResponseSchema = paginatedResponse(
   tourFAQResponseSchema
 ).openapi("TourFAQsListResponse");
 
+const tourFAQSQuerySchema = z.object({
+  page: z.coerce.number().optional().default(1).openapi({
+    example: 1,
+    description: "Page number for pagination",
+  }),
+  limit: z.coerce.number().optional().default(10).openapi({
+    example: 10,
+    description: "Number of items per page",
+  }),
+  isActive: z.coerce.boolean().optional(),
+  sortBy: z.string().optional().openapi({
+    example: "startDate",
+    description: "Sort by field",
+  }),
+  sortOrder: z.string().optional().default("asc").openapi({
+    example: "asc",
+    description: "Sort order",
+  }),
+});
+const allFAQSQuerySchema = z.object({
+  tourId: z.string().optional().openapi({
+    example: "tour_123abc",
+    description: "Filter by tour ID",
+  }),
+  page: z.coerce.number().optional().default(1).openapi({
+    example: 1,
+    description: "Page number for pagination",
+  }),
+  limit: z.coerce.number().optional().default(10).openapi({
+    example: 10,
+    description: "Number of items per page",
+  }),
+  isActive: z.coerce.boolean().optional(),
+  sortBy: z.string().optional().openapi({
+    example: "startDate",
+    description: "Sort by field",
+  }),
+  sortOrder: z.string().optional().default("asc").openapi({
+    example: "asc",
+    description: "Sort order",
+  }),
+});
+
 const tourFAQIdParamsSchema = z.object({
   faqId: z.string().min(1).openapi({ example: "Faq_123abc" }),
 });
 
 type CreateTourFAQInput = z.infer<typeof createTourFAQSchema>;
 type UpdateTourFAQInput = z.infer<typeof updateTourFAQSchema>;
+type tourFAQSQueryInput = z.infer<typeof tourFAQSQuerySchema>;
+type allFAQSQueryInput = z.infer<typeof allFAQSQuerySchema>;
 
 export {
   createTourFAQSchema,
@@ -78,6 +123,10 @@ export {
   tourFAQResponseSchema,
   tourFAQsListResponseSchema,
   tourFAQIdParamsSchema,
+  allFAQSQuerySchema,
+  tourFAQSQuerySchema,
   CreateTourFAQInput,
   UpdateTourFAQInput,
+  tourFAQSQueryInput,
+  allFAQSQueryInput
 };

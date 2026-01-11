@@ -15,7 +15,7 @@ import {
   removeActivitiesSchema,
   updateItinerarySchema,
 } from "../../schema";
-import { validate } from "../../middleware/validate";
+import { validateParams, validateRequest } from "../../middleware/validate";
 import { AdminOnly, authenticateToken } from "../../middleware/auth";
 import { registerRoute } from "../../utils/openapi.utils";
 import {
@@ -33,30 +33,30 @@ const router = Router();
 router.use(authenticateToken, AdminOnly);
 
 // Admin itinerary routes
-router.post("/", validate.body(createItinerarySchema), createItinerary);
+router.post("/", validateRequest(createItinerarySchema), createItinerary);
 router.patch(
   "/:itineraryId",
-  validate.params(itineraryIdParamSchema),
-  validate.body(updateItinerarySchema),
+  validateParams(itineraryIdParamSchema),
+  validateRequest(updateItinerarySchema),
   updateItinerary
 );
 
 router.delete(
   "/:itineraryId",
-  validate.params(itineraryIdParamSchema),
+  validateParams(itineraryIdParamSchema),
   deleteItinerary
 );
 
 router.patch(
   "/:itineraryId/add-activities",
-  validate.params(itineraryIdParamSchema),
-  validate.body(addActivitiesSchema),
+  validateParams(itineraryIdParamSchema),
+  validateRequest(addActivitiesSchema),
   addActivity
 );
 
 router.delete(
   "/:itineraryId/remove-activities",
-  validate.params(itineraryIdParamSchema),
+  validateParams(itineraryIdParamSchema),
   removeActivity
 );
 

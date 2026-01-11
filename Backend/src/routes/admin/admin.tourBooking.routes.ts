@@ -1,13 +1,11 @@
 import { Router } from "express";
 import { AdminOnly, authenticateToken } from "../../middleware/auth";
-import { validate } from "../../middleware/validate";
 import {
   bookingParamsSchema,
   bookingQuerySchema,
   bookingStatsResponseSchema,
   tourBookingListResponseSchema,
   tourBookingResponseSchema,
-  updateBookingSchema,
   updateBookingStatusSchema,
 } from "../../schema";
 import {
@@ -24,17 +22,18 @@ import {
   notFoundErrorSchema,
   unauthorizedErrorSchema,
 } from "../../schema/common.schema";
+import { validateParams, validateQuery, validateRequest } from "../../middleware/validate";
 
 const router = Router();
 router.use(authenticateToken, AdminOnly);
 // Admin tour booking routes
 
-router.get("/", validate.query(bookingQuerySchema), getAllTourBookings);
+router.get("/", validateQuery(bookingQuerySchema), getAllTourBookings);
 
 router.patch(
   "/:bookingId",
-  validate.params(bookingParamsSchema),
-  validate.body(updateBookingStatusSchema),
+  validateParams(bookingParamsSchema),
+  validateRequest(updateBookingStatusSchema),
   updateTourBookingStatus
 );
 
@@ -42,7 +41,7 @@ router.get("/booking-stats", getTourBookingStats);
 
 router.get(
   "/:bookingId",
-  validate.params(bookingParamsSchema),
+  validateParams(bookingParamsSchema),
   getAdminTourBookingById
 );
 

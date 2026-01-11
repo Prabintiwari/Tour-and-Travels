@@ -1,5 +1,4 @@
 import { Router } from "express";
-import { validate } from "../../middleware/validate";
 import {
   loginSchema,
   registerSchema,
@@ -25,22 +24,23 @@ import {
   notFoundErrorSchema,
   unauthorizedErrorSchema,
 } from "../../schema/common.schema";
+import { validateParams, validateRequest } from "../../middleware/validate";
 
 const router = Router();
 
 // Auth Routes
 
-router.post("/register", validate.body(registerSchema), register);
+router.post("/register", validateRequest(registerSchema), register);
 
 router.post("/verify-register", verifyRegistration);
 
-router.post("/login", validate.body(loginSchema), login);
+router.post("/login", validateRequest(loginSchema), login);
 
 router.post("/logout", authenticateToken, logout);
 
 router.get("/my-profile", authenticateToken, getMe);
 
-router.delete("/:id",validate.params(userIdParamSchema), authenticateToken, deleteUser);
+router.delete("/:id",validateParams(userIdParamSchema), authenticateToken, deleteUser);
 
 // Swagger registration
 

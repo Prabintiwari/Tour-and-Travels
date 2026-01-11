@@ -19,7 +19,7 @@ import {
   notFoundErrorSchema,
   unauthorizedErrorSchema,
 } from "../../schema/common.schema";
-import { validate } from "../../middleware/validate";
+import { validateParams } from "../../middleware/validate";
 
 const router = Router();
 
@@ -27,12 +27,12 @@ const router = Router();
 router.get("/", getCompleteItinerary);
 router.get(
   "/:itineraryId",
-  validate.params(itineraryIdParamSchema),
+  validateParams(itineraryIdParamSchema),
   getItineraryById
 );
 router.get(
   "/tour/:tourId",
-  validate.params(tourParamsSchema)
+  validateParams(tourParamsSchema)
 );
 
 // Swagger registration

@@ -20,10 +20,9 @@ import {
   reviewIdParamsSchema,
   reviewStatisticsQuerySchema,
   reviewStatisticsResponseSchema,
-  tourReviewResponseSchema,
   tourReviewsListResponseSchema,
 } from "../../schema";
-import { validate } from "../../middleware/validate";
+import { validateQuery, validateRequest } from "../../middleware/validate";
 
 const router = Router();
 
@@ -35,17 +34,17 @@ router.get("/", getAllReviews);
 
 router.get(
   "/statistics",
-  validate.query(reviewStatisticsQuerySchema),
+  validateQuery(reviewStatisticsQuerySchema),
   getReviewStatistics
 );
 router.post(
   "/bulk-delete",
-  validate.body(bulkDeleteReviewSchema),
+  validateRequest(bulkDeleteReviewSchema),
   adminDeleteReview
 );
 router.delete(
   "/:reviewId",
-  validate.params(reviewIdParamsSchema),
+ validateQuery(reviewIdParamsSchema),
   adminDeleteReview
 );
 

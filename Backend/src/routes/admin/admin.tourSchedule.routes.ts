@@ -1,6 +1,5 @@
 import { Router } from "express";
 
-import { validate } from "../../middleware/validate";
 
 import {
   createTourScheduleSchema,
@@ -23,23 +22,24 @@ import {
   internalServerErrorSchema,
   unauthorizedErrorSchema,
 } from "../../schema/common.schema";
+import { validateParams, validateRequest } from "../../middleware/validate";
 
 const router = Router();
 
 router.use(authenticateToken, AdminOnly);
 
 // Tour Schedule API
-router.post("/", validate.body(createTourScheduleSchema), createTourSchedule);
+router.post("/", validateRequest(createTourScheduleSchema), createTourSchedule);
 router.patch(
   "/:tourScheduleId",
-  validate.params(tourScheduleIdParamSchema),
-  validate.body(updateTourScheduleSchema),
+  validateParams(tourScheduleIdParamSchema),
+  validateRequest(updateTourScheduleSchema),
   updateTourSchedule
 );
 
 router.delete(
   "/:tourScheduleId",
-  validate.params(tourScheduleIdParamSchema),
+  validateParams(tourScheduleIdParamSchema),
   deleteTourSchedule
 );
 

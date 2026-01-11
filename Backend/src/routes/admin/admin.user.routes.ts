@@ -11,7 +11,6 @@ import {
   userResponseSchema,
 } from "../../schema";
 import { cloudinaryUpload } from "../../middleware/upload";
-import { validate } from "../../middleware/validate";
 import {
   blockUser,
   getAllUsers,
@@ -30,6 +29,7 @@ import {
 } from "../../schema/common.schema";
 import { registerRoute } from "../../utils/openapi.utils";
 import z from "zod";
+import { validateParams, validateRequest } from "../../middleware/validate";
 
 const router = Router();
 
@@ -40,23 +40,23 @@ router.use(authenticateToken, AdminOnly);
 router.patch(
   "/update-profile/:userId",
   cloudinaryUpload("users/profile").single("profileImage"),
-  validate.params(userIdParamSchema),
-  validate.body(updateUserSchema),
+  validateParams(userIdParamSchema),
+  validateRequest(updateUserSchema),
   updateUserDetails
 );
 
 router.get("/", getAllUsers);
 
-router.get("/:userId", validate.params(userIdParamSchema), getUserById);
+router.get("/:userId", validateParams(userIdParamSchema), getUserById);
 
-router.delete("/:userId", validate.params(userIdParamSchema), deleteUser);
+router.delete("/:userId", validateParams(userIdParamSchema), deleteUser);
 
-router.patch("/block/:userId", validate.params(userIdParamSchema), blockUser);
+router.patch("/block/:userId", validateParams(userIdParamSchema), blockUser);
 
 router.patch(
   "/:id/role",
-  validate.params(userIdParamSchema),
-  validate.body(updateUserRoleSchema),
+  validateParams(userIdParamSchema),
+  validateRequest(updateUserRoleSchema),
   updateUserRole
 );
 

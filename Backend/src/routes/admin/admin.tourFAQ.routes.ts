@@ -1,11 +1,18 @@
 import { Router } from "express";
-import { validate } from "../../middleware/validate";
+import {  validateParams, validateQuery, validateRequest } from "../../middleware/validate";
 import {
+  allFAQSQuerySchema,
   createTourFAQSchema,
   tourFAQResponseSchema,
   tourFAQsListResponseSchema,
+  tourFAQSQuerySchema,
+  tourParamsSchema,
 } from "../../schema";
-import { createFAQ, getAllFAQs } from "../../controllers/tourFAQ.controller";
+import {
+  createFAQ,
+  getAllFAQs,
+  getAllTourFAQs,
+} from "../../controllers/tourFAQ.controller";
 import { AdminOnly, authenticateToken } from "../../middleware/auth";
 import { registerRoute } from "../../utils/openapi.utils";
 import {
@@ -22,9 +29,16 @@ router.use(authenticateToken, AdminOnly);
 
 // Admin FAQ routes
 
-router.post("/", validate.body(createTourFAQSchema), createFAQ);
+router.post("/", validateRequest(createTourFAQSchema), createFAQ);
 
-router.get("/", getAllFAQs);
+router.get("/", validateQuery(allFAQSQuerySchema), getAllFAQs);
+
+router.get(
+  "/tours/:tourId",
+  validateParams(tourParamsSchema),
+  validateQuery(tourFAQSQuerySchema),
+  getAllTourFAQs
+);
 
 // Swagger registration
 
@@ -61,12 +75,36 @@ registerRoute({
 registerRoute({
   method: "get",
   path: "/api/admin/faqs",
-  summary: "Get all Tour Faqs",
+  summary: "Get all FAQs across all tours",
   tags: ["FAQS"],
   security: [{ bearerAuth: [] }],
+  request: { query: allFAQSQuerySchema },
   responses: {
     200: {
-      description: "Get all Tour Faqs",
+      description: "Get all FAQs across all tours",
+      content: {
+        "application/json": { schema: tourFAQsListResponseSchema },
+      },
+    },
+    400: errorResponse(badRequestErrorSchema, "Bad Request"),
+    401: errorResponse(unauthorizedErrorSchema, "Unauthorized"),
+    403: errorResponse(forbiddenErrorSchema, "Forbidden"),
+    409: errorResponse(conflictErrorSchema, "Conflict"),
+    500: errorResponse(internalServerErrorSchema, "Internal Server Error"),
+  },
+});
+
+// Get all faqs for a tour
+registerRoute({
+  method: "get",
+  path: "/api/admin/faqs/tours/{tourId}",
+  summary: "Get all Faqs for a tour (including inactive)",
+  tags: ["FAQS"],
+  security: [{ bearerAuth: [] }],
+  request: { params: tourParamsSchema, query: tourFAQSQuerySchema },
+  responses: {
+    200: {
+      description: "Get all Faqs for a tour",
       content: {
         "application/json": { schema: tourFAQsListResponseSchema },
       },

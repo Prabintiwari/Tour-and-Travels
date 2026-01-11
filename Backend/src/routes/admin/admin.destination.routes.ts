@@ -11,7 +11,7 @@ import {
   updateDestinationSchema,
 } from "../../schema";
 import { cloudinaryUpload } from "../../middleware/upload";
-import { validate } from "../../middleware/validate";
+import {  validateParams, validateRequest } from "../../middleware/validate";
 import { AdminOnly, authenticateToken } from "../../middleware/auth";
 import { registerRoute } from "../../utils/openapi.utils";
 import {
@@ -30,21 +30,21 @@ router.use(authenticateToken, AdminOnly);
 router.post(
   "/",
   cloudinaryUpload("destination/").array("imageUrl", 5),
-  validate.body(destinationSchema),
+  validateRequest(destinationSchema),
   createDestination
 );
 
 router.patch(
   "/:destinationId",
   cloudinaryUpload("destination/").array("imageUrl", 5),
-  validate.params(destinationIdParamSchema),
-  validate.body(updateDestinationSchema),
+  validateParams(destinationIdParamSchema),
+  validateRequest(updateDestinationSchema),
   updateDestination
 );
 
 router.delete(
   "/:destinationId",
-  validate.params(destinationIdParamSchema),
+  validateParams(destinationIdParamSchema),
   deleteDestination
 );
 
@@ -58,7 +58,7 @@ registerRoute({
   tags: ["Destinations"],
   security: [{ bearerAuth: [] }],
   request: {
-    body: {
+  rvalidateRequest: {
       content: {
         "multipart/form-data": { schema: destinationSchema },
       },
@@ -87,7 +87,7 @@ registerRoute({
   tags: ["Destinations"],
   security: [{ bearerAuth: [] }],
   request: {
-    body: {
+  rvalidateRequest: {
       content: {
         "multipart/form-data": { schema: updateDestinationSchema },
       },

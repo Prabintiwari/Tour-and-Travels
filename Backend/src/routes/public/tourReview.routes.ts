@@ -1,6 +1,5 @@
 import { Router } from "express";
 import { authenticateToken } from "../../middleware/auth";
-import { validate } from "../../middleware/validate";
 import {
   createTourReviewSchema,
   destinationIdParamSchema,
@@ -30,6 +29,7 @@ import {
   internalServerErrorSchema,
   unauthorizedErrorSchema,
 } from "../../schema/common.schema";
+import { validateParams, validateQuery, validateRequest } from "../../middleware/validate";
 
 const router = Router();
 
@@ -37,53 +37,53 @@ const router = Router();
 router.post(
   "/",
   authenticateToken,
-  validate.body(createTourReviewSchema),
+  validateRequest(createTourReviewSchema),
   createReview
 );
 
 router.get(
   "/tour/:tourId/can-review",
   authenticateToken,
-  validate.params(tourParamsSchema),
+  validateParams(tourParamsSchema),
   canReviewTour
 );
 
 router.get(
   "/tour/:tourId",
-  validate.params(tourParamsSchema),
-  validate.query(reviewIdQuerySchema),
+  validateParams(tourParamsSchema),
+  validateQuery(reviewIdQuerySchema),
   getTourReviews
 );
 
 router.get(
   "/destination/:destinationId",
-  validate.params(destinationIdParamSchema),
-  validate.query(reviewIdQuerySchema),
+  validateParams(destinationIdParamSchema),
+  validateQuery(reviewIdQuerySchema),
   getDestinationReviews
 );
 
 router.get(
   "/user/:userId",
   authenticateToken,
-  validate.params(userIdParamSchema),
-  validate.query(reviewIdQuerySchema),
+  validateParams(userIdParamSchema),
+  validateQuery(reviewIdQuerySchema),
   getUserReviews
 );
 
-router.get("/:reviewId", validate.params(reviewIdParamsSchema), getReviewById);
+router.get("/:reviewId", validateParams(reviewIdParamsSchema), getReviewById);
 
 router.patch(
   "/:reviewId",
   authenticateToken,
-  validate.params(reviewIdParamsSchema),
-  validate.body(updateTourReviewSchema),
+  validateParams(reviewIdParamsSchema),
+  validateRequest(updateTourReviewSchema),
   updateReview
 );
 
 router.delete(
   "/:reviewId",
   authenticateToken,
-  validate.params(reviewIdParamsSchema),
+  validateParams(reviewIdParamsSchema),
   deleteReview
 );
 

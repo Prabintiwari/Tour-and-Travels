@@ -6,7 +6,7 @@ import {
 import { registerRoute } from "../../utils/openapi.utils";
 import { destinationGalleryResponseSchema, destinationIdParamSchema } from "../../schema";
 import { errorResponse, forbiddenErrorSchema, internalServerErrorSchema, notFoundErrorSchema, unauthorizedErrorSchema } from "../../schema/common.schema";
-import { validate } from "../../middleware/validate";
+import { validateParams } from "../../middleware/validate";
 
 const router = Router();
 
@@ -14,7 +14,7 @@ const router = Router();
 // Destination routes
 router.get("/", getAllGalleries);
 
-router.get("/:destinationId",validate.params(destinationIdParamSchema), getGalleryByDestination);
+router.get("/:destinationId",validateParams(destinationIdParamSchema), getGalleryByDestination);
 
 // Swagger registration
 

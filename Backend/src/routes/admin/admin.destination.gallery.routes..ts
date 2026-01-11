@@ -23,7 +23,7 @@ import {
   unauthorizedErrorSchema,
 } from "../../schema/common.schema";
 import { Param } from "@prisma/client/runtime/library";
-import { validate } from "../../middleware/validate";
+import { validateParams } from "../../middleware/validate";
 
 const router = Router();
 router.use(authenticateToken, AdminOnly);
@@ -31,7 +31,7 @@ router.use(authenticateToken, AdminOnly);
 // Admin destinaion-gallery routes
 router.post(
   "/:destinationId",
-  validate.params(destinationIdParamSchema),
+  validateParams(destinationIdParamSchema),
   cloudinaryUploadFromParams("destination/gallery", "destinationId").array(
     "imageUrl",
     10
@@ -41,13 +41,13 @@ router.post(
 
 router.patch(
   "/:destinationId/images",
-  validate.params(destinationIdParamSchema),
+  validateParams(destinationIdParamSchema),
   removeGalleryImages
 );
 
 router.delete(
   "/:destinationId",
-  validate.params(destinationIdParamSchema),
+  validateParams(destinationIdParamSchema),
   deleteGallery
 );
 

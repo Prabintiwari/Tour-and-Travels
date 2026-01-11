@@ -1,5 +1,4 @@
 import { Router } from "express";
-import { validate } from "../../middleware/validate";
 import {
   forgotPasswordSchema,
   resendOtpSchema,
@@ -27,6 +26,7 @@ import {
   notFoundErrorSchema,
   unauthorizedErrorSchema,
 } from "../../schema/common.schema";
+import { validateParams, validateRequest } from "../../middleware/validate";
 
 const router = Router();
 
@@ -34,8 +34,8 @@ router.patch(
   "/users/update-profile/:userId",
   cloudinaryUpload("users/profile").single("profileImage"),
   authenticateToken,
-  validate.params(userIdParamSchema),
-  validate.body(updateUserSchema),
+  validateParams(userIdParamSchema),
+  validateRequest(updateUserSchema),
   updateUserDetails
 );
 

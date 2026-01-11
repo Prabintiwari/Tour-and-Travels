@@ -19,27 +19,26 @@ import {
   notFoundErrorSchema,
   unauthorizedErrorSchema,
 } from "../../schema/common.schema";
-import { validate } from "../../middleware/validate";
-import { Param } from "@prisma/client/runtime/library";
+import { validateParams, validateQuery } from "../../middleware/validate";
 
 const router = Router();
 
 // Destination routes
 router.get(
   "/",
-  validate.query(getAllDestinationsQuerySchema),
+  validateQuery(getAllDestinationsQuerySchema),
   getAllDestinations
 );
 router.get("/popular-destination", getPopularDestinations);
 router.get("/regions", getAllRegions);
 router.get(
   "/stats/:destinationId",
-  validate.params(destinationIdParamSchema),
+  validateParams(destinationIdParamSchema),
   getDestinationStats
 );
 router.get(
   "/:destinationId",
-  validate.params(destinationIdParamSchema),
+  validateParams(destinationIdParamSchema),
   getDestinationById
 );
 

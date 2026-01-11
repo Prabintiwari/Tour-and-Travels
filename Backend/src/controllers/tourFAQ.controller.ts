@@ -1,6 +1,10 @@
 import { Request, Response, NextFunction } from "express";
 import { z } from "zod";
-import { updateTourFAQSchema } from "../schema";
+import {
+  allFAQSQueryInput,
+  tourFAQSQueryInput,
+  updateTourFAQSchema,
+} from "../schema";
 import prisma from "../config/prisma";
 
 // Create a new FAQ - Admin
@@ -236,11 +240,7 @@ const searchFAQs = async (req: Request, res: Response, next: NextFunction) => {
   }
 };
 
-/**
- * Get all FAQs for a tour (including inactive) - Admin
- * @route GET /api/admin/tours/:tourId/faqs
- * @access Private (Admin)
- */
+// Get all FAQs for a tour (including inactive)
 const getAllTourFAQs = async (
   req: Request,
   res: Response,
@@ -248,7 +248,17 @@ const getAllTourFAQs = async (
 ) => {
   try {
     const { tourId } = req.params;
-    const { isActive, sortBy = "createdAt", sortOrder = "desc" } = req.query;
+    const {
+      page,
+      limit,
+      isActive,
+      sortBy = "createdAt",
+      sortOrder = "desc",
+    } = req.query as unknown as tourFAQSQueryInput;
+
+    const pageNumber = page ?? 1;
+    const limitNumber = limit ?? 10;
+    const skip = (pageNumber - 1) * limitNumber;
 
     // Validate tour exists
     const tour = await prisma.tour.findUnique({
@@ -261,15 +271,20 @@ const getAllTourFAQs = async (
 
     const where: any = { tourId };
     if (isActive !== undefined) {
-      where.isActive = isActive === "true";
+      where.isActive = isActive === true;
     }
 
-    const faqs = await prisma.tourFAQ.findMany({
-      where,
-      orderBy: {
-        [sortBy as string]: sortOrder as string,
-      },
-    });
+    const [faqs, total] = await Promise.all([
+      prisma.tourFAQ.findMany({
+        where,
+        skip,
+        take: limitNumber,
+        orderBy: {
+          [sortBy as string]: sortOrder as string,
+        },
+      }),
+      prisma.tourFAQ.count({ where }),
+    ]);
 
     // Get statistics
     const stats = {
@@ -282,16 +297,14 @@ const getAllTourFAQs = async (
       status: 200,
       success: true,
       data: {
-        faqs: faqs.map((faq) => ({
-          id: faq.id,
-          tourId: faq.tourId,
-          question: faq.question,
-          answer: faq.answer,
-          isActive: faq.isActive,
-          createdAt: faq.createdAt.toISOString(),
-          updatedAt: faq.updatedAt.toISOString(),
-        })),
+        faqs,
         stats,
+        pagination: {
+          total,
+          page: pageNumber,
+          limit: limitNumber,
+          totalPages: Math.ceil(total / limitNumber),
+        },
       },
     });
   } catch (error: any) {
@@ -303,55 +316,58 @@ const getAllTourFAQs = async (
   }
 };
 
-/**
- * Get all FAQs across all tours - Admin
- * @route GET /api/admin/faqs
- * @access Private (Admin)
- */
+// Get all FAQs across all tours - Admin
 const getAllFAQs = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 20;
     const {
+      page,
+      limit,
       isActive,
       tourId,
       sortBy = "createdAt",
       sortOrder = "desc",
-    } = req.query;
+    } = req.query as unknown as allFAQSQueryInput;
+    console.log(typeof page,typeof limit);
+
+    const pageNumber = page ?? 1;
+    const limitNumber = limit ?? 10;
+    const skip = (pageNumber - 1) * limitNumber;
 
     const where: any = {};
     if (isActive !== undefined) {
-      where.isActive = isActive === "true";
+      where.isActive = isActive === true;
     }
     if (tourId) {
       where.tourId = tourId as string;
     }
 
-    const total = await prisma.tourFAQ.count({ where });
-
-    const faqs = await prisma.tourFAQ.findMany({
-      where,
-      include: {
-        tour: {
-          select: {
-            id: true,
-            title: true,
-            coverImage: true,
-            destination: {
-              select: {
-                id: true,
-                name: true,
+    const [faqs, total] = await Promise.all([
+      prisma.tourFAQ.findMany({
+        where,
+        include: {
+          tour: {
+            select: {
+              id: true,
+              title: true,
+              coverImage: true,
+              destination: {
+                select: {
+                  id: true,
+                  name: true,
+                },
               },
             },
           },
         },
-      },
-      orderBy: {
-        [sortBy as string]: sortOrder as string,
-      },
-      skip: (page - 1) * limit,
-      take: limit,
-    });
+        orderBy: {
+          [sortBy as string]: sortOrder as string,
+        },
+        skip,
+        take: limitNumber,
+      }),
+
+      prisma.tourFAQ.count({ where }),
+    ]);
 
     // Get statistics
     const allFAQs = await prisma.tourFAQ.findMany({
@@ -360,9 +376,9 @@ const getAllFAQs = async (req: Request, res: Response, next: NextFunction) => {
     });
 
     const stats = {
-      total: allFAQs.length,
-      active: allFAQs.filter((f) => f.isActive).length,
-      inactive: allFAQs.filter((f) => !f.isActive).length,
+      total: faqs.length,
+      active: faqs.filter((f) => f.isActive).length,
+      inactive: faqs.filter((f) => !f.isActive).length,
     };
 
     next({
@@ -372,9 +388,9 @@ const getAllFAQs = async (req: Request, res: Response, next: NextFunction) => {
         faqs,
         pagination: {
           total,
-          page,
-          limit,
-          totalPages: Math.ceil(total / limit),
+          pageNumber,
+          limitNumber,
+          totalPages: Math.ceil(total / limitNumber),
         },
         stats,
       },

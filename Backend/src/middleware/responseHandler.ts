@@ -22,7 +22,7 @@ const responseHandler = (
     });
   } catch (error) {
     console.log(error);
-    return res.status(500).json({
+    return res.status(response.status).json({
       success: false,
       message: "Internal server error",
     });

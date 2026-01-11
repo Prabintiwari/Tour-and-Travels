@@ -21,19 +21,24 @@ import {
   unauthorizedErrorSchema,
 } from "../../schema/common.schema";
 import { authenticateToken } from "../../middleware/auth";
-import { validate } from "../../middleware/validate";
+import { validateParams, validateQuery } from "../../middleware/validate";
 
 const router = Router();
 
 // Tour routes
 
-router.get("/",validate.query(tourQuerySchema), getAllTours);
+router.get("/", validateQuery(tourQuerySchema), getAllTours);
 
 router.get("/guide-pricing/default", authenticateToken, getDefaultGuidePricing);
 
-router.get("/:tourId/guide-pricing", authenticateToken, getGuidePricingForTour);
+router.get(
+  "/:tourId/guide-pricing",
+  validateParams(tourParamsSchema),
+  authenticateToken,
+  getGuidePricingForTour
+);
 
-router.get("/:tourId", getTourById);
+router.get("/:tourId", validateParams(tourParamsSchema), getTourById);
 
 // Swagger registration
 
