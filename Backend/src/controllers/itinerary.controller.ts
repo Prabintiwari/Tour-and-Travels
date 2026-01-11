@@ -1,13 +1,15 @@
 import { Request, Response, NextFunction } from "express";
 import prisma from "../config/prisma";
 import {
-  activitySchema,
   activityType,
+  addActivitiesSchema,
   createItinerarySchema,
   itineraryIdParamSchema,
+  removeActivitiesSchema,
   tourParamsSchema,
   updateItinerarySchema,
 } from "../schema";
+import { Prisma } from "@prisma/client";
 
 // CREATE ITINERARY
 const createItinerary = async (
@@ -16,7 +18,7 @@ const createItinerary = async (
   next: NextFunction
 ) => {
   try {
-    const validateData = req.body;
+    const validateData = createItinerarySchema.parse(req.body);
 
     // Verify tour exists
     const tour = await prisma.tour.findUnique({
@@ -90,7 +92,7 @@ const getItinerariesByTour = async (
   next: NextFunction
 ) => {
   try {
-    const { tourId } = req.params;
+    const { tourId } = tourParamsSchema.parse(req.params);
 
     if (!tourId) {
       next({ status: 400, success: false, message: "Tour ID is required" });
@@ -138,7 +140,7 @@ const getItineraryById = async (
   next: NextFunction
 ) => {
   try {
-    const { itineraryId } = req.params;
+    const { itineraryId } = itineraryIdParamSchema.parse(req.params);
 
     const itinerary = await prisma.itinerary.findUnique({
       where: { id: itineraryId },
@@ -186,8 +188,8 @@ const updateItinerary = async (
   next: NextFunction
 ) => {
   try {
-    const { itineraryId } = req.params;
-    const validateData = req.body;
+    const { itineraryId } = itineraryIdParamSchema.parse(req.params);
+    const validateData = updateItinerarySchema.parse(req.body);
 
     // Verify itinerary exists
     const existingItinerary = await prisma.itinerary.findUnique({
@@ -277,7 +279,7 @@ const deleteItinerary = async (
   next: NextFunction
 ) => {
   try {
-    const { itineraryId } = req.params;
+    const { itineraryId } = itineraryIdParamSchema.parse(req.params);
 
     const itinerary = await prisma.itinerary.findUnique({
       where: { id: itineraryId },
@@ -310,17 +312,8 @@ const deleteItinerary = async (
 //  ADD ACTIVITY
 const addActivity = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { itineraryId } = req.params;
-    const { time, activity, location } = req.body;
-
-    if (!time || !activity || !location) {
-      next({
-        status: 400,
-        success: false,
-        message: "time, activity, and location are required",
-      });
-      return;
-    }
+    const { itineraryId } = itineraryIdParamSchema.parse(req.params);
+    const { activities } = addActivitiesSchema.parse(req.body);
 
     const itinerary = await prisma.itinerary.findUnique({
       where: { id: itineraryId },
@@ -331,13 +324,11 @@ const addActivity = async (req: Request, res: Response, next: NextFunction) => {
       return;
     }
 
-    const newActivity: activityType = { time, activity, location };
-
     const updatedItinerary = await prisma.itinerary.update({
       where: { id: itineraryId },
       data: {
         activities: {
-          push: newActivity,
+          push: activities,
         },
       },
     });
@@ -363,58 +354,54 @@ const removeActivity = async (
   next: NextFunction
 ) => {
   try {
-    const { itineraryId } = req.params;
-    const { activityIndex } = req.body;
-
-    if (typeof activityIndex !== "number" || activityIndex < 0) {
-      next({
-        status: 400,
-        success: false,
-        message: "Valid activityIndex is required",
-      });
-      return;
-    }
+    const { itineraryId } = itineraryIdParamSchema.parse(req.params);
+    const { activityIndexes } = removeActivitiesSchema.parse(req.body);
 
     const itinerary = await prisma.itinerary.findUnique({
       where: { id: itineraryId },
     });
 
     if (!itinerary) {
-      next({ status: 404, success: false, message: "Itinerary not found" });
-      return;
+      return res.status(404).json({
+        success: false,
+        message: "Itinerary not found",
+      });
     }
 
-    if (activityIndex >= itinerary.activities.length) {
-      next({
-        status: 400,
+    const totalActivities = itinerary.activities.length;
+
+    const invalidIndex = activityIndexes.find(
+      (index) => index < 0 || index >= totalActivities
+    );
+
+    if (invalidIndex !== undefined) {
+      return res.status(400).json({
         success: false,
-        message: "Activity index out of bounds",
+        message: `Activity index out of bounds: ${invalidIndex}`,
       });
-      return;
     }
 
     const updatedActivities = itinerary.activities.filter(
-      (_, i) => i !== activityIndex
-    );
+      (_, index) => !activityIndexes.includes(index)
+    ) as Prisma.InputJsonValue[];
 
     const updatedItinerary = await prisma.itinerary.update({
       where: { id: itineraryId },
       data: {
-        activities: updatedActivities as activityType[],
+        activities: updatedActivities,
       },
     });
 
-    next({
+    return next({
       status: 200,
       success: true,
       message: "Activity removed successfully",
       data: updatedItinerary,
     });
   } catch (error: any) {
-    next({
-      status: 500,
-      message: "Internal server error",
-      error: error.message,
+    return res.status(400).json({
+      success: false,
+      message: error?.errors?.[0]?.message || error.message,
     });
   }
 };

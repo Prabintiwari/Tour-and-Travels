@@ -3,7 +3,7 @@ import { BookingStatus, GuidePricingType } from "@prisma/client";
 import { generateBookingCode } from "../utils/generateBookingCode";
 import prisma from "../config/prisma";
 import { AuthRequest } from "../middleware/auth";
-import { BookingQueryParams } from "../schema";
+import { bookingParamsSchema, BookingQueryParams, bookingQuerySchema, updateBookingStatusSchema } from "../schema";
 
 // Create a new tour booking
 const createTourBooking = async (
@@ -441,7 +441,6 @@ const getAllTourBookings = async (
   next: NextFunction
 ) => {
   try {
-    console.log("object");
     const {
       bookingId,
       status,
@@ -454,8 +453,7 @@ const getAllTourBookings = async (
       limit,
       sortBy,
       sortOrder,
-    } = req.query as unknown as BookingQueryParams;
-    console.log("2");
+    } = bookingQuerySchema.parse(req.query) 
 
     const pageNumber = page ?? 1;
     const limitNumber = limit ?? 10;
@@ -1111,8 +1109,8 @@ const updateTourBookingStatus = async (
   next: NextFunction
 ) => {
   try {
-    const { bookingId } = req.params;
-    const { status } = req.body;
+    const { bookingId } = bookingParamsSchema.parse(req.params);
+    const { status } = updateBookingStatusSchema.parse(req.body);
 
     const booking = await prisma.tourBooking.findUnique({
       where: { id: bookingId },

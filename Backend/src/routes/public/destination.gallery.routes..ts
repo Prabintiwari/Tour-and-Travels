@@ -14,7 +14,7 @@ const router = Router();
 // Destination routes
 router.get("/", getAllGalleries);
 
-router.get("/:destinationId",validateParams(destinationIdParamSchema), getGalleryByDestination);
+router.get("/:destinationId", getGalleryByDestination);
 
 // Swagger registration
 
@@ -53,7 +53,7 @@ registerRoute({
   summary: "List of Destinations gallery by id",
   tags: ["Destinations"],
   request: {
-    query: destinationIdParamSchema,
+    params: destinationIdParamSchema,
   },
   responses: {
     200: {

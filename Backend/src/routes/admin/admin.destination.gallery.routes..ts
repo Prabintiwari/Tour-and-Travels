@@ -31,7 +31,6 @@ router.use(authenticateToken, AdminOnly);
 // Admin destinaion-gallery routes
 router.post(
   "/:destinationId",
-  validateParams(destinationIdParamSchema),
   cloudinaryUploadFromParams("destination/gallery", "destinationId").array(
     "imageUrl",
     10
@@ -41,13 +40,11 @@ router.post(
 
 router.patch(
   "/:destinationId/images",
-  validateParams(destinationIdParamSchema),
   removeGalleryImages
 );
 
 router.delete(
   "/:destinationId",
-  validateParams(destinationIdParamSchema),
   deleteGallery
 );
 

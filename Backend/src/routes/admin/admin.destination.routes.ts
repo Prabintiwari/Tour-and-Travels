@@ -30,21 +30,17 @@ router.use(authenticateToken, AdminOnly);
 router.post(
   "/",
   cloudinaryUpload("destination/").array("imageUrl", 5),
-  validateRequest(destinationSchema),
   createDestination
 );
 
 router.patch(
   "/:destinationId",
   cloudinaryUpload("destination/").array("imageUrl", 5),
-  validateParams(destinationIdParamSchema),
-  validateRequest(updateDestinationSchema),
   updateDestination
 );
 
 router.delete(
   "/:destinationId",
-  validateParams(destinationIdParamSchema),
   deleteDestination
 );
 

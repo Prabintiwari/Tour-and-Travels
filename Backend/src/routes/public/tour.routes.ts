@@ -27,18 +27,17 @@ const router = Router();
 
 // Tour routes
 
-router.get("/", validateQuery(tourQuerySchema), getAllTours);
+router.get("/", getAllTours);
 
 router.get("/guide-pricing/default", authenticateToken, getDefaultGuidePricing);
 
 router.get(
   "/:tourId/guide-pricing",
-  validateParams(tourParamsSchema),
   authenticateToken,
   getGuidePricingForTour
 );
 
-router.get("/:tourId", validateParams(tourParamsSchema), getTourById);
+router.get("/:tourId",  getTourById);
 
 // Swagger registration
 

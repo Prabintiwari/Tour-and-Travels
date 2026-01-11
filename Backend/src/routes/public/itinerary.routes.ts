@@ -27,12 +27,11 @@ const router = Router();
 router.get("/", getCompleteItinerary);
 router.get(
   "/:itineraryId",
-  validateParams(itineraryIdParamSchema),
   getItineraryById
 );
 router.get(
   "/tour/:tourId",
-  validateParams(tourParamsSchema)
+  getItinerariesByTour
 );
 
 // Swagger registration

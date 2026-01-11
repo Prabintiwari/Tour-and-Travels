@@ -1,8 +1,8 @@
 import { Router } from "express";
-import {  validateParams, validateQuery, validateRequest } from "../../middleware/validate";
 import {
   allFAQSQuerySchema,
   createTourFAQSchema,
+  tourFAQIdParamsSchema,
   tourFAQResponseSchema,
   tourFAQsListResponseSchema,
   tourFAQSQuerySchema,
@@ -10,8 +10,11 @@ import {
 } from "../../schema";
 import {
   createFAQ,
+  getAdminFAQById,
   getAllFAQs,
   getAllTourFAQs,
+  getFAQById,
+  updateFAQ,
 } from "../../controllers/tourFAQ.controller";
 import { AdminOnly, authenticateToken } from "../../middleware/auth";
 import { registerRoute } from "../../utils/openapi.utils";
@@ -29,16 +32,15 @@ router.use(authenticateToken, AdminOnly);
 
 // Admin FAQ routes
 
-router.post("/", validateRequest(createTourFAQSchema), createFAQ);
+router.post("/", createFAQ);
 
-router.get("/", validateQuery(allFAQSQuerySchema), getAllFAQs);
+router.get("/", getAllFAQs);
 
-router.get(
-  "/tours/:tourId",
-  validateParams(tourParamsSchema),
-  validateQuery(tourFAQSQuerySchema),
-  getAllTourFAQs
-);
+router.get("/tours/:tourId", getAllTourFAQs);
+
+router.post("/:faqId", updateFAQ);
+
+router.get("/:faqId", getAdminFAQById);
 
 // Swagger registration
 
@@ -105,6 +107,29 @@ registerRoute({
   responses: {
     200: {
       description: "Get all Faqs for a tour",
+      content: {
+        "application/json": { schema: tourFAQsListResponseSchema },
+      },
+    },
+    400: errorResponse(badRequestErrorSchema, "Bad Request"),
+    401: errorResponse(unauthorizedErrorSchema, "Unauthorized"),
+    403: errorResponse(forbiddenErrorSchema, "Forbidden"),
+    409: errorResponse(conflictErrorSchema, "Conflict"),
+    500: errorResponse(internalServerErrorSchema, "Internal Server Error"),
+  },
+});
+
+//Get FAQ by ID (including inactive)
+registerRoute({
+  method: "get",
+  path: "/api/admin/faqs/{faqId}",
+  summary: "Get FAQ by ID (including inactive)",
+  tags: ["FAQS"],
+  security: [{ bearerAuth: [] }],
+  request: { params: tourFAQIdParamsSchema },
+  responses: {
+    200: {
+      description: "Get FAQ by ID",
       content: {
         "application/json": { schema: tourFAQsListResponseSchema },
       },

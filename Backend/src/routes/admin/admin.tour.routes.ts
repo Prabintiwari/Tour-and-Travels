@@ -30,8 +30,6 @@ import {
 } from "../../schema/common.schema";
 import z from "zod";
 import { cloudinaryUploadFromParams } from "../../middleware/upload";
-import { Param } from "@prisma/client/runtime/library";
-import { validateParams, validateRequest } from "../../middleware/validate";
 const router = Router();
 
 router.use(authenticateToken, AdminOnly);
@@ -39,39 +37,33 @@ router.use(authenticateToken, AdminOnly);
 // Admin tour routes
 router.post(
   "/guide-pricing/default",
-  validateRequest(defaultGuidePricingSchema),
   setDefaultGuidePricing
 );
 
-router.post("/", validateRequest(createTourSchema), createTour);
+router.post("/",  createTour);
 
 router.post(
   "/:tourId",
-  validateParams(tourParamsSchema),
   cloudinaryUploadFromParams("tour", "tourId").array("imageUrl", 10),
   addTourImages
 );
 
 router.patch(
   "/:tourId/images",
-  validateParams(tourParamsSchema),
   removeTourImages
 );
 
 router.patch(
   "/:tourId",
-  validateParams(tourParamsSchema),
-  validateRequest(updateTourSchema),
   updateTour
 );
 
 router.delete(
   "/:tourId/guide-pricing",
-  validateParams(tourParamsSchema),
   deleteTourGuidePricing
 );
 
-router.delete("/:tourId", validateParams(tourParamsSchema), deleteTour);
+router.delete("/:tourId", deleteTour);
 
 // Create a new tour
 registerRoute({

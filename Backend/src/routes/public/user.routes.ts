@@ -26,7 +26,6 @@ import {
   notFoundErrorSchema,
   unauthorizedErrorSchema,
 } from "../../schema/common.schema";
-import { validateParams, validateRequest } from "../../middleware/validate";
 
 const router = Router();
 
@@ -34,8 +33,6 @@ router.patch(
   "/users/update-profile/:userId",
   cloudinaryUpload("users/profile").single("profileImage"),
   authenticateToken,
-  validateParams(userIdParamSchema),
-  validateRequest(updateUserSchema),
   updateUserDetails
 );
 

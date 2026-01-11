@@ -4,6 +4,7 @@ import {
   DestinationQueryParams,
   destinationSchema,
   getAllDestinationsQuerySchema,
+  updateDestinationSchema,
 } from "../schema";
 import prisma from "../config/prisma";
 import cloudinary from "../config/cloudinary";
@@ -77,7 +78,7 @@ const getDestinationById = async (
   next: NextFunction
 ) => {
   try {
-    const { destinationId } = req.params;
+    const { destinationId } = destinationIdParamSchema.parse(req.params);
 
     const destination = await prisma.destination.findUnique({
       where: { id: destinationId },
@@ -148,7 +149,8 @@ const getAllDestinations = async (
   next: NextFunction
 ) => {
   try {
-    const { page, limit, region, search, sortBy, order } = req.query;
+    const { page, limit, region, search, sortBy, order } =
+      getAllDestinationsQuerySchema.parse(req.query);
 
     const pageNumber = page ?? 1;
     const limitNumber = limit ?? 10;
@@ -308,8 +310,8 @@ const updateDestination = async (
   next: NextFunction
 ) => {
   try {
-    const { destinationId } = req.params;
-    const validatedData = req.body;
+    const { destinationId } = destinationIdParamSchema.parse(req.params);
+    const validatedData = updateDestinationSchema.parse(req.body);
 
     // Check if destination exists
     const destination = await prisma.destination.findUnique({
@@ -387,7 +389,7 @@ const deleteDestination = async (
   next: NextFunction
 ) => {
   try {
-    const { destinationId } = req.params;
+    const { destinationId } = destinationIdParamSchema.parse(req.params);
 
     const destination = await prisma.destination.findUnique({
       where: { id: destinationId },
@@ -448,7 +450,7 @@ const getDestinationStats = async (
   next: NextFunction
 ) => {
   try {
-    const { destinationId } = req.params;
+    const { destinationId } = destinationIdParamSchema.parse(req.params);
 
     const destination = await prisma.destination.findUnique({
       where: { id: destinationId },

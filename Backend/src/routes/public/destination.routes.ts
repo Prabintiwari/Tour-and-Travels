@@ -19,28 +19,19 @@ import {
   notFoundErrorSchema,
   unauthorizedErrorSchema,
 } from "../../schema/common.schema";
-import { validateParams, validateQuery } from "../../middleware/validate";
 
 const router = Router();
 
 // Destination routes
-router.get(
-  "/",
-  validateQuery(getAllDestinationsQuerySchema),
-  getAllDestinations
-);
+router.get("/", getAllDestinations);
+
 router.get("/popular-destination", getPopularDestinations);
+
 router.get("/regions", getAllRegions);
-router.get(
-  "/stats/:destinationId",
-  validateParams(destinationIdParamSchema),
-  getDestinationStats
-);
-router.get(
-  "/:destinationId",
-  validateParams(destinationIdParamSchema),
-  getDestinationById
-);
+
+router.get("/stats/:destinationId", getDestinationStats);
+
+router.get("/:destinationId", getDestinationById);
 
 // Swagger registration
 

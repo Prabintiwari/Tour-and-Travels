@@ -28,12 +28,10 @@ const router = Router();
 router.use(authenticateToken, AdminOnly);
 // Admin tour booking routes
 
-router.get("/", validateQuery(bookingQuerySchema), getAllTourBookings);
+router.get("/",  getAllTourBookings);
 
 router.patch(
   "/:bookingId",
-  validateParams(bookingParamsSchema),
-  validateRequest(updateBookingStatusSchema),
   updateTourBookingStatus
 );
 

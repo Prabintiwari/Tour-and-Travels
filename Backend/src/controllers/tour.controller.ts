@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import prisma from "../config/prisma";
 import cloudinary from "../config/cloudinary";
-import { createTourSchema, TourQueryParams } from "../schema";
+import { createTourSchema, defaultGuidePricingSchema, removeTourImagesBodySchema, tourParamsSchema, TourQueryParams, tourQuerySchema, updateTourSchema } from "../schema";
 
 import {
   calculateDiscountAmount,
@@ -11,7 +11,7 @@ import {
 // CREATE TOUR WITH OPTIONAL GUIDE PRICING AND DISCOUNT
 const createTour = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const validatedData = req.body;
+    const validatedData = createTourSchema.parse(req.body);
 
     // Check if destination exists
     const destination = await prisma.destination.findUnique({
@@ -130,7 +130,7 @@ const createTour = async (req: Request, res: Response, next: NextFunction) => {
 // GET TOUR BY ID WITH ALL RELATED DATA
 const getTourById = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { tourId } = req.params;
+    const { tourId } = tourParamsSchema.parse(req.params);
 
     const tour = await prisma.tour.findUnique({
       where: { id: tourId },
@@ -226,7 +226,7 @@ const getAllTours = async (
       maxPrice,
       search,
       discountedOnly,
-    } = req.query;
+    } = tourQuerySchema.parse(req.query);
 
     const pageNumber = page ?? 1;
     const limitNumber = limit ?? 10;
@@ -339,8 +339,8 @@ const getAllTours = async (
 // UPDATE TOUR (WITH GUIDE PRICING AND DISCOUNT)
 const updateTour = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { tourId } = req.params;
-    const validatedData = req.body;
+    const { tourId } = tourParamsSchema.parse(req.params);
+    const validatedData = updateTourSchema.parse(req.body);
     const {
       guidePricePerDay,
       guidePricePerPerson,
@@ -479,7 +479,7 @@ const updateTour = async (req: Request, res: Response, next: NextFunction) => {
 // DELETE TOUR (CASCADE DELETES OTHER AUTOMATICALLY)
 const deleteTour = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { tourId } = req.params;
+    const { tourId } = tourParamsSchema.parse(req.params);
 
     const tour = await prisma.tour.findUnique({ where: { id: tourId } });
     if (!tour) {
@@ -523,7 +523,7 @@ const addTourImages = async (
   next: NextFunction
 ) => {
   try {
-    const { tourId } = req.params;
+    const { tourId } = tourParamsSchema.parse(req.params);
     const files = req.files as Express.Multer.File[];
 
     const tour = await prisma.tour.findUnique({ where: { id: tourId } });
@@ -579,16 +579,12 @@ const removeTourImages = async (
   next: NextFunction
 ) => {
   try {
-    const { tourId } = req.params;
-    const { imagePublicIds } = req.body;
+    const { tourId } = tourParamsSchema.parse(req.params);
+    const { imagePublicIds } = removeTourImagesBodySchema.parse(req.body);
 
     const tour = await prisma.tour.findUnique({ where: { id: tourId } });
     if (!tour) {
       return next({ status: 404, message: "Tour not found" });
-    }
-
-    if (!imagePublicIds || imagePublicIds.length === 0) {
-      return next({ status: 400, message: "No images specified" });
     }
 
     const successfulDeletions: string[] = [];
@@ -609,7 +605,7 @@ const removeTourImages = async (
 
     let updatedCoverImage;
     let updatedCoverImagePublicId;
-    if (imagePublicIds.includes(tour.coverImagePublicId)) {
+    if (tour.coverImagePublicId && imagePublicIds.includes(tour.coverImagePublicId)) {
       updatedCoverImage = null;
       updatedCoverImagePublicId = null;
     }
@@ -662,7 +658,7 @@ const getGuidePricingForTour = async (
   next: NextFunction
 ) => {
   try {
-    const { tourId } = req.params;
+    const { tourId } = tourParamsSchema.parse(req.params);
 
     // Try to get tour-specific pricing first
     let guidePricing = await prisma.tourGuidePricing.findUnique({
@@ -697,7 +693,7 @@ const setDefaultGuidePricing = async (
   next: NextFunction
 ) => {
   try {
-    const validateData = req.body;
+    const validateData = defaultGuidePricingSchema.parse(req.body)
 
     // Check if default pricing already exists
     const existingDefault = await prisma.tourGuidePricing.findFirst({
@@ -789,7 +785,7 @@ const deleteTourGuidePricing = async (
   next: NextFunction
 ) => {
   try {
-    const { tourId } = req.params;
+    const { tourId } = tourParamsSchema.parse(req.params);
 
     const guidePricing = await prisma.tourGuidePricing.findUnique({
       where: { tourId },

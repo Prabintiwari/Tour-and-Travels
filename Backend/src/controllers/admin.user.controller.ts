@@ -26,7 +26,7 @@ const getAllUsers = async (req: Request, res: Response, next: NextFunction) => {
 // get user by id
 const getUserById = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { userId } = req.params;
+    const { userId } = userIdParamSchema.parse(req.params);
     const user = await prisma.user.findUnique({
       where: { id: userId },
       select: {
@@ -61,8 +61,8 @@ const updateUserRole = async (
   next: NextFunction
 ) => {
   try {
-    const { role } = req.body;
-    const { userId } = req.params;
+    const { role } = updateUserRoleSchema.parse(req.body);
+    const { userId } = userIdParamSchema.parse(req.params);
 
     // Cannot change own role
     if (req.id === userId) {
@@ -98,7 +98,7 @@ const updateUserRole = async (
 // delete user
 const blockUser = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { userId } = req.params;
+    const { userId } = userIdParamSchema.parse(req.params);
     const existingUser = await prisma.user.findUnique({
       where: { id: userId },
     });

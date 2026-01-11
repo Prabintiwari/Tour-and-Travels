@@ -29,7 +29,7 @@ const createOrUpdateGalleryRequestSchema = z
 
 const removeGalleryImagesSchema = z
   .object({
-    publicIds: z
+    imagePublicIds: z
       .array(z.string())
       .min(1, "At least one image publicId is required")
       .openapi({
@@ -51,9 +51,27 @@ const destinationGalleryResponseSchema = z
   })
   .openapi("DestinationGalleryResponse");
 
+  const destinationGalleryQuerySchema = z.object({
+    page: z.coerce.number().int().positive().optional(),
+    limit: z.coerce.number().int().positive().optional(),
+    search: z.string().optional().openapi({
+      example:"Bagmati",
+      description:"Search by name,location,region"
+    }),
+    sortBy: z.string().optional().openapi({
+    example: "startDate",
+    description: "Sort by field",
+  }),
+  sortOrder: z.string().optional().default("asc").openapi({
+    example: "asc",
+    description: "Sort order",
+  }),
+  });
+
 export {
   galleryImageSchema,
   createOrUpdateGalleryRequestSchema,
   removeGalleryImagesSchema,
   destinationGalleryResponseSchema,
+  destinationGalleryQuerySchema
 };

@@ -10,7 +10,6 @@ import {
   internalServerErrorSchema,
   unauthorizedErrorSchema,
 } from "../../schema/common.schema";
-import {  validateParams } from "../../middleware/validate";
 
 const router = Router();
 
@@ -18,7 +17,7 @@ router.get("/search", searchFAQs);
 
 router.get("/tours/:tourId", getTourFAQs);
 
-router.get("/:faqId",validateParams(tourFAQIdParamsSchema), getFAQById);
+router.get("/:faqId", getFAQById);
 
 // Swagger registration
 

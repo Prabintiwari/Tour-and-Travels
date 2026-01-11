@@ -1,8 +1,12 @@
 import { Request, Response, NextFunction } from "express";
 import { z } from "zod";
 import {
-  allFAQSQueryInput,
+  allFAQSQuerySchema,
+  createTourFAQSchema,
+  searchFAQSQuerySchema,
+  tourFAQIdParamsSchema,
   tourFAQSQueryInput,
+  tourParamsSchema,
   updateTourFAQSchema,
 } from "../schema";
 import prisma from "../config/prisma";
@@ -10,7 +14,7 @@ import prisma from "../config/prisma";
 // Create a new FAQ - Admin
 const createFAQ = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const validatedData = req.body;
+    const validatedData = createTourFAQSchema.parse(req.body);
 
     // Validate tour exists
     const tour = await prisma.tour.findUnique({
@@ -87,7 +91,7 @@ const createFAQ = async (req: Request, res: Response, next: NextFunction) => {
 //Get all active FAQs for a tour
 const getTourFAQs = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { tourId } = req.params;
+    const { tourId } = tourParamsSchema.parse(req.params);
 
     // Validate tour exists
     const tour = await prisma.tour.findUnique({
@@ -128,7 +132,7 @@ const getTourFAQs = async (req: Request, res: Response, next: NextFunction) => {
 //Get a single FAQ by ID
 const getFAQById = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { faqId } = req.params;
+    const { faqId } = tourFAQIdParamsSchema.parse(req.params);
 
     const faq = await prisma.tourFAQ.findUnique({
       where: { id: faqId },
@@ -168,16 +172,8 @@ const getFAQById = async (req: Request, res: Response, next: NextFunction) => {
 //Search FAQs across all tours
 const searchFAQs = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { query: searchQuery, tourId } = req.query;
-    const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 10;
-
-    if (!searchQuery || typeof searchQuery !== "string") {
-      return res.status(400).json({
-        success: false,
-        message: "Search query is required",
-      });
-    }
+    const { page, limit, sortBy, sortOrder, searchQuery, tourId } =
+      searchFAQSQuerySchema.parse(req.query);
 
     const where: any = {
       isActive: true,
@@ -212,6 +208,9 @@ const searchFAQs = async (req: Request, res: Response, next: NextFunction) => {
             title: true,
           },
         },
+      },
+      orderBy: {
+        [sortBy]: sortOrder,
       },
       skip: (page - 1) * limit,
       take: limit,
@@ -326,12 +325,9 @@ const getAllFAQs = async (req: Request, res: Response, next: NextFunction) => {
       tourId,
       sortBy = "createdAt",
       sortOrder = "desc",
-    } = req.query as unknown as allFAQSQueryInput;
-    console.log(typeof page,typeof limit);
-
-    const pageNumber = page ?? 1;
-    const limitNumber = limit ?? 10;
-    const skip = (pageNumber - 1) * limitNumber;
+    } = allFAQSQuerySchema.parse(req.query);
+    console.log(typeof page, typeof limit);
+    const skip = (page - 1) * limit;
 
     const where: any = {};
     if (isActive !== undefined) {
@@ -363,7 +359,7 @@ const getAllFAQs = async (req: Request, res: Response, next: NextFunction) => {
           [sortBy as string]: sortOrder as string,
         },
         skip,
-        take: limitNumber,
+        take: limit,
       }),
 
       prisma.tourFAQ.count({ where }),
@@ -388,9 +384,9 @@ const getAllFAQs = async (req: Request, res: Response, next: NextFunction) => {
         faqs,
         pagination: {
           total,
-          pageNumber,
-          limitNumber,
-          totalPages: Math.ceil(total / limitNumber),
+          page,
+          limit,
+          totalPages: Math.ceil(total / limit),
         },
         stats,
       },
@@ -404,18 +400,14 @@ const getAllFAQs = async (req: Request, res: Response, next: NextFunction) => {
   }
 };
 
-/**
- * Get FAQ by ID (Admin - including inactive)
- * @route GET /api/admin/faqs/:faqId
- * @access Private (Admin)
- */
+// Get FAQ by ID (including inactive)
 const getAdminFAQById = async (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
   try {
-    const { faqId } = req.params;
+    const { faqId } = tourFAQIdParamsSchema.parse(req.params);
 
     const faq = await prisma.tourFAQ.findUnique({
       where: { id: faqId },
@@ -456,7 +448,7 @@ const getAdminFAQById = async (
  */
 const updateFAQ = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { faqId } = req.params;
+    const { faqId } = tourFAQIdParamsSchema.parse(req.params);
     const validatedData = updateTourFAQSchema.parse(req.body);
 
     // Check if there's data to update
@@ -554,7 +546,7 @@ const toggleFAQStatus = async (
   next: NextFunction
 ) => {
   try {
-    const { faqId } = req.params;
+    const { faqId } = tourFAQIdParamsSchema.parse(req.params);
 
     const existingFAQ = await prisma.tourFAQ.findUnique({
       where: { id: faqId },
@@ -597,7 +589,7 @@ const toggleFAQStatus = async (
  */
 const deleteFAQ = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { faqId } = req.params;
+    const { faqId } = tourFAQIdParamsSchema.parse(req.params);
 
     const existingFAQ = await prisma.tourFAQ.findUnique({
       where: { id: faqId },
@@ -632,7 +624,7 @@ const bulkCreateFAQs = async (
   next: NextFunction
 ) => {
   try {
-    const { tourId } = req.params;
+    const { tourId } = tourParamsSchema.parse(req.params);
     const { faqs } = req.body;
 
     if (!Array.isArray(faqs) || faqs.length === 0) {
@@ -773,7 +765,7 @@ const bulkDeleteFAQs = async (
   next: NextFunction
 ) => {
   try {
-    const { faqIds } = req.body;
+    const { faqIds } = (req.body);
 
     if (!Array.isArray(faqIds) || faqIds.length === 0) {
       return res.status(400).json({
@@ -814,7 +806,7 @@ const bulkDeleteFAQs = async (
  */
 const reorderFAQs = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { tourId } = req.params;
+    const { tourId } = tourParamsSchema.parse(req.params);
     const { faqOrder } = req.body; // Array of FAQ IDs in desired order
 
     if (!Array.isArray(faqOrder) || faqOrder.length === 0) {

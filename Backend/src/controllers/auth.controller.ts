@@ -11,7 +11,7 @@ import welcomeEmail from "../templets/userEmailTemplet/WelcomeEmail";
 // user register
 const register = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const validatedData = req.body;
+    const validatedData = registerSchema.parse(req.body);
     let tempUser;
 
     // Check if user exists
@@ -251,7 +251,7 @@ const logout = (req: Request, res: Response, next: NextFunction) => {
 // delete user
 const deleteUser = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { userId } = req.params;
+    const { userId } = userIdParamSchema.parse(req.params);
     const existingUser = await prisma.user.findUnique({
       where: { id: userId },
     });

@@ -36,27 +36,21 @@ router.use(authenticateToken, AdminOnly);
 router.post("/", validateRequest(createItinerarySchema), createItinerary);
 router.patch(
   "/:itineraryId",
-  validateParams(itineraryIdParamSchema),
-  validateRequest(updateItinerarySchema),
   updateItinerary
 );
 
 router.delete(
   "/:itineraryId",
-  validateParams(itineraryIdParamSchema),
   deleteItinerary
 );
 
 router.patch(
   "/:itineraryId/add-activities",
-  validateParams(itineraryIdParamSchema),
-  validateRequest(addActivitiesSchema),
   addActivity
 );
 
 router.delete(
   "/:itineraryId/remove-activities",
-  validateParams(itineraryIdParamSchema),
   removeActivity
 );
 

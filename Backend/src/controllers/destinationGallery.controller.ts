@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import prisma from "../config/prisma";
 import cloudinary from "../config/cloudinary";
-import { destinationIdParamSchema, DestinationQueryParams } from "../schema";
+import { destinationGalleryQuerySchema, destinationIdParamSchema, DestinationQueryParams, removeGalleryImagesSchema } from "../schema";
 
 // Create gallery for a destination (or add images if already exists)
 const createOrUpdateGallery = async (
@@ -10,7 +10,7 @@ const createOrUpdateGallery = async (
   next: NextFunction
 ) => {
   try {
-    const { destinationId } = req.params;
+    const { destinationId } = destinationIdParamSchema.parse(req.params);
     const files = req.files as Express.Multer.File[];
 
     // Validate destination exists
@@ -106,7 +106,7 @@ const getGalleryByDestination = async (
   next: NextFunction
 ) => {
   try {
-    const { destinationId } = req.params;
+    const { destinationId } = destinationIdParamSchema.parse(req.params);
 
     // Verify destination exists
     const destination = await prisma.destination.findUnique({
@@ -175,8 +175,8 @@ const getAllGalleries = async (
       limit,
       search,
       sortBy = "createdAt",
-      order = "desc",
-    } = req.query;
+      sortOrder = "desc",
+    } = destinationGalleryQuerySchema.parse(req.query);
 
     const pageNumber = page ?? 1;
     const limitNumber = limit ?? 10;
@@ -198,7 +198,7 @@ const getAllGalleries = async (
     const validSortFields = ["createdAt", "updatedAt"];
     const sortField = validSortFields.includes(sortBy) ? sortBy : "createdAt";
 
-    const sortOrder = order.toLowerCase() === "asc" ? "asc" : "desc";
+    const validSortOrder = sortOrder.toLowerCase() === "asc" ? "asc" : "desc";
 
     const galleries = await prisma.destinationGallery.findMany({
       where: filters,
@@ -214,7 +214,7 @@ const getAllGalleries = async (
           },
         },
       },
-      orderBy: { [sortField]: sortOrder },
+      orderBy: { [sortField]: validSortOrder },
     });
 
     const total = await prisma.destinationGallery.count({ where: filters });
@@ -253,8 +253,8 @@ const removeGalleryImages = async (
   next: NextFunction
 ) => {
   try {
-    const { destinationId } = req.params;
-    const { imagePublicIds } = req.body as { imagePublicIds: string[] };
+   const { destinationId } = destinationIdParamSchema.parse(req.params);
+    const { imagePublicIds } = removeGalleryImagesSchema.parse(req.body) 
 
     // Validation
     if (
@@ -357,7 +357,7 @@ const deleteGallery = async (
   next: NextFunction
 ) => {
   try {
-    const { destinationId } = req.params;
+    const { destinationId } = destinationIdParamSchema.parse(req.params);
 
     const gallery = await prisma.destinationGallery.findUnique({
       where: { destinationId },

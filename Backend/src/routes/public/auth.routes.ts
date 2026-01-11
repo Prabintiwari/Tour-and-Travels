@@ -24,23 +24,22 @@ import {
   notFoundErrorSchema,
   unauthorizedErrorSchema,
 } from "../../schema/common.schema";
-import { validateParams, validateRequest } from "../../middleware/validate";
 
 const router = Router();
 
 // Auth Routes
 
-router.post("/register", validateRequest(registerSchema), register);
+router.post("/register", register);
 
 router.post("/verify-register", verifyRegistration);
 
-router.post("/login", validateRequest(loginSchema), login);
+router.post("/login", login);
 
 router.post("/logout", authenticateToken, logout);
 
 router.get("/my-profile", authenticateToken, getMe);
 
-router.delete("/:id",validateParams(userIdParamSchema), authenticateToken, deleteUser);
+router.delete("/:id", authenticateToken, deleteUser);
 
 // Swagger registration
 

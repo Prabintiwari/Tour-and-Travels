@@ -107,6 +107,33 @@ const allFAQSQuerySchema = z.object({
     description: "Sort order",
   }),
 });
+const searchFAQSQuerySchema = z.object({
+  tourId: z.string().optional().openapi({
+    example: "tour_123abc",
+    description: "Filter by tour ID",
+  }),
+  searchQuery:z.string().openapi({
+    example: "What is the cancellation policy?",
+    description: "FAQ question",
+  }),
+  page: z.coerce.number().optional().default(1).openapi({
+    example: 1,
+    description: "Page number for pagination",
+  }),
+  limit: z.coerce.number().optional().default(10).openapi({
+    example: 10,
+    description: "Number of items per page",
+  }),
+  isActive: z.coerce.boolean().optional(),
+  sortBy: z.string().optional().default("createdAt").openapi({
+    example: "startDate",
+    description: "Sort by field",
+  }),
+  sortOrder: z.string().optional().default("asc").openapi({
+    example: "asc",
+    description: "Sort order",
+  }),
+});
 
 const tourFAQIdParamsSchema = z.object({
   faqId: z.string().min(1).openapi({ example: "Faq_123abc" }),
@@ -125,6 +152,7 @@ export {
   tourFAQIdParamsSchema,
   allFAQSQuerySchema,
   tourFAQSQuerySchema,
+  searchFAQSQuerySchema,
   CreateTourFAQInput,
   UpdateTourFAQInput,
   tourFAQSQueryInput,
