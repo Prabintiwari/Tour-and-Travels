@@ -37,14 +37,12 @@ const router = Router();
 router.post(
   "/",
   authenticateToken,
-  validateRequest(createTourReviewSchema),
   createReview
 );
 
 router.get(
   "/tour/:tourId/can-review",
   authenticateToken,
-  validateParams(tourParamsSchema),
   canReviewTour
 );
 

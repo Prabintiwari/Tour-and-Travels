@@ -12,18 +12,15 @@ import {
 } from "../../schema";
 import { registerRoute } from "../../utils/openapi.utils";
 import { errorResponse, forbiddenErrorSchema, internalServerErrorSchema, notFoundErrorSchema, unauthorizedErrorSchema } from "../../schema/common.schema";
-import { validateParams, validateQuery } from "../../middleware/validate";
 const router = Router();
 
-router.get("/", validateQuery(tourScheduleQuerySchema), getTourSchedules);
+router.get("/",  getTourSchedules);
 router.get(
   "/available/:tourId",
-  validateParams(tourParamsSchema),
   getAvailableSchedules
 );
 router.get(
   "/:tourScheduleId",
-  validateParams(tourScheduleIdParamSchema),
   getTourScheduleById
 );
 

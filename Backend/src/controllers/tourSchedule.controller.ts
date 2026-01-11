@@ -2,6 +2,9 @@ import { Request, Response, NextFunction } from "express";
 import {
   createTourScheduleSchema,
   getTourSchedulesQuerySchema,
+  tourParamsSchema,
+  tourScheduleIdParamSchema,
+  tourScheduleQuerySchema,
   updateTourScheduleSchema,
 } from "../schema";
 import prisma from "../config/prisma";
@@ -118,7 +121,7 @@ const getTourSchedules = async (
       availableSeatsMin,
       sortBy,
       sortOrder,
-    } = req.query as unknown as getTourSchedulesQuerySchema;
+    } = tourScheduleQuerySchema.parse(req.query)
 
     const pageNumber = page ?? 1;
     const limitNumber = limit ?? 10;
@@ -223,7 +226,7 @@ const getTourScheduleById = async (
   next: NextFunction
 ) => {
   try {
-    const { tourScheduleId } = req.params;
+    const { tourScheduleId } = tourScheduleIdParamSchema.parse(req.params);
 
     const schedule = await prisma.tourSchedule.findUnique({
       where: { id: tourScheduleId },
@@ -276,8 +279,8 @@ const updateTourSchedule = async (
   next: NextFunction
 ) => {
   try {
-    const { tourScheduleId } = req.params;
-    const validatedData = req.body;
+    const { tourScheduleId } = tourScheduleIdParamSchema.parse(req.params);
+    const validatedData = updateTourScheduleSchema.parse(req.body);
 
     // Check if schedule exists
     const existingSchedule = await prisma.tourSchedule.findUnique({
@@ -386,7 +389,7 @@ const deleteTourSchedule = async (
   next: NextFunction
 ) => {
   try {
-    const { tourScheduleId } = req.params;
+    const { tourScheduleId } = tourScheduleIdParamSchema.parse(req.params);
 
     const schedule = await prisma.tourSchedule.findUnique({
       where: { id: tourScheduleId },
@@ -438,7 +441,7 @@ const getAvailableSchedules = async (
   next: NextFunction
 ) => {
   try {
-    const { tourId } = req.params;
+    const { tourId } = tourParamsSchema.parse(req.params);
 
     const schedules = await prisma.tourSchedule.findMany({
       where: {

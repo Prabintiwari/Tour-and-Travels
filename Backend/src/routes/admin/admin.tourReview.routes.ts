@@ -2,6 +2,7 @@ import { Router } from "express";
 import { AdminOnly, authenticateToken } from "../../middleware/auth";
 import {
   adminDeleteReview,
+  bulkDeleteReviews,
   getAllReviews,
   getReviewById,
   getReviewStatistics,
@@ -34,17 +35,14 @@ router.get("/", getAllReviews);
 
 router.get(
   "/statistics",
-  validateQuery(reviewStatisticsQuerySchema),
   getReviewStatistics
 );
 router.post(
   "/bulk-delete",
-  validateRequest(bulkDeleteReviewSchema),
-  adminDeleteReview
+  bulkDeleteReviews
 );
 router.delete(
   "/:reviewId",
- validateQuery(reviewIdParamsSchema),
   adminDeleteReview
 );
 

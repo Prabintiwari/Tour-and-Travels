@@ -4,6 +4,11 @@ import {
   ReviewQueryParams,
   ReviewIdQueryParams,
   reviewStatisticsQueryParams,
+  createTourReviewSchema,
+  tourParamsSchema,
+  bulkDeleteReviewSchema,
+  reviewIdParamsSchema,
+  reviewIdQuerySchema,
 } from "../schema";
 import { AuthRequest } from "../middleware/auth";
 import { BookingStatus } from "@prisma/client";
@@ -30,7 +35,7 @@ const createReview = async (
       return next({ status: 404, success: false, message: "User not found!" });
     }
 
-    const validatedData = req.body;
+    const validatedData = createTourReviewSchema.parse(req.body);
 
     // Validate tour exists
     const tour = await prisma.tour.findUnique({
@@ -138,9 +143,9 @@ const getTourReviews = async (
   next: NextFunction
 ) => {
   try {
-    const { tourId } = req.params;
+    const { tourId } = tourParamsSchema.parse(req.params);
     const { page, limit, rating, sortBy, sortOrder } =
-      req.query as unknown as ReviewIdQueryParams;
+      reviewIdQuerySchema.parse(req.query) 
 
     const pageNumber = page ?? 1;
     const limitNumber = limit ?? 10;
@@ -631,7 +636,7 @@ const canReviewTour = async (
 ) => {
   try {
     const userId = req.id;
-    const { tourId } = req.params;
+    const { tourId } = tourParamsSchema.parse(req.params);
 
     if (!userId) {
       return next({
@@ -810,7 +815,7 @@ const adminDeleteReview = async (
   next: NextFunction
 ) => {
   try {
-    const { reviewId } = req.params;
+    const { reviewId } = reviewIdParamsSchema.parse(req.params);
 
     const review = await prisma.tourReview.findUnique({
       where: { id: reviewId },
@@ -924,17 +929,14 @@ const getReviewStatistics = async (
   }
 };
 
-/**
- * Bulk delete reviews (admin)
- * @route POST /api/admin/reviews/bulk-delete
- */
+// Bulk delete reviews (admin)
 const bulkDeleteReviews = async (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
   try {
-    const { reviewIds } = req.body;
+    const { reviewIds } = bulkDeleteReviewSchema.parse(req.body);
 
     if (!Array.isArray(reviewIds) || reviewIds.length === 0) {
       return res.status(400).json({

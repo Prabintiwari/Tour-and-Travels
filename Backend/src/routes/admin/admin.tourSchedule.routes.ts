@@ -29,17 +29,14 @@ const router = Router();
 router.use(authenticateToken, AdminOnly);
 
 // Tour Schedule API
-router.post("/", validateRequest(createTourScheduleSchema), createTourSchedule);
+router.post("/",  createTourSchedule);
 router.patch(
   "/:tourScheduleId",
-  validateParams(tourScheduleIdParamSchema),
-  validateRequest(updateTourScheduleSchema),
   updateTourSchedule
 );
 
 router.delete(
   "/:tourScheduleId",
-  validateParams(tourScheduleIdParamSchema),
   deleteTourSchedule
 );
 
