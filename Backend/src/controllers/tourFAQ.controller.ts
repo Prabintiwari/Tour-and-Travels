@@ -315,7 +315,7 @@ const getAllTourFAQs = async (
   }
 };
 
-// Get all FAQs across all tours - Admin
+// Get all FAQs across all tours
 const getAllFAQs = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const {
@@ -326,7 +326,7 @@ const getAllFAQs = async (req: Request, res: Response, next: NextFunction) => {
       sortBy = "createdAt",
       sortOrder = "desc",
     } = allFAQSQuerySchema.parse(req.query);
-    console.log(typeof page, typeof limit);
+
     const skip = (page - 1) * limit;
 
     const where: any = {};
@@ -441,23 +441,19 @@ const getAdminFAQById = async (
   }
 };
 
-/**
- * Update an FAQ - Admin
- * @route PUT /api/admin/faqs/:faqId
- * @access Private (Admin)
- */
+// Update an FAQ - Admin
 const updateFAQ = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { faqId } = tourFAQIdParamsSchema.parse(req.params);
     const validatedData = updateTourFAQSchema.parse(req.body);
 
-    // Check if there's data to update
     if (
-      !validatedData.question &&
-      !validatedData.answer &&
+      validatedData.question === undefined &&
+      validatedData.answer === undefined &&
       validatedData.isActive === undefined
     ) {
-      return res.status(400).json({
+      return next({
+        status: 400,
         success: false,
         message: "At least one field must be provided for update",
       });
@@ -468,24 +464,26 @@ const updateFAQ = async (req: Request, res: Response, next: NextFunction) => {
     });
 
     if (!existingFAQ) {
-      return next({ status: 404, success: false, message: "FAQ not found" });
+      return next({
+        status: 404,
+        success: false,
+        message: "FAQ not found",
+      });
     }
 
-    // Check for duplicate question if question is being updated
+    const normalizedQuestion = validatedData.question
+      ? validatedData.question.trim().toLowerCase()
+      : undefined;
+
     if (
-      validatedData.question &&
-      validatedData.question !== existingFAQ.question
+      normalizedQuestion &&
+      normalizedQuestion !== existingFAQ.questionLower
     ) {
       const duplicateFAQ = await prisma.tourFAQ.findFirst({
         where: {
           tourId: existingFAQ.tourId,
-          question: {
-            equals: validatedData.question,
-            mode: "insensitive",
-          },
-          id: {
-            not: faqId,
-          },
+          questionLower: normalizedQuestion,
+          id: { not: faqId },
         },
       });
 
@@ -498,9 +496,17 @@ const updateFAQ = async (req: Request, res: Response, next: NextFunction) => {
       }
     }
 
+    const updateData: any = {
+      ...validatedData,
+    };
+
+    if (normalizedQuestion) {
+      updateData.questionLower = normalizedQuestion;
+    }
+
     const faq = await prisma.tourFAQ.update({
       where: { id: faqId },
-      data: validatedData,
+      data: updateData,
       include: {
         tour: {
           select: {
@@ -511,35 +517,23 @@ const updateFAQ = async (req: Request, res: Response, next: NextFunction) => {
       },
     });
 
-    next({
+    return next({
       status: 200,
       success: true,
       message: "FAQ updated successfully",
-      data: {
-        id: faq.id,
-        tourId: faq.tourId,
-        question: faq.question,
-        answer: faq.answer,
-        isActive: faq.isActive,
-        tour: faq.tour,
-        createdAt: faq.createdAt.toISOString(),
-        updatedAt: faq.updatedAt.toISOString(),
-      },
+      data: { faq },
     });
   } catch (error: any) {
-    next({
+    return next({
       status: 500,
+      success: false,
       message: error.message || "Internal server error",
       error: error.message,
     });
   }
 };
 
-/**
- * Toggle FAQ active status - Admin
- * @route PATCH /api/admin/faqs/:faqId/toggle
- * @access Private (Admin)
- */
+//Toggle FAQ active status 
 const toggleFAQStatus = async (
   req: Request,
   res: Response,
@@ -582,11 +576,7 @@ const toggleFAQStatus = async (
   }
 };
 
-/**
- * Delete an FAQ - Admin
- * @route DELETE /api/admin/faqs/:faqId
- * @access Private (Admin)
- */
+// Delete an FAQ 
 const deleteFAQ = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { faqId } = tourFAQIdParamsSchema.parse(req.params);
@@ -765,7 +755,7 @@ const bulkDeleteFAQs = async (
   next: NextFunction
 ) => {
   try {
-    const { faqIds } = (req.body);
+    const { faqIds } = req.body;
 
     if (!Array.isArray(faqIds) || faqIds.length === 0) {
       return res.status(400).json({

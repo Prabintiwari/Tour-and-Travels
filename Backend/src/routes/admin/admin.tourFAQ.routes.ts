@@ -7,13 +7,16 @@ import {
   tourFAQsListResponseSchema,
   tourFAQSQuerySchema,
   tourParamsSchema,
+  updateTourFAQSchema,
 } from "../../schema";
 import {
   createFAQ,
+  deleteFAQ,
   getAdminFAQById,
   getAllFAQs,
   getAllTourFAQs,
   getFAQById,
+  toggleFAQStatus,
   updateFAQ,
 } from "../../controllers/tourFAQ.controller";
 import { AdminOnly, authenticateToken } from "../../middleware/auth";
@@ -34,13 +37,18 @@ router.use(authenticateToken, AdminOnly);
 
 router.post("/", createFAQ);
 
-router.get("/", getAllFAQs);
-
 router.get("/tours/:tourId", getAllTourFAQs);
 
-router.post("/:faqId", updateFAQ);
+router.patch("/:faqId/toggle",  toggleFAQStatus);
 
-router.get("/:faqId", getAdminFAQById);
+router.patch("/:faqId",  updateFAQ);
+
+router.delete("/:faqId",  deleteFAQ);
+
+router.get("/",  getAllFAQs);
+
+router.get("/:faqId",  getAdminFAQById);
+
 
 // Swagger registration
 
@@ -61,6 +69,61 @@ registerRoute({
   responses: {
     200: {
       description: "Tour Faqs created",
+      content: {
+        "application/json": { schema: tourFAQResponseSchema },
+      },
+    },
+    400: errorResponse(badRequestErrorSchema, "Bad Request"),
+    401: errorResponse(unauthorizedErrorSchema, "Unauthorized"),
+    403: errorResponse(forbiddenErrorSchema, "Forbidden"),
+    409: errorResponse(conflictErrorSchema, "Conflict"),
+    500: errorResponse(internalServerErrorSchema, "Internal Server Error"),
+  },
+});
+
+// Update a new tour faqs
+registerRoute({
+  method: "patch",
+  path: "/api/admin/faqs/{faqId}",
+  summary: "Update a  tour faqs",
+  tags: ["FAQS"],
+  security: [{ bearerAuth: [] }],
+  request: {
+    params:tourFAQIdParamsSchema,
+    body: {
+      content: {
+        "application/json": { schema: updateTourFAQSchema },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: "Tour Faqs updated",
+      content: {
+        "application/json": { schema: tourFAQResponseSchema },
+      },
+    },
+    400: errorResponse(badRequestErrorSchema, "Bad Request"),
+    401: errorResponse(unauthorizedErrorSchema, "Unauthorized"),
+    403: errorResponse(forbiddenErrorSchema, "Forbidden"),
+    409: errorResponse(conflictErrorSchema, "Conflict"),
+    500: errorResponse(internalServerErrorSchema, "Internal Server Error"),
+  },
+});
+
+// Toggle FAQ active status
+registerRoute({
+  method: "patch",
+  path: "/api/admin/faqs/{faqId}/toggle",
+  summary: "Toggle FAQ active status",
+  tags: ["FAQS"],
+  security: [{ bearerAuth: [] }],
+  request: {
+    params:tourFAQIdParamsSchema,
+  },
+  responses: {
+    200: {
+      description: "Toggle FAQ active status",
       content: {
         "application/json": { schema: tourFAQResponseSchema },
       },
@@ -133,6 +196,29 @@ registerRoute({
       content: {
         "application/json": { schema: tourFAQsListResponseSchema },
       },
+    },
+    400: errorResponse(badRequestErrorSchema, "Bad Request"),
+    401: errorResponse(unauthorizedErrorSchema, "Unauthorized"),
+    403: errorResponse(forbiddenErrorSchema, "Forbidden"),
+    409: errorResponse(conflictErrorSchema, "Conflict"),
+    500: errorResponse(internalServerErrorSchema, "Internal Server Error"),
+  },
+});
+
+// Delete an FAQ
+registerRoute({
+  method: "delete",
+  path: "/api/admin/faqs/{faqId}",
+  summary: "Delete a faqs",
+  tags: ["FAQS"],
+  security: [{ bearerAuth: [] }],
+  request: {
+    params:tourFAQIdParamsSchema,
+  },
+  responses: {
+    200: {
+      description: "Tour Faqs deleted successfully",
+     
     },
     400: errorResponse(badRequestErrorSchema, "Bad Request"),
     401: errorResponse(unauthorizedErrorSchema, "Unauthorized"),
