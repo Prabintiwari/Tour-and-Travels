@@ -9,6 +9,10 @@ import {
   bulkDeleteReviewSchema,
   reviewIdParamsSchema,
   reviewIdQuerySchema,
+  destinationIdParamSchema,
+  updateTourReviewSchema,
+  reviewQuerySchema,
+  reviewStatisticsQuerySchema,
 } from "../schema";
 import { AuthRequest } from "../middleware/auth";
 import { BookingStatus } from "@prisma/client";
@@ -260,7 +264,7 @@ const getReviewById = async (
   next: NextFunction
 ) => {
   try {
-    const { reviewId } = req.params;
+    const { reviewId } = reviewIdParamsSchema.parse(req.params);
 
     const review = await prisma.tourReview.findUnique({
       where: { id: reviewId },
@@ -315,9 +319,9 @@ const getDestinationReviews = async (
   next: NextFunction
 ) => {
   try {
-    const { destinationId } = req.params;
+    const { destinationId } = destinationIdParamSchema.parse(req.params);
     const { page, limit, rating, sortBy, sortOrder } =
-      req.query as unknown as ReviewIdQueryParams;
+      reviewIdQuerySchema.parse(req.query)
 
     const pageNumber = page ?? 1;
     const limitNumber = limit ?? 10;
@@ -420,8 +424,8 @@ const updateReview = async (
 ) => {
   try {
     const userId = req.id;
-    const { reviewId } = req.params;
-    const validatedData = req.body;
+    const { reviewId } = reviewIdParamsSchema.parse(req.params);
+    const validatedData = updateTourReviewSchema.parse(req.body);
 
     if (!userId) {
       return next({
@@ -502,7 +506,7 @@ const deleteReview = async (
 ) => {
   try {
     const userId = req.id;
-    const { reviewId } = req.params;
+    const { reviewId } = reviewIdParamsSchema.parse(req.params);
 
     if (!userId) {
       return next({
@@ -555,7 +559,7 @@ const getUserReviews = async (
   try {
     const userId = req.id;
     const { page, limit, rating, sortBy, sortOrder } =
-      req.query as unknown as ReviewIdQueryParams;
+      reviewIdQuerySchema.parse(req.query)
     const pageNumber = page ?? 1;
     const limitNumber = limit ?? 10;
     const skip = (pageNumber - 1) * limitNumber;
@@ -726,7 +730,7 @@ const getAllReviews = async (
       userId,
       sortBy,
       sortOrder,
-    } = req.query as unknown as ReviewQueryParams;
+    } = reviewQuerySchema.parse(req.query)
 
     const pageNumber = page ?? 1;
     const limitNumber = limit ?? 10;
@@ -851,7 +855,7 @@ const getReviewStatistics = async (
 ) => {
   try {
     const { tourId, destinationId } =
-      req.query as unknown as reviewStatisticsQueryParams;
+      reviewStatisticsQuerySchema.parse(req.query)
 
     const where: any = {};
     if (tourId) {

@@ -29,7 +29,6 @@ import {
   internalServerErrorSchema,
   unauthorizedErrorSchema,
 } from "../../schema/common.schema";
-import { validateParams, validateQuery, validateRequest } from "../../middleware/validate";
 
 const router = Router();
 
@@ -48,40 +47,31 @@ router.get(
 
 router.get(
   "/tour/:tourId",
-  validateParams(tourParamsSchema),
-  validateQuery(reviewIdQuerySchema),
   getTourReviews
 );
 
 router.get(
   "/destination/:destinationId",
-  validateParams(destinationIdParamSchema),
-  validateQuery(reviewIdQuerySchema),
   getDestinationReviews
 );
 
 router.get(
   "/user/:userId",
   authenticateToken,
-  validateParams(userIdParamSchema),
-  validateQuery(reviewIdQuerySchema),
   getUserReviews
 );
 
-router.get("/:reviewId", validateParams(reviewIdParamsSchema), getReviewById);
+router.get("/:reviewId", getReviewById);
 
 router.patch(
   "/:reviewId",
   authenticateToken,
-  validateParams(reviewIdParamsSchema),
-  validateRequest(updateTourReviewSchema),
   updateReview
 );
 
 router.delete(
   "/:reviewId",
   authenticateToken,
-  validateParams(reviewIdParamsSchema),
   deleteReview
 );
 

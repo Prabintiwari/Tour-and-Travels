@@ -33,18 +33,9 @@ router.use(authenticateToken, AdminOnly);
 
 router.get("/", getAllReviews);
 
-router.get(
-  "/statistics",
-  getReviewStatistics
-);
-router.post(
-  "/bulk-delete",
-  bulkDeleteReviews
-);
-router.delete(
-  "/:reviewId",
-  adminDeleteReview
-);
+router.get("/statistics", getReviewStatistics);
+router.post("/bulk-delete", bulkDeleteReviews);
+router.delete("/:reviewId", adminDeleteReview);
 
 // Swagger registration
 
@@ -79,6 +70,7 @@ registerRoute({
   summary: "List of review statistics",
   tags: ["Tour Review"],
   security: [{ bearerAuth: [] }],
+  request: { query: reviewStatisticsQuerySchema },
   responses: {
     200: {
       description: "Get all Review statistics successfully",
