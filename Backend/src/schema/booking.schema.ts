@@ -104,12 +104,11 @@ const updateBookingStatusSchema = z
   })
   .openapi("UpdateBookingStatusRequest");
 
-  const rescheduleBookingSchema = z.object({
+const rescheduleBookingSchema = z.object({
   newScheduleId: z.string().openapi({
     example: "schedule_123abc",
   }),
 });
-
 
 const tourBookingResponseSchema = z.object({
   id: z.string().openapi({ example: "booking_123abc" }),
@@ -203,6 +202,23 @@ const bookingParamsSchema = z.object({
   bookingId: z.string().min(1).openapi({ example: "booking_123abc" }),
 });
 
+const getBookingQuerySchema = z.object({
+  status: z.nativeEnum(BookingStatus).openapi({
+    example: BookingStatus.CANCELLED,
+    description: "New booking status",
+  }),
+  page: z.coerce.number().int().positive().optional(),
+  limit: z.coerce.number().int().positive().optional(),
+  sortBy: z.string().optional().openapi({
+    example: "startDate",
+    description: "Sort by field",
+  }),
+  sortOrder: z.string().optional().default("asc").openapi({
+    example: "asc",
+    description: "Sort order",
+  }),
+});
+
 export {
   createBookingSchema,
   updateBookingSchema,
@@ -214,4 +230,5 @@ export {
   bookingStatsResponseSchema,
   BookingQueryParams,
   bookingParamsSchema,
+  getBookingQuerySchema,
 };

@@ -3,7 +3,16 @@ import { BookingStatus, GuidePricingType } from "@prisma/client";
 import { generateBookingCode } from "../utils/generateBookingCode";
 import prisma from "../config/prisma";
 import { AuthRequest } from "../middleware/auth";
-import { bookingParamsSchema, BookingQueryParams, bookingQuerySchema, updateBookingStatusSchema } from "../schema";
+import {
+  bookingParamsSchema,
+  BookingQueryParams,
+  bookingQuerySchema,
+  createBookingSchema,
+  getBookingQuerySchema,
+  rescheduleBookingSchema,
+  updateBookingSchema,
+  updateBookingStatusSchema,
+} from "../schema";
 
 // Create a new tour booking
 const createTourBooking = async (
@@ -21,7 +30,7 @@ const createTourBooking = async (
       });
     }
 
-    const validateData = req.body;
+    const validateData = createBookingSchema.parse(req.body);
 
     /* Verify tour */
     const tour = await prisma.tour.findUnique({
@@ -241,9 +250,12 @@ const getUserTourBookings = async (
 ) => {
   try {
     const userId = req.id;
-    const { status, page = "1", limit = "10" } = req.query;
+    const { status, page, limit, sortBy, sortOrder } =
+      getBookingQuerySchema.parse(req.query);
 
-    const skip = (parseInt(page as string) - 1) * parseInt(limit as string);
+    const pageNumber = page || 1;
+    const limitNumber = limit || 10;
+    const skip = (pageNumber - 1) * limitNumber;
 
     const where: any = { userId };
     if (status) {
@@ -254,7 +266,7 @@ const getUserTourBookings = async (
       prisma.tourBooking.findMany({
         where,
         skip,
-        take: parseInt(limit as string),
+        take: limitNumber,
         include: {
           tour: {
             include: {
@@ -264,7 +276,7 @@ const getUserTourBookings = async (
           schedule: true,
           payment: true,
         },
-        orderBy: { bookingDate: "desc" },
+        orderBy: { [sortBy as string]: sortOrder as string },
       }),
       prisma.tourBooking.count({ where }),
     ]);
@@ -276,9 +288,9 @@ const getUserTourBookings = async (
         bookings,
         pagination: {
           total,
-          page: parseInt(page as string),
-          limit: parseInt(limit as string),
-          totalPages: Math.ceil(total / parseInt(limit as string)),
+          page: pageNumber,
+          limit: limitNumber,
+          totalPages: Math.ceil(total / limitNumber),
         },
       },
     });
@@ -299,7 +311,7 @@ const getUserTourBookingById = async (
 ) => {
   try {
     const userId = req.id;
-    const { bookingId } = req.params;
+    const { bookingId } = bookingParamsSchema.parse(req.params);
 
     const booking = await prisma.tourBooking.findFirst({
       where: {
@@ -354,7 +366,7 @@ const cancelUserTourBooking = async (
 ) => {
   try {
     const userId = req.id;
-    const { bookingId } = req.params;
+    const { bookingId } = bookingParamsSchema.parse(req.params);
 
     const booking = await prisma.tourBooking.findFirst({
       where: {
@@ -453,7 +465,7 @@ const getAllTourBookings = async (
       limit,
       sortBy,
       sortOrder,
-    } = bookingQuerySchema.parse(req.query) 
+    } = bookingQuerySchema.parse(req.query);
 
     const pageNumber = page ?? 1;
     const limitNumber = limit ?? 10;
@@ -536,7 +548,7 @@ const getAdminTourBookingById = async (
   next: NextFunction
 ) => {
   try {
-    const { bookingId } = req.params;
+    const { bookingId } = bookingParamsSchema.parse(req.params);
 
     const booking = await prisma.tourBooking.findUnique({
       where: { id: bookingId },
@@ -590,9 +602,9 @@ const updateTourBooking = async (
   next: NextFunction
 ) => {
   try {
-    const validateData = req.body;
+    const validateData = updateBookingSchema.parse(req.body);
     const userId = req.id;
-    const { bookingId } = req.params;
+    const { bookingId } = bookingParamsSchema.parse(req.params);
 
     // Fetch existing booking
     const booking = await prisma.tourBooking.findFirst({
@@ -853,8 +865,8 @@ const rescheduleTourBooking = async (
 ) => {
   try {
     const userId = req.id;
-    const { bookingId } = req.params;
-    const { newScheduleId } = req.body;
+    const { bookingId } = bookingParamsSchema.parse(req.params);
+    const { newScheduleId } = rescheduleBookingSchema.parse(req.body);
 
     if (!newScheduleId) {
       return next({
@@ -886,7 +898,9 @@ const rescheduleTourBooking = async (
 
     // Only allow rescheduling for PENDING or CONFIRMED bookings
     if (
-      ![BookingStatus.PENDING, BookingStatus.CONFIRMED].includes(booking.status as "PENDING" | "CONFIRMED")
+      ![BookingStatus.PENDING, BookingStatus.CONFIRMED].includes(
+        booking.status as "PENDING" | "CONFIRMED"
+      )
     ) {
       return next({
         status: 400,

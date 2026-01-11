@@ -25,7 +25,6 @@ import {
   notFoundErrorSchema,
   unauthorizedErrorSchema,
 } from "../../schema/common.schema";
-import { validateParams, validateRequest } from "../../middleware/validate";
 
 const router = Router();
 
@@ -33,23 +32,18 @@ const router = Router();
 router.post(
   "/",
   authenticateToken,
-  validateRequest(createBookingSchema),
   createTourBooking
 );
 
 router.patch(
   "/my-booking/:bookingId/reschedule",
   authenticateToken,
-  validateParams(bookingParamsSchema),
-  validateRequest(rescheduleBookingSchema),
   rescheduleTourBooking
 );
 
 router.patch(
   "/my-booking/:bookingId",
   authenticateToken,
-  validateParams(bookingParamsSchema),
-  validateRequest(updateBookingSchema),
   updateTourBooking
 );
 
@@ -58,14 +52,12 @@ router.get("/my-booking", authenticateToken, getUserTourBookings);
 router.patch(
   "/my-booking/:bookingId/cancel",
   authenticateToken,
-  validateParams(bookingParamsSchema),
   cancelUserTourBooking
 );
 
 router.get(
   "/my-booking/:bookingId",
   authenticateToken,
-  validateParams(bookingParamsSchema),
   getUserTourBookingById
 );
 

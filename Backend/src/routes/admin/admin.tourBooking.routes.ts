@@ -39,7 +39,6 @@ router.get("/booking-stats", getTourBookingStats);
 
 router.get(
   "/:bookingId",
-  validateParams(bookingParamsSchema),
   getAdminTourBookingById
 );
 
