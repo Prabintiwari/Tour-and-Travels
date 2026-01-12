@@ -3,6 +3,8 @@ import { z } from "zod";
 import {
   allFAQSQuerySchema,
   bulkCreateTourFAQsSchema,
+  bulkDeleteFAQsSchema,
+  bulkUpdateTourFAQsSchema,
   createTourFAQSchema,
   searchFAQSQuerySchema,
   tourFAQIdParamsSchema,
@@ -442,7 +444,7 @@ const getAdminFAQById = async (
   }
 };
 
-// Update an FAQ - Admin
+// Update an FAQ
 const updateFAQ = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { faqId } = tourFAQIdParamsSchema.parse(req.params);
@@ -695,52 +697,66 @@ const bulkCreateFAQs = async (
   }
 };
 
-/**
- * Bulk update FAQs - Admin
- * @route PUT /api/admin/faqs/bulk-update
- * @access Private (Admin)
- */
+// Bulk update FAQs
 const bulkUpdateFAQs = async (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
   try {
-    const { updates } = req.body;
+    const { faqs } = bulkUpdateTourFAQsSchema.parse(req.body);
+    console.log(faqs);
 
-    if (!Array.isArray(updates) || updates.length === 0) {
-      return res.status(400).json({
+    const normalizedQuestions = faqs
+      .filter(f => f.question)
+      .map(f => f.question!.trim().toLowerCase());
+
+    // Check for duplicates inside the request
+    const uniqueQuestions = new Set(normalizedQuestions);
+    if (uniqueQuestions.size !== normalizedQuestions.length) {
+      return next({
+        status: 400,
         success: false,
-        message: "Updates array is required and must not be empty",
+        message: "Duplicate FAQ questions are not allowed in the same request",
       });
     }
 
-    const updateSchema = z.object({
-      id: z.string(),
-      question: z.string().min(5).max(500).optional(),
-      answer: z.string().min(10).max(2000).optional(),
-      isActive: z.boolean().optional(),
-    });
+    //  Check duplicates against DB (exclude current faqIds)
+    if (normalizedQuestions.length > 0) {
+      const existingFAQs = await prisma.tourFAQ.findMany({
+        where: {
+          questionLower: { in: normalizedQuestions },
+          NOT: { id: { in: faqs.map(f => f.faqId) } },
+        },
+        select: { questionLower: true },
+      });
 
-    const validatedUpdates = updates.map((update, index) => {
-      try {
-        return updateSchema.parse(update);
-      } catch (error) {
-        throw new Error(`Invalid update at index ${index}: ${error}`);
+      if (existingFAQs.length > 0) {
+        return next({
+          status: 409,
+          success: false,
+          message: "Some FAQ questions already exist in the database",
+          data: existingFAQs.map(f => f.questionLower),
+        });
       }
-    });
+    }
 
     const updatedFAQs = await prisma.$transaction(
-      validatedUpdates.map((update) => {
-        const { id, ...data } = update;
+      faqs.map((update) => {
+        const { faqId, question, ...data } = update;
+
         return prisma.tourFAQ.update({
-          where: { id },
-          data,
+          where: { id: faqId },
+          data: {
+            ...data,
+            question: question?.trim(),
+            questionLower: question ? question.trim().toLowerCase() : undefined,
+          },
         });
       })
     );
 
-    next({
+    return next({
       status: 200,
       success: true,
       message: `${updatedFAQs.length} FAQ(s) updated successfully`,
@@ -750,129 +766,62 @@ const bulkUpdateFAQs = async (
       },
     });
   } catch (error: any) {
-    next({
+    return next({
       status: 500,
+      success: false,
       message: error.message || "Internal server error",
       error: error.message,
     });
   }
 };
 
-/**
- * Bulk delete FAQs - Admin
- * @route POST /api/admin/faqs/bulk-delete
- * @access Private (Admin)
- */
+// Bulk delete FAQs
 const bulkDeleteFAQs = async (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
   try {
-    const { faqIds } = req.body;
+    const { faqIds } = bulkDeleteFAQsSchema.parse(req.body);
 
-    if (!Array.isArray(faqIds) || faqIds.length === 0) {
-      return res.status(400).json({
+    const validIds = [...new Set(faqIds)].filter(id => /^[0-9a-fA-F]{24}$/.test(id));
+
+    if (validIds.length === 0) {
+      return next({
+        status: 400,
         success: false,
-        message: "faqIds array is required and must not be empty",
+        message: "No valid FAQ IDs provided",
       });
     }
 
     const result = await prisma.tourFAQ.deleteMany({
-      where: {
-        id: {
-          in: faqIds,
-        },
-      },
+      where: { id: { in: validIds } },
     });
+
+    if (result.count === 0) {
+      return next({
+        status: 404,
+        success: false,
+        message: "No FAQs found for the provided IDs",
+      });
+    }
 
     next({
       status: 200,
       success: true,
       message: `${result.count} FAQ(s) deleted successfully`,
-      data: {
-        deletedCount: result.count,
-      },
+      data: { deletedCount: result.count },
     });
   } catch (error: any) {
     next({
       status: 500,
+      success: false,
       message: error.message || "Internal server error",
       error: error.message,
     });
   }
 };
 
-/**
- * Reorder FAQs for a tour - Admin
- * @route PUT /api/admin/tours/:tourId/faqs/reorder
- * @access Private (Admin)
- */
-const reorderFAQs = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const { tourId } = tourParamsSchema.parse(req.params);
-    const { faqOrder } = req.body; // Array of FAQ IDs in desired order
-
-    if (!Array.isArray(faqOrder) || faqOrder.length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: "faqOrder array is required and must not be empty",
-      });
-    }
-
-    // Validate tour exists
-    const tour = await prisma.tour.findUnique({
-      where: { id: tourId },
-    });
-
-    if (!tour) {
-      return next({ status: 404, success: false, message: "Tour not found" });
-    }
-
-    // Verify all FAQs belong to this tour
-    const faqs = await prisma.tourFAQ.findMany({
-      where: {
-        id: { in: faqOrder },
-        tourId,
-      },
-    });
-
-    if (faqs.length !== faqOrder.length) {
-      return res.status(400).json({
-        success: false,
-        message: "Some FAQs do not belong to this tour or do not exist",
-      });
-    }
-
-    // Note: Since we don't have an 'order' field in the schema,
-    // we'll update the updatedAt field to reflect the new order
-    // In production, you might want to add an 'order' or 'position' field
-    const updates = await prisma.$transaction(
-      faqOrder.map((faqId, index) =>
-        prisma.tourFAQ.update({
-          where: { id: faqId },
-          data: { updatedAt: new Date(Date.now() + index) },
-        })
-      )
-    );
-
-    next({
-      status: 200,
-      success: true,
-      message: "FAQs reordered successfully",
-      data: {
-        reorderedCount: updates.length,
-        note: 'Consider adding an "order" field to the schema for better sorting',
-      },
-    });
-  } catch (error: any) {
-    next({
-      status: 500,
-      message: error.message || "Internal server error",
-      error: error.message,
-    });
-  }
-};
 
 /**
  * Copy FAQs from one tour to another - Admin
@@ -1062,7 +1011,6 @@ export {
   bulkCreateFAQs,
   bulkUpdateFAQs,
   bulkDeleteFAQs,
-  reorderFAQs,
   copyFAQs,
   getFAQStatistics,
 };

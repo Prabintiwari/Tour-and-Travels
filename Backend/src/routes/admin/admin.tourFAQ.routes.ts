@@ -2,6 +2,8 @@ import { Router } from "express";
 import {
   allFAQSQuerySchema,
   bulkCreateTourFAQsSchema,
+  bulkDeleteFAQsSchema,
+  bulkUpdateTourFAQsSchema,
   createTourFAQSchema,
   tourFAQIdParamsSchema,
   tourFAQResponseSchema,
@@ -12,6 +14,8 @@ import {
 } from "../../schema";
 import {
   bulkCreateFAQs,
+  bulkDeleteFAQs,
+  bulkUpdateFAQs,
   createFAQ,
   deleteFAQ,
   getAdminFAQById,
@@ -40,17 +44,22 @@ router.post("/", createFAQ);
 
 router.post("/tour/:tourId/bulk-create", bulkCreateFAQs);
 
-router.get("/tours/:tourId", getAllTourFAQs);
+router.patch("/bulk-update", bulkUpdateFAQs);
 
 router.patch("/:faqId/toggle", toggleFAQStatus);
 
 router.patch("/:faqId", updateFAQ);
 
-router.delete("/:faqId", deleteFAQ);
+router.get("/tours/:tourId", getAllTourFAQs);
+
 
 router.get("/", getAllFAQs);
 
+router.delete("/bulk-delete", bulkDeleteFAQs);
+
 router.get("/:faqId", getAdminFAQById);
+
+router.delete("/:faqId", deleteFAQ);
 
 // Swagger registration
 
@@ -91,7 +100,7 @@ registerRoute({
   tags: ["FAQS"],
   security: [{ bearerAuth: [] }],
   request: {
-    params:  tourParamsSchema ,
+    params: tourParamsSchema,
     body: {
       content: {
         "application/json": { schema: bulkCreateTourFAQsSchema },
@@ -131,6 +140,35 @@ registerRoute({
   responses: {
     200: {
       description: "Tour Faqs updated",
+      content: {
+        "application/json": { schema: tourFAQResponseSchema },
+      },
+    },
+    400: errorResponse(badRequestErrorSchema, "Bad Request"),
+    401: errorResponse(unauthorizedErrorSchema, "Unauthorized"),
+    403: errorResponse(forbiddenErrorSchema, "Forbidden"),
+    409: errorResponse(conflictErrorSchema, "Conflict"),
+    500: errorResponse(internalServerErrorSchema, "Internal Server Error"),
+  },
+});
+
+// Bulk update FAQs
+registerRoute({
+  method: "patch",
+  path: "/api/admin/faqs/bulk-update",
+  summary: "Bulk update FAQs ",
+  tags: ["FAQS"],
+  security: [{ bearerAuth: [] }],
+  request: {
+    body: {
+      content: {
+        "application/json": { schema: bulkUpdateTourFAQsSchema },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: "Bulk FAQs updated",
       content: {
         "application/json": { schema: tourFAQResponseSchema },
       },
@@ -250,6 +288,32 @@ registerRoute({
   responses: {
     200: {
       description: "Tour Faqs deleted successfully",
+    },
+    400: errorResponse(badRequestErrorSchema, "Bad Request"),
+    401: errorResponse(unauthorizedErrorSchema, "Unauthorized"),
+    403: errorResponse(forbiddenErrorSchema, "Forbidden"),
+    409: errorResponse(conflictErrorSchema, "Conflict"),
+    500: errorResponse(internalServerErrorSchema, "Internal Server Error"),
+  },
+});
+
+// Bulk delete FAQs
+registerRoute({
+  method: "delete",
+  path: "/api/admin/faqs/bulk-delete",
+  summary: "Bulk delete FAQs",
+  tags: ["FAQS"],
+  security: [{ bearerAuth: [] }],
+  request: {
+    body: {
+      content: {
+        "application/json": { schema: bulkDeleteFAQsSchema },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: "Bulk Faqs deleted successfully",
     },
     400: errorResponse(badRequestErrorSchema, "Bad Request"),
     401: errorResponse(unauthorizedErrorSchema, "Unauthorized"),

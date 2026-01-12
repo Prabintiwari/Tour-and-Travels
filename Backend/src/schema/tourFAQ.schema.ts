@@ -47,11 +47,11 @@ const updateTourFAQSchema = z
   })
   .openapi("UpdateTourFAQ");
 
- const tourFAQBaseSchema = createTourFAQSchema
+const tourFAQBaseSchema = createTourFAQSchema
   .omit({ tourId: true })
   .openapi("TourFAQBase");
 
-   const bulkCreateTourFAQsSchema = z
+const bulkCreateTourFAQsSchema = z
   .object({
     faqs: z
       .array(tourFAQBaseSchema)
@@ -62,7 +62,36 @@ const updateTourFAQSchema = z
   })
   .openapi("BulkCreateTourFAQs");
 
+const bulkUpdateTourFAQsSchema = z
+  .object({
+    faqs: z.array(
+      tourFAQBaseSchema.partial().extend({
+        faqId: z
+          .string()
+          .regex(/^[0-9a-fA-F]{24}$/, "Invalid FAQ ID")
+          .openapi({
+            description: "FAQ ObjectId",
+            example: "507f1f77bcf86cd799439012",
+          }),
+      })
+    ),
+  })
+  .openapi("BulkUpdateTourFAQs");
 
+const bulkDeleteFAQsSchema = z
+  .object({
+    faqIds: z
+      .array(z.string().regex(/^[0-9a-fA-F]{24}$/, "Invalid FAQ ID"))
+      .min(1, "At least one faqId is required")
+      .max(100, "Cannot delete more than 100 FAQs at once")
+      .refine((ids) => new Set(ids).size === ids.length, {
+        message: "Duplicate faqIds are not allowed",
+      })
+      .openapi({
+        example: ["507f1f77bcf86cd799439012", "6962901c6bb019b3ff9f2c25"],
+      }),
+  })
+  .openapi("bulkDeleteFAQsRequest");
 
 const tourFAQResponseSchema = z
   .object({
@@ -129,7 +158,7 @@ const searchFAQSQuerySchema = z.object({
     example: "tour_123abc",
     description: "Filter by tour ID",
   }),
-  searchQuery:z.string().openapi({
+  searchQuery: z.string().openapi({
     example: "What is the cancellation policy?",
     description: "FAQ question",
   }),
@@ -165,7 +194,9 @@ export {
   createTourFAQSchema,
   updateTourFAQSchema,
   bulkCreateTourFAQsSchema,
+  bulkUpdateTourFAQsSchema,
   tourFAQResponseSchema,
+  bulkDeleteFAQsSchema,
   tourFAQsListResponseSchema,
   tourFAQIdParamsSchema,
   allFAQSQuerySchema,
@@ -174,5 +205,5 @@ export {
   CreateTourFAQInput,
   UpdateTourFAQInput,
   tourFAQSQueryInput,
-  allFAQSQueryInput
+  allFAQSQueryInput,
 };
