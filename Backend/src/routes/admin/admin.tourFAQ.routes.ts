@@ -21,6 +21,7 @@ import {
   getAdminFAQById,
   getAllFAQs,
   getAllTourFAQs,
+  getFAQStatistics,
   toggleFAQStatus,
   updateFAQ,
 } from "../../controllers/tourFAQ.controller";
@@ -50,8 +51,9 @@ router.patch("/:faqId/toggle", toggleFAQStatus);
 
 router.patch("/:faqId", updateFAQ);
 
-router.get("/tours/:tourId", getAllTourFAQs);
+router.get("/statistics", getFAQStatistics);
 
+router.get("/tours/:tourId", getAllTourFAQs);
 
 router.get("/", getAllFAQs);
 

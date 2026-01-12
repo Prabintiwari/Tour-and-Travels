@@ -1,14 +1,14 @@
 import { Request, Response, NextFunction } from "express";
-import { z } from "zod";
 import {
   allFAQSQuerySchema,
   bulkCreateTourFAQsSchema,
   bulkDeleteFAQsSchema,
   bulkUpdateTourFAQsSchema,
   createTourFAQSchema,
+  FAQsStatisticsQuerySchema,
   searchFAQSQuerySchema,
   tourFAQIdParamsSchema,
-  tourFAQSQueryInput,
+  tourFAQSQuerySchema,
   tourParamsSchema,
   updateTourFAQSchema,
 } from "../schema";
@@ -256,7 +256,7 @@ const getAllTourFAQs = async (
       isActive,
       sortBy = "createdAt",
       sortOrder = "desc",
-    } = req.query as unknown as tourFAQSQueryInput;
+    } = tourFAQSQuerySchema.parse(req.query);
 
     const pageNumber = page ?? 1;
     const limitNumber = limit ?? 10;
@@ -822,7 +822,6 @@ const bulkDeleteFAQs = async (
   }
 };
 
-
 /**
  * Copy FAQs from one tour to another - Admin
  * @route POST /api/admin/tours/:sourceTourId/faqs/copy/:targetTourId
@@ -906,30 +905,25 @@ const copyFAQs = async (req: Request, res: Response, next: NextFunction) => {
   }
 };
 
-/**
- * Get FAQ statistics - Admin
- * @route GET /api/admin/faqs/statistics
- * @access Private (Admin)
- */
+// Get FAQ statistics 
 const getFAQStatistics = async (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
   try {
-    const { tourId, destinationId } = req.query;
+    const { tourId, destinationId } =FAQsStatisticsQuerySchema.parse( req.query);
 
     let tourIds: string[] | undefined;
 
-    // If filtering by destination, get all tours in that destination
     if (destinationId) {
       const tours = await prisma.tour.findMany({
-        where: { destinationId: destinationId as string },
+        where: { destinationId },
         select: { id: true },
       });
-      tourIds = tours.map((t) => t.id);
+      tourIds = tours.map((tour) => tour.id);
     } else if (tourId) {
-      tourIds = [tourId as string];
+      tourIds = [tourId];
     }
 
     const where: any = {};

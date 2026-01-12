@@ -185,10 +185,16 @@ const tourFAQIdParamsSchema = z.object({
   faqId: z.string().min(1).openapi({ example: "Faq_123abc" }),
 });
 
-type CreateTourFAQInput = z.infer<typeof createTourFAQSchema>;
-type UpdateTourFAQInput = z.infer<typeof updateTourFAQSchema>;
-type tourFAQSQueryInput = z.infer<typeof tourFAQSQuerySchema>;
-type allFAQSQueryInput = z.infer<typeof allFAQSQuerySchema>;
+const FAQsStatisticsQuerySchema = z.object({
+  tourId: z.string().optional().openapi({
+    example: "tour_123abc",
+    description: "Filter by tour ID",
+  }),
+  destinationId: z.string().optional().openapi({
+    example: "dest_123abc",
+    description: "Filter by destination ID",
+  }),
+});
 
 export {
   createTourFAQSchema,
@@ -202,8 +208,5 @@ export {
   allFAQSQuerySchema,
   tourFAQSQuerySchema,
   searchFAQSQuerySchema,
-  CreateTourFAQInput,
-  UpdateTourFAQInput,
-  tourFAQSQueryInput,
-  allFAQSQueryInput,
+  FAQsStatisticsQuerySchema,
 };
