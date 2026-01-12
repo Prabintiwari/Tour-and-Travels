@@ -1,6 +1,7 @@
 import { Router } from "express";
 import {
   allFAQSQuerySchema,
+  bulkCreateTourFAQsSchema,
   createTourFAQSchema,
   tourFAQIdParamsSchema,
   tourFAQResponseSchema,
@@ -16,7 +17,6 @@ import {
   getAdminFAQById,
   getAllFAQs,
   getAllTourFAQs,
-  getFAQById,
   toggleFAQStatus,
   updateFAQ,
 } from "../../controllers/tourFAQ.controller";
@@ -38,7 +38,7 @@ router.use(authenticateToken, AdminOnly);
 
 router.post("/", createFAQ);
 
-router.post("/tour/:tourId/bulk", bulkCreateFAQs);
+router.post("/tour/:tourId/bulk-create", bulkCreateFAQs);
 
 router.get("/tours/:tourId", getAllTourFAQs);
 
@@ -86,7 +86,7 @@ registerRoute({
 // Bulk create FAQs for a tour
 registerRoute({
   method: "post",
-  path: "/api/admin/faqs/tour/{touId}/bulk",
+  path: "/api/admin/faqs/tour/{tourId}/bulk-create",
   summary: "Bulk create FAQs for a tour ",
   tags: ["FAQS"],
   security: [{ bearerAuth: [] }],
@@ -94,7 +94,7 @@ registerRoute({
     params:  tourParamsSchema ,
     body: {
       content: {
-        "application/json": { schema: createTourFAQSchema },
+        "application/json": { schema: bulkCreateTourFAQsSchema },
       },
     },
   },

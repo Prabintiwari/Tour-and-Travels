@@ -47,6 +47,23 @@ const updateTourFAQSchema = z
   })
   .openapi("UpdateTourFAQ");
 
+ const tourFAQBaseSchema = createTourFAQSchema
+  .omit({ tourId: true })
+  .openapi("TourFAQBase");
+
+   const bulkCreateTourFAQsSchema = z
+  .object({
+    faqs: z
+      .array(tourFAQBaseSchema)
+      .min(1, "At least one FAQ is required")
+      .openapi({
+        description: "List of FAQs to create for a tour",
+      }),
+  })
+  .openapi("BulkCreateTourFAQs");
+
+
+
 const tourFAQResponseSchema = z
   .object({
     id: z.string().openapi({ example: "507f1f77bcf86cd799439015" }),
@@ -147,6 +164,7 @@ type allFAQSQueryInput = z.infer<typeof allFAQSQuerySchema>;
 export {
   createTourFAQSchema,
   updateTourFAQSchema,
+  bulkCreateTourFAQsSchema,
   tourFAQResponseSchema,
   tourFAQsListResponseSchema,
   tourFAQIdParamsSchema,

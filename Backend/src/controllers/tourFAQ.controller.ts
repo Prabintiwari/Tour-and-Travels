@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { z } from "zod";
 import {
   allFAQSQuerySchema,
+  bulkCreateTourFAQsSchema,
   createTourFAQSchema,
   searchFAQSQuerySchema,
   tourFAQIdParamsSchema,
@@ -533,7 +534,7 @@ const updateFAQ = async (req: Request, res: Response, next: NextFunction) => {
   }
 };
 
-//Toggle FAQ active status 
+//Toggle FAQ active status
 const toggleFAQStatus = async (
   req: Request,
   res: Response,
@@ -576,7 +577,7 @@ const toggleFAQStatus = async (
   }
 };
 
-// Delete an FAQ 
+// Delete an FAQ
 const deleteFAQ = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { faqId } = tourFAQIdParamsSchema.parse(req.params);
@@ -603,7 +604,7 @@ const deleteFAQ = async (req: Request, res: Response, next: NextFunction) => {
   }
 };
 
-// Bulk create FAQs for a tour 
+// Bulk create FAQs for a tour
 const bulkCreateFAQs = async (
   req: Request,
   res: Response,
@@ -611,55 +612,72 @@ const bulkCreateFAQs = async (
 ) => {
   try {
     const { tourId } = tourParamsSchema.parse(req.params);
-    const { faqs } = req.body;
+    const { faqs } = bulkCreateTourFAQsSchema.parse(req.body);
 
-    if (!Array.isArray(faqs) || faqs.length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: "FAQs array is required and must not be empty",
-      });
-    }
-
-    // Validate tour exists
     const tour = await prisma.tour.findUnique({
       where: { id: tourId },
+      select: { id: true },
     });
 
     if (!tour) {
-      return next({ status: 404, success: false, message: "Tour not found" });
+      return next({
+        status: 404,
+        success: false,
+        message: "Tour not found",
+      });
     }
 
-    // Validate each FAQ
-    const faqSchema = z.object({
-      question: z.string().min(5).max(500),
-      answer: z.string().min(10).max(2000),
-      isActive: z.boolean().default(true).optional(),
+    const normalizedQuestions = faqs.map((faq) =>
+      faq.question.trim().toLowerCase()
+    );
+
+    // Prevent duplicate questions in request
+    const uniqueQuestions = new Set(normalizedQuestions);
+    if (uniqueQuestions.size !== normalizedQuestions.length) {
+      return next({
+        status: 400,
+        success: false,
+        message: "Duplicate FAQ questions are not allowed in the same request",
+      });
+    }
+
+    const existingFAQs = await prisma.tourFAQ.findMany({
+      where: {
+        tourId,
+        questionLower: { in: normalizedQuestions },
+      },
+      select: {
+        questionLower: true,
+      },
     });
 
-    const validatedFAQs = faqs.map((faq, index) => {
-      try {
-        return faqSchema.parse(faq);
-      } catch (error) {
-        throw new Error(`Invalid FAQ at index ${index}: ${error}`);
-      }
-    });
+    if (existingFAQs.length > 0) {
+      return next({
+        status: 409,
+        success: false,
+        message: "Some FAQ questions already exist for this tour",
+        data: {
+          existingQuestions: existingFAQs.map((f) => f.questionLower),
+        },
+      });
+    }
 
-    // Bulk create using transaction
+    // Bulk create FAQs
     const createdFAQs = await prisma.$transaction(
-      validatedFAQs.map((faq) =>
+      faqs.map((faq, index) =>
         prisma.tourFAQ.create({
           data: {
             tourId,
-            question: faq.question,
-            questionLower: faq.question.toLowerCase(),
-            answer: faq.answer,
+            question: faq.question.trim(),
+            questionLower: normalizedQuestions[index],
+            answer: faq.answer.trim(),
             isActive: faq.isActive ?? true,
           },
         })
       )
     );
 
-    next({
+    return next({
       status: 201,
       success: true,
       message: `${createdFAQs.length} FAQ(s) created successfully`,
@@ -669,10 +687,10 @@ const bulkCreateFAQs = async (
       },
     });
   } catch (error: any) {
-    next({
+    return next({
       status: 500,
+      success: false,
       message: error.message || "Internal server error",
-      error: error.message,
     });
   }
 };
