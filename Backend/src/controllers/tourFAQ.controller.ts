@@ -603,11 +603,7 @@ const deleteFAQ = async (req: Request, res: Response, next: NextFunction) => {
   }
 };
 
-/**
- * Bulk create FAQs for a tour - Admin
- * @route POST /api/admin/tours/:tourId/faqs/bulk
- * @access Private (Admin)
- */
+// Bulk create FAQs for a tour 
 const bulkCreateFAQs = async (
   req: Request,
   res: Response,

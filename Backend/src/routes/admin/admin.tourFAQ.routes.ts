@@ -10,6 +10,7 @@ import {
   updateTourFAQSchema,
 } from "../../schema";
 import {
+  bulkCreateFAQs,
   createFAQ,
   deleteFAQ,
   getAdminFAQById,
@@ -37,18 +38,19 @@ router.use(authenticateToken, AdminOnly);
 
 router.post("/", createFAQ);
 
+router.post("/tour/:tourId/bulk", bulkCreateFAQs);
+
 router.get("/tours/:tourId", getAllTourFAQs);
 
-router.patch("/:faqId/toggle",  toggleFAQStatus);
+router.patch("/:faqId/toggle", toggleFAQStatus);
 
-router.patch("/:faqId",  updateFAQ);
+router.patch("/:faqId", updateFAQ);
 
-router.delete("/:faqId",  deleteFAQ);
+router.delete("/:faqId", deleteFAQ);
 
-router.get("/",  getAllFAQs);
+router.get("/", getAllFAQs);
 
-router.get("/:faqId",  getAdminFAQById);
-
+router.get("/:faqId", getAdminFAQById);
 
 // Swagger registration
 
@@ -81,6 +83,36 @@ registerRoute({
   },
 });
 
+// Bulk create FAQs for a tour
+registerRoute({
+  method: "post",
+  path: "/api/admin/faqs/tour/{touId}/bulk",
+  summary: "Bulk create FAQs for a tour ",
+  tags: ["FAQS"],
+  security: [{ bearerAuth: [] }],
+  request: {
+    params:  tourParamsSchema ,
+    body: {
+      content: {
+        "application/json": { schema: createTourFAQSchema },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: "Bulk FAQs for a tour created",
+      content: {
+        "application/json": { schema: tourFAQResponseSchema },
+      },
+    },
+    400: errorResponse(badRequestErrorSchema, "Bad Request"),
+    401: errorResponse(unauthorizedErrorSchema, "Unauthorized"),
+    403: errorResponse(forbiddenErrorSchema, "Forbidden"),
+    409: errorResponse(conflictErrorSchema, "Conflict"),
+    500: errorResponse(internalServerErrorSchema, "Internal Server Error"),
+  },
+});
+
 // Update a new tour faqs
 registerRoute({
   method: "patch",
@@ -89,7 +121,7 @@ registerRoute({
   tags: ["FAQS"],
   security: [{ bearerAuth: [] }],
   request: {
-    params:tourFAQIdParamsSchema,
+    params: tourFAQIdParamsSchema,
     body: {
       content: {
         "application/json": { schema: updateTourFAQSchema },
@@ -119,7 +151,7 @@ registerRoute({
   tags: ["FAQS"],
   security: [{ bearerAuth: [] }],
   request: {
-    params:tourFAQIdParamsSchema,
+    params: tourFAQIdParamsSchema,
   },
   responses: {
     200: {
@@ -213,12 +245,11 @@ registerRoute({
   tags: ["FAQS"],
   security: [{ bearerAuth: [] }],
   request: {
-    params:tourFAQIdParamsSchema,
+    params: tourFAQIdParamsSchema,
   },
   responses: {
     200: {
       description: "Tour Faqs deleted successfully",
-     
     },
     400: errorResponse(badRequestErrorSchema, "Bad Request"),
     401: errorResponse(unauthorizedErrorSchema, "Unauthorized"),
