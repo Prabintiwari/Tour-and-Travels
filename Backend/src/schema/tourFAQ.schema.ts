@@ -196,6 +196,26 @@ const FAQsStatisticsQuerySchema = z.object({
   }),
 });
 
+const copyFAQsParamsSchema = z.object({
+  sourceTourId: z
+    .string()
+    .regex(/^[0-9a-fA-F]{24}$/, "Invalid source tour ID")
+    .openapi({ description: "Source Tour ObjectId" }),
+  targetTourId: z
+    .string()
+    .regex(/^[0-9a-fA-F]{24}$/, "Invalid target tour ID")
+    .openapi({ description: "Target Tour ObjectId" }),
+});
+
+const copyFAQsSchema = z
+  .object({
+    includeInactive: z.boolean().optional().default(false).openapi({
+      description: "Whether to include inactive FAQs",
+      example: false,
+    }),
+  })
+  .openapi("CopyFAQsBody");
+
 export {
   createTourFAQSchema,
   updateTourFAQSchema,
@@ -209,4 +229,6 @@ export {
   tourFAQSQuerySchema,
   searchFAQSQuerySchema,
   FAQsStatisticsQuerySchema,
+  copyFAQsParamsSchema,
+  copyFAQsSchema,
 };

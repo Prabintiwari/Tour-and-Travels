@@ -4,6 +4,8 @@ import {
   bulkCreateTourFAQsSchema,
   bulkDeleteFAQsSchema,
   bulkUpdateTourFAQsSchema,
+  copyFAQsParamsSchema,
+  copyFAQsSchema,
   createTourFAQSchema,
   FAQsStatisticsQuerySchema,
   searchFAQSQuerySchema,
@@ -708,8 +710,8 @@ const bulkUpdateFAQs = async (
     console.log(faqs);
 
     const normalizedQuestions = faqs
-      .filter(f => f.question)
-      .map(f => f.question!.trim().toLowerCase());
+      .filter((f) => f.question)
+      .map((f) => f.question!.trim().toLowerCase());
 
     // Check for duplicates inside the request
     const uniqueQuestions = new Set(normalizedQuestions);
@@ -726,7 +728,7 @@ const bulkUpdateFAQs = async (
       const existingFAQs = await prisma.tourFAQ.findMany({
         where: {
           questionLower: { in: normalizedQuestions },
-          NOT: { id: { in: faqs.map(f => f.faqId) } },
+          NOT: { id: { in: faqs.map((f) => f.faqId) } },
         },
         select: { questionLower: true },
       });
@@ -736,7 +738,7 @@ const bulkUpdateFAQs = async (
           status: 409,
           success: false,
           message: "Some FAQ questions already exist in the database",
-          data: existingFAQs.map(f => f.questionLower),
+          data: existingFAQs.map((f) => f.questionLower),
         });
       }
     }
@@ -784,7 +786,9 @@ const bulkDeleteFAQs = async (
   try {
     const { faqIds } = bulkDeleteFAQsSchema.parse(req.body);
 
-    const validIds = [...new Set(faqIds)].filter(id => /^[0-9a-fA-F]{24}$/.test(id));
+    const validIds = [...new Set(faqIds)].filter((id) =>
+      /^[0-9a-fA-F]{24}$/.test(id)
+    );
 
     if (validIds.length === 0) {
       return next({
@@ -822,17 +826,14 @@ const bulkDeleteFAQs = async (
   }
 };
 
-/**
- * Copy FAQs from one tour to another - Admin
- * @route POST /api/admin/tours/:sourceTourId/faqs/copy/:targetTourId
- * @access Private (Admin)
- */
+//Copy FAQs from one tour to another
 const copyFAQs = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { sourceTourId, targetTourId } = req.params;
-    const { includeInactive = false } = req.body;
+    const { sourceTourId, targetTourId } = copyFAQsParamsSchema.parse(
+      req.params
+    );
+    const { includeInactive } = copyFAQsSchema.parse(req.body);
 
-    // Validate both tours exist
     const [sourceTour, targetTour] = await Promise.all([
       prisma.tour.findUnique({ where: { id: sourceTourId } }),
       prisma.tour.findUnique({ where: { id: targetTourId } }),
@@ -854,11 +855,8 @@ const copyFAQs = async (req: Request, res: Response, next: NextFunction) => {
       });
     }
 
-    // Get FAQs from source tour
     const where: any = { tourId: sourceTourId };
-    if (!includeInactive) {
-      where.isActive = true;
-    }
+    if (!includeInactive) where.isActive = true;
 
     const sourceFAQs = await prisma.tourFAQ.findMany({ where });
 
@@ -870,14 +868,36 @@ const copyFAQs = async (req: Request, res: Response, next: NextFunction) => {
       });
     }
 
-    // Create FAQs in target tour
+    //  Prevent duplicates in target tour
+    const targetQuestions = await prisma.tourFAQ.findMany({
+      where: { tourId: targetTourId },
+      select: { questionLower: true },
+    });
+
+    const existingQuestionsSet = new Set(
+      targetQuestions.map((q) => q.questionLower)
+    );
+
+    const faqsToCopy = sourceFAQs.filter(
+      (faq) => !existingQuestionsSet.has(faq.question.trim().toLowerCase())
+    );
+
+    if (faqsToCopy.length === 0) {
+      return next({
+        status: 409,
+        success: false,
+        message: "All FAQs already exist in the target tour",
+      });
+    }
+
+    //  Copy FAQs to target tour 
     const copiedFAQs = await prisma.$transaction(
-      sourceFAQs.map((faq) =>
+      faqsToCopy.map((faq) =>
         prisma.tourFAQ.create({
           data: {
             tourId: targetTourId,
-            question: faq.question,
-            questionLower: faq.question.toLowerCase(),
+            question: faq.question.trim(),
+            questionLower: faq.question.trim().toLowerCase(),
             answer: faq.answer,
             isActive: faq.isActive,
           },
@@ -885,7 +905,7 @@ const copyFAQs = async (req: Request, res: Response, next: NextFunction) => {
       )
     );
 
-    next({
+    return next({
       status: 201,
       success: true,
       message: `${copiedFAQs.length} FAQ(s) copied successfully`,
@@ -899,20 +919,23 @@ const copyFAQs = async (req: Request, res: Response, next: NextFunction) => {
   } catch (error: any) {
     next({
       status: 500,
+      success: false,
       message: error.message || "Internal server error",
       error: error.message,
     });
   }
 };
 
-// Get FAQ statistics 
+// Get FAQ statistics
 const getFAQStatistics = async (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
   try {
-    const { tourId, destinationId } =FAQsStatisticsQuerySchema.parse( req.query);
+    const { tourId, destinationId } = FAQsStatisticsQuerySchema.parse(
+      req.query
+    );
 
     let tourIds: string[] | undefined;
 

@@ -4,7 +4,10 @@ import {
   bulkCreateTourFAQsSchema,
   bulkDeleteFAQsSchema,
   bulkUpdateTourFAQsSchema,
+  copyFAQsParamsSchema,
+  copyFAQsSchema,
   createTourFAQSchema,
+  FAQsStatisticsQuerySchema,
   tourFAQIdParamsSchema,
   tourFAQResponseSchema,
   tourFAQsListResponseSchema,
@@ -16,6 +19,7 @@ import {
   bulkCreateFAQs,
   bulkDeleteFAQs,
   bulkUpdateFAQs,
+  copyFAQs,
   createFAQ,
   deleteFAQ,
   getAdminFAQById,
@@ -51,9 +55,11 @@ router.patch("/:faqId/toggle", toggleFAQStatus);
 
 router.patch("/:faqId", updateFAQ);
 
-router.get("/statistics", getFAQStatistics);
-
 router.get("/tours/:tourId", getAllTourFAQs);
+
+router.post("/tours/:sourceTourId/copy/:targetTourId", copyFAQs);
+
+router.get("/statistics", getFAQStatistics);
 
 router.get("/", getAllFAQs);
 
@@ -183,6 +189,36 @@ registerRoute({
   },
 });
 
+// Copy FAQs from one tour to another
+registerRoute({
+  method: "post",
+  path: "/api/admin/faqs/tours/{sourceTourId}/copy/{targetTourId}",
+  summary: "Copy FAQs from one tour to another",
+  tags: ["FAQS"],
+  security: [{ bearerAuth: [] }],
+  request: {
+    params: copyFAQsParamsSchema,
+    body: {
+      content: {
+        "application/json": { schema: copyFAQsSchema },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: "Faqs copy successfully",
+      content: {
+        "application/json": { schema: tourFAQResponseSchema },
+      },
+    },
+    400: errorResponse(badRequestErrorSchema, "Bad Request"),
+    401: errorResponse(unauthorizedErrorSchema, "Unauthorized"),
+    403: errorResponse(forbiddenErrorSchema, "Forbidden"),
+    409: errorResponse(conflictErrorSchema, "Conflict"),
+    500: errorResponse(internalServerErrorSchema, "Internal Server Error"),
+  },
+});
+
 // Toggle FAQ active status
 registerRoute({
   method: "patch",
@@ -219,6 +255,29 @@ registerRoute({
   responses: {
     200: {
       description: "Get all FAQs across all tours",
+      content: {
+        "application/json": { schema: tourFAQsListResponseSchema },
+      },
+    },
+    400: errorResponse(badRequestErrorSchema, "Bad Request"),
+    401: errorResponse(unauthorizedErrorSchema, "Unauthorized"),
+    403: errorResponse(forbiddenErrorSchema, "Forbidden"),
+    409: errorResponse(conflictErrorSchema, "Conflict"),
+    500: errorResponse(internalServerErrorSchema, "Internal Server Error"),
+  },
+});
+
+// Get faqs statistics
+registerRoute({
+  method: "get",
+  path: "/api/admin/faqs/statistics",
+  summary: "Get FAQs statistics",
+  tags: ["FAQS"],
+  security: [{ bearerAuth: [] }],
+  request: { query: FAQsStatisticsQuerySchema },
+  responses: {
+    200: {
+      description: "Get FAQs statistics",
       content: {
         "application/json": { schema: tourFAQsListResponseSchema },
       },
