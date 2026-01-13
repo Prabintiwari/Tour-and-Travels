@@ -207,8 +207,8 @@ const getMyCustomItineraryById = async (
   }
 };
 
-
-const updateCustomItinerary = async (
+// Update custom Itinerary 
+const updateMyCustomItinerary = async (
   req: AuthRequest,
   res: Response,
   next: NextFunction
@@ -216,34 +216,34 @@ const updateCustomItinerary = async (
   try {
     const userId = req.id;
     if (!userId) {
-      next({ status: 401, success: false, message: "Unauthorized" });
-      return;
+      return next({ status: 401, success: false, message: "Unauthorized" });
     }
 
-    const { id } = req.params;
+    const { itineraryId } = customItineraryParamsSchema.parse(req.params);
     const validatedData = updateCustomItinerarySchema.parse(req.body);
 
-    const existingItinerary = await prisma.customItinerary.findUnique({
-      where: { id },
+    const itinerary = await prisma.customItinerary.findFirst({
+      where: {
+        id: itineraryId,
+        userId,
+      },
     });
 
-    if (!existingItinerary) {
-      next({ status: 404, success: false, error: "Itinerary not found" });
-      return;
-    }
-
-    if (existingItinerary.userId !== userId) {
-      next({
-        status: 403,
+    if (!itinerary) {
+      return next({
+        status: 404,
         success: false,
-        message: "Forbidden - not the owner",
+        message: "Itinerary not found",
       });
-      return;
     }
 
     const updatedItinerary = await prisma.customItinerary.update({
-      where: { id },
-      data: validatedData,
+      where: { id: itineraryId },
+      data: {
+        title: validatedData.title,
+        description: validatedData.description,
+        numberOfDays: validatedData.numberOfDays,
+      },
       include: {
         destination: {
           select: {
@@ -254,80 +254,78 @@ const updateCustomItinerary = async (
           },
         },
         events: {
-          orderBy: { startTime: "asc" },
+          orderBy: [{ day: "asc" }, { order: "asc" }],
         },
       },
     });
 
-    next({ status: 200, success: true, updatedItinerary });
+    return next({
+      status: 200,
+      success: true,
+      data: updatedItinerary,
+    });
   } catch (error: any) {
     console.error("Error updating itinerary:", error);
-    next({
-      status: 500,
+    return next({
+      status: 400,
       success: false,
-      message: error.message || "Interna; server error",
-      error: "Internal server error",
+      message: error.message || "Failed to update itinerary",
     });
   }
 };
 
-const deleteCustomItinerary = async (
-  req: Request,
-
+const deleteMyCustomItinerary = async (
+  req: AuthRequest,
   res: Response,
   next: NextFunction
 ) => {
   try {
-    const userId = (req as any).user?.id;
+    const userId = req.id;
     if (!userId) {
-      next({ status: 401, success: false, message: "Unauthorized" });
-      return;
+      return next({ status: 401, success: false, message: "Unauthorized" });
     }
 
-    const { id } = req.params;
+    const { itineraryId } = customItineraryParamsSchema.parse(req.params);
 
-    const existingItinerary = await prisma.customItinerary.findUnique({
-      where: { id },
+    const itinerary = await prisma.customItinerary.findFirst({
+      where: {
+        id: itineraryId,
+        userId,
+      },
     });
 
-    if (!existingItinerary) {
-      next({ status: 404, success: false, error: "Itinerary not found" });
-      return;
-    }
-
-    if (existingItinerary.userId !== userId) {
-      next({
-        status: 403,
+    if (!itinerary) {
+      return next({
+        status: 404,
         success: false,
-        message: "Forbidden - not the owner",
+        message: "Itinerary not found",
       });
-      return;
     }
 
     await prisma.customItinerary.delete({
-      where: { id },
+      where: { id: itineraryId },
     });
 
-    next({
+    return next({
       status: 200,
       success: true,
       message: "Itinerary deleted successfully",
     });
   } catch (error: any) {
     console.error("Error deleting itinerary:", error);
-    next({
+    return next({
       status: 500,
       success: false,
-      message: error.message || "Interna; server error",
-      error: "Internal server error",
+      message: "Internal server error",
     });
   }
 };
+
 
 export {
   createCustomItinerary,
   getMyCustomItineraries,
   getMyCustomItineraryById,
-  updateCustomItinerary,
-  deleteCustomItinerary,
+  updateMyCustomItinerary,
+  deleteMyCustomItinerary,
 };
