@@ -63,6 +63,14 @@ enum PaymentMethod {
   UPI
 }
 
+enum CustomItineraryEventType {
+  ACTIVITY
+  MEAL
+  TRANSPORT
+  ACCOMMODATION
+}
+
+
 enum RentalStatus {
   PENDING
   ACTIVE
@@ -418,21 +426,28 @@ model CustomItinerary {
 }
 
 model CustomItineraryEvent {
-  id                    String   @id @default(auto()) @map("_id") @db.ObjectId
-  itineraryId           String   @db.ObjectId
-  itinerary             CustomItinerary @relation(fields: [itineraryId], references: [id], onDelete: Cascade)
-  title                 String
-  description           String?
-  startTime             DateTime?
-  endTime               DateTime?
-  location              String?
-  type                  String? // ACTIVITY, MEAL, TRANSPORT, ACCOMMODATION
-  notes                 String?
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  itineraryId   String   @db.ObjectId
+  itinerary     CustomItinerary @relation(fields: [itineraryId], references: [id], onDelete: Cascade)
+
+  day           Int     
+  order         Int     
+
+  title         String
+  description   String?
+  startTime     DateTime?
+  endTime       DateTime?
+  location      String?
+  type          CustomItineraryEventType
+  notes         String?
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   @@index([itineraryId])
+  @@index([itineraryId, day])
 }
+
 
 // ==================== VEHICLE MANAGEMENT ====================
 model Vehicle {

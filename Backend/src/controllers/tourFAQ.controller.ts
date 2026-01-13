@@ -890,7 +890,7 @@ const copyFAQs = async (req: Request, res: Response, next: NextFunction) => {
       });
     }
 
-    //  Copy FAQs to target tour 
+    //  Copy FAQs to target tour
     const copiedFAQs = await prisma.$transaction(
       faqsToCopy.map((faq) =>
         prisma.tourFAQ.create({
