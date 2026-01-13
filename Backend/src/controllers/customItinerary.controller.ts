@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import {
+  admincustomItineraryquerySchema,
   createCustomItinerarySchema,
   customItineraryParamsSchema,
   customItineraryquerySchema,
@@ -207,7 +208,7 @@ const getMyCustomItineraryById = async (
   }
 };
 
-// Update custom Itinerary 
+// Update custom Itinerary
 const updateMyCustomItinerary = async (
   req: AuthRequest,
   res: Response,
@@ -274,6 +275,7 @@ const updateMyCustomItinerary = async (
   }
 };
 
+// Delete custom Itinerary
 const deleteMyCustomItinerary = async (
   req: AuthRequest,
   res: Response,
@@ -321,6 +323,135 @@ const deleteMyCustomItinerary = async (
   }
 };
 
+// Get all custom Itinerary - Admin
+const getAllCustomItinerariesAdmin = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const {
+      page = 1,
+      limit = 10,
+      destinationId,
+      userId,
+    } = admincustomItineraryquerySchema.parse(req.query);
+
+    const skip = (page - 1) * limit;
+
+    const where: any = {};
+    if (destinationId) where.destinationId = destinationId;
+    if (userId) where.userId = userId;
+
+    const [itineraries, total] = await Promise.all([
+      prisma.customItinerary.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { createdAt: "desc" },
+        include: {
+          user: {
+            select: {
+              id: true,
+              fullName: true,
+              email: true,
+            },
+          },
+          destination: {
+            select: {
+              id: true,
+              name: true,
+              location: true,
+              imageUrl: true,
+            },
+          },
+          events: {
+            orderBy: [{ day: "asc" }, { order: "asc" }],
+          },
+        },
+      }),
+      prisma.customItinerary.count({ where }),
+    ]);
+
+    return next({
+      status: 200,
+      success: true,
+      data: {
+        itineraries,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit),
+        },
+      },
+    });
+  } catch (error: any) {
+    console.error("Admin get all custom itineraries error:", error);
+    return next({
+      status: 500,
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+// Get custom itinerary by id
+const getCustomItineraryByIdAdmin = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { itineraryId } = customItineraryParamsSchema.parse(req.params);
+
+    const itinerary = await prisma.customItinerary.findUnique({
+      where: { id: itineraryId },
+      include: {
+        user: {
+          select: {
+            id: true,
+            fullName: true,
+            email: true,
+          },
+        },
+        destination: {
+          select: {
+            id: true,
+            name: true,
+            location: true,
+            imageUrl: true,
+            description: true,
+          },
+        },
+        events: {
+          orderBy: [{ day: "asc" }, { order: "asc" }],
+        },
+      },
+    });
+
+    if (!itinerary) {
+      return next({
+        status: 404,
+        success: false,
+        message: "Itinerary not found",
+      });
+    }
+
+    return next({
+      status: 200,
+      success: true,
+      data: itinerary,
+    });
+  } catch (error: any) {
+    console.error("Admin get custom itinerary by id error:", error);
+    return next({
+      status: 500,
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
 
 export {
   createCustomItinerary,
@@ -328,4 +459,6 @@ export {
   getMyCustomItineraryById,
   updateMyCustomItinerary,
   deleteMyCustomItinerary,
+  getAllCustomItinerariesAdmin,
+  getCustomItineraryByIdAdmin,
 };

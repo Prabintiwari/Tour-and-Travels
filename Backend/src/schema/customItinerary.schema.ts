@@ -55,6 +55,17 @@ const customItineraryquerySchema = z.object({
   }),
 });
 
+const admincustomItineraryquerySchema = z.object({
+  page: z.coerce.number().int().positive().optional(),
+  limit: z.coerce.number().int().positive().optional(),
+  destinationId: z.string().optional().openapi({
+    example: "destination_456def",
+  }),
+  userId: z.string().optional().openapi({
+    example: "user_456def",
+  }),
+});
+
 const customItineraryParamsSchema = z
   .object({
     itineraryId: z.string().min(1).openapi({
@@ -82,4 +93,5 @@ export {
   customItineraryParamsSchema,
   CustomItineraryResponseSchema,
   CustomItineraryListResponseSchema,
+  admincustomItineraryquerySchema,
 };

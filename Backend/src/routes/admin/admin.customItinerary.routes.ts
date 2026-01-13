@@ -1,9 +1,12 @@
 import { Router } from "express";
 import { AdminOnly, authenticateToken } from "../../middleware/auth";
-import { createCustomItinerary } from "../../controllers/customItinerary.controller";
+import { createCustomItinerary, getAllCustomItinerariesAdmin } from "../../controllers/customItinerary.controller";
 import { registerRoute } from "../../utils/openapi.utils";
 import {
+    admincustomItineraryquerySchema,
   createCustomItinerarySchema,
+  CustomItineraryListResponseSchema,
+  customItineraryParamsSchema,
   CustomItineraryResponseSchema,
 } from "../../schema/customItinerary.schema";
 import {
@@ -19,31 +22,55 @@ const router = Router();
 
 router.use(authenticateToken, AdminOnly);
 
-router.post("/", createCustomItinerary);
+router.get("/", getAllCustomItinerariesAdmin);
+
+router.get("/:itineraryId", getAllCustomItinerariesAdmin);
 
 // Swagger registration
-// create a Custom Itinerary
+
+// Get Custom Itineraries
 registerRoute({
-  method: "post",
+  method: "get",
   path: "/api/admin/custom-itinerary",
-  summary: "Create Custom Itinerary",
+  summary: "Get Custom Itineraries",
   tags: ["Custom-Itinerary"],
   security: [{ bearerAuth: [] }],
   request: {
-    body: {
-      content: {
-        "application/json": {
-          schema: createCustomItinerarySchema,
-        },
-      },
-    },
+    query: admincustomItineraryquerySchema,
   },
   responses: {
     200: {
-      description: "Custom Itinerary created",
+      description: "Get Custom Itineraries",
       content: {
         "application/json": {
-          schema: CustomItineraryResponseSchema,
+          schema: CustomItineraryListResponseSchema,
+        },
+      },
+    },
+    400: errorResponse(badRequestErrorSchema, "Bad Request"),
+    401: errorResponse(unauthorizedErrorSchema, "Unauthorized"),
+    403: errorResponse(forbiddenErrorSchema, "Forbidden"),
+    409: errorResponse(conflictErrorSchema, "Conflict"),
+    500: errorResponse(internalServerErrorSchema, "Internal Server Error"),
+  },
+});
+
+// Get Custom Itinerary by Id
+registerRoute({
+  method: "get",
+  path: "/api/admin/custom-itinerary/{itineraryId}",
+  summary: "Get Custom Itinerary by Id",
+  tags: ["Custom-Itinerary"],
+  security: [{ bearerAuth: [] }],
+  request: {
+    params: customItineraryParamsSchema,
+  },
+  responses: {
+    200: {
+      description: "Get Custom Itinerary by Id",
+      content: {
+        "application/json": {
+          schema: CustomItineraryListResponseSchema,
         },
       },
     },
