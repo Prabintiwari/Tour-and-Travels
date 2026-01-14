@@ -36,10 +36,14 @@ const customItineraryEventBaseSchema = z
       example: "Carry water and wear comfortable shoes",
     }),
   })
-  .refine((data) => data.type !== CustomItineraryEventType.ACTIVITY || !!data.startTime, {
-    message: "ACTIVITY must have startTime",
-    path: ["startTime"],
-  });
+  .refine(
+    (data) =>
+      data.type !== CustomItineraryEventType.ACTIVITY || !!data.startTime,
+    {
+      message: "ACTIVITY must have startTime",
+      path: ["startTime"],
+    }
+  );
 
 const createCustomItineraryEventSchema = z
   .object({
@@ -67,6 +71,14 @@ const customItineraryEventQuerySchema = z.object({
 
   type: z.nativeEnum(CustomItineraryEventType).optional().openapi({
     example: CustomItineraryEventType.ACTIVITY,
+  }),
+  page: z.coerce.number().optional().default(1).openapi({
+    example: 1,
+    description: "Page number for pagination",
+  }),
+  limit: z.coerce.number().optional().default(10).openapi({
+    example: 10,
+    description: "Number of items per page",
   }),
 });
 

@@ -2,11 +2,13 @@ import { Request, Response, NextFunction } from "express";
 import prisma from "../config/prisma";
 import {
   createCustomItineraryEventSchema,
+  customItineraryEventQuerySchema,
   updateCustomItineraryEventSchema,
 } from "../schema/customItineraryEvent.schema";
 import { AuthRequest } from "../middleware/auth";
 import { customItineraryParamsSchema } from "../schema/customItinerary.schema";
 
+// Create Custom Itinerary Events
 const createCustomItineraryEvent = async (
   req: AuthRequest,
   res: Response,
@@ -81,13 +83,14 @@ const createCustomItineraryEvent = async (
   }
 };
 
+// Update Custom Itinerary Events
 const updateCustomItineraryEvent = async (
   req: AuthRequest,
   res: Response,
   next: NextFunction
-)=> {
+) => {
   try {
-    const userId = req .id;
+    const userId = req.id;
     if (!userId) {
       return next({
         status: 401,
@@ -173,4 +176,62 @@ const updateCustomItineraryEvent = async (
   }
 };
 
-export { createCustomItineraryEvent, updateCustomItineraryEvent };
+// Get Custom Itinerary Events
+const getCustomItineraryEvents = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  const userId = req.id;
+  if (!userId) {
+    return next({
+      status: 401,
+      success: false,
+      message: "Unauthorized",
+    });
+  }
+
+  const { itineraryId, type, page, limit } =
+    customItineraryEventQuerySchema.parse(req.query);
+
+  const skip = (page - 1) * limit;
+
+  const filters: any = {};
+  if (itineraryId) filters.itineraryId = itineraryId;
+  if (type) filters.type = type;
+
+  const [events, total] = await Promise.all([
+    prisma.customItineraryEvent.findMany({
+      where: filters,
+      skip,
+      take: limit,
+      orderBy: { ["createdAt"]: "asc" },
+      include: {
+        itinerary: {
+          select: {
+            id: true,
+            title: true,
+            user: { select: { id: true, fullName: true, email: true } },
+          },
+        },
+      },
+    }),
+    prisma.customItineraryEvent.count({ where: filters }),
+  ]);
+
+  return next({
+    status: 200,
+    success: true,
+    data: {
+      events,
+      pagination: { total, page, limit, totalPage: Math.ceil(total / limit) },
+    },
+  });
+};
+
+export {
+  createCustomItineraryEvent,
+  updateCustomItineraryEvent,
+   getCustomItineraryEvents 
+,
+};
