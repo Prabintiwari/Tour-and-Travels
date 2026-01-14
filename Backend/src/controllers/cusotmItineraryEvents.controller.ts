@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import prisma from "../config/prisma";
 import {
+  adminCustomItineraryEventQuerySchema,
   createCustomItineraryEventSchema,
   customItineraryEventParamsSchema,
   customItineraryEventQuerySchema,
@@ -262,7 +263,7 @@ const getMyCustomItineraryEventsByItineraryId = async (
   }
 };
 
-// Get Custom Itinerary Events by Itinerary Id
+// Get Custom Itinerary Events by Id
 const getMyCustomItineraryEventsById = async (
   req: AuthRequest,
   res: Response,
@@ -278,61 +279,42 @@ const getMyCustomItineraryEventsById = async (
       });
     }
 
-    const { type, page, limit } = customItineraryEventQuerySchema.parse(
-      req.query
-    );
     const { eventId } = customItineraryEventParamsSchema.parse(req.params);
-
-    const skip = (page - 1) * limit;
-
     const where: any = {
-      id: eventId,
+      id:eventId,
       itinerary: {
         userId: userId,
       },
     };
 
-    if (type) {
-      where.type = type;
-    }
-
-    const [events, total] = await Promise.all([
-      prisma.customItineraryEvent.findMany({
-        where,
-        skip,
-        take: limit,
-        orderBy: [
-          { itineraryId: "asc" },
-          { day: "asc" },
-          { order: "asc" },
-          { createdAt: "asc" },
-        ],
-        include: {
-          itinerary: {
-            select: {
-              id: true,
-              title: true,
-              destination: {
-                select: { id: true, name: true },
-              },
+    const event = await prisma.customItineraryEvent.findMany({
+      where,
+      include: {
+        itinerary: {
+          select: {
+            id: true,
+            title: true,
+            destination: {
+              select: { id: true, name: true },
             },
           },
         },
-      }),
-      prisma.customItineraryEvent.count({ where }),
-    ]);
+      },
+    });
+
+    if (!event) {
+      return next({
+        status: 404,
+        success: false,
+        message: "Events not found!",
+      });
+    }
 
     return next({
       status: 200,
       success: true,
       data: {
-        events,
-        pagination: {
-          page,
-          limit,
-          total,
-          totalPages: Math.ceil(total / limit),
-        },
+        event,
       },
     });
   } catch (error: any) {
@@ -420,10 +402,198 @@ const getMyAllCustomItineraryEvents = async (
     });
   }
 };
+
+// Get Custom Itinerary Events by Id -(Admin)
+const getCustomItineraryEventsByIdAdmin = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { eventId } = customItineraryEventParamsSchema.parse(req.params);
+
+    const event = await prisma.customItineraryEvent.findUnique({
+      where: { id: eventId },
+      include: {
+        itinerary: {
+          select: {
+            id: true,
+            title: true,
+            destination: {
+              select: { id: true, name: true },
+            },
+          },
+        },
+      },
+    });
+    if (!event) {
+      return next({
+        status: 404,
+        success: false,
+        message: "Events not found!",
+      });
+    }
+
+    return next({
+      status: 200,
+      success: true,
+      data: {
+        event,
+      },
+    });
+  } catch (error: any) {
+    console.error("Error fetching user itinerary events:", error);
+    return next({
+      status: 500,
+      success: false,
+      message: error.message || "Internal server error",
+    });
+  }
+};
+
+// Get Custom Itinerary Events by Itinerary Id - (Admin)
+const getCustomItineraryEventsByItineraryIdAdmin = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const {
+      type,
+      page = 1,
+      limit = 10,
+    } = customItineraryEventQuerySchema.parse(req.query);
+
+    const { itineraryId } = customItineraryParamsSchema.parse(req.params);
+
+    const skip = (page - 1) * limit;
+
+    const where: any = { itineraryId };
+    if (type) where.type = type;
+
+    const [events, total] = await Promise.all([
+      prisma.customItineraryEvent.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: [{ day: "asc" }, { order: "asc" }, { createdAt: "asc" }],
+        include: {
+          itinerary: {
+            select: {
+              id: true,
+              title: true,
+              user: {
+                select: { id: true, fullName: true, email: true },
+              },
+              destination: {
+                select: { id: true, name: true },
+              },
+            },
+          },
+        },
+      }),
+      prisma.customItineraryEvent.count({ where }),
+    ]);
+
+    return next({
+      status: 200,
+      success: true,
+      data: {
+        events,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit),
+        },
+      },
+    });
+  } catch (error: any) {
+    console.error("Admin get itinerary events error:", error);
+    return next({
+      status: 500,
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+const getAllCustomItineraryEventsAdmin = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const {
+      type,
+      itineraryId,
+      userId,
+      page = 1,
+      limit = 20,
+    } = adminCustomItineraryEventQuerySchema.parse(req.query);
+
+    const skip = (page - 1) * limit;
+
+    const where: any = {};
+    if (type) where.type = type;
+    if (itineraryId) where.itineraryId = itineraryId;
+    if (userId) where.itinerary = { userId };
+
+    const [events, total] = await Promise.all([
+      prisma.customItineraryEvent.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: [
+          { itineraryId: "asc" },
+          { day: "asc" },
+          { order: "asc" },
+          { createdAt: "asc" },
+        ],
+        include: {
+          itinerary: {
+            select: {
+              id: true,
+              title: true,
+              user: { select: { id: true, fullName: true, email: true } },
+              destination: { select: { id: true, name: true } },
+            },
+          },
+        },
+      }),
+      prisma.customItineraryEvent.count({ where }),
+    ]);
+
+    return next({
+      status: 200,
+      success: true,
+      data: {
+        events,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit),
+        },
+      },
+    });
+  } catch (error: any) {
+    console.error("Admin get all custom itinerary events error:", error);
+    return next({
+      status: 500,
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
 export {
   createCustomItineraryEvent,
   updateCustomItineraryEvent,
   getMyCustomItineraryEventsByItineraryId,
   getMyCustomItineraryEventsById,
   getMyAllCustomItineraryEvents,
+  getCustomItineraryEventsByIdAdmin,
+  getCustomItineraryEventsByItineraryIdAdmin,
+  getAllCustomItineraryEventsAdmin,
 };

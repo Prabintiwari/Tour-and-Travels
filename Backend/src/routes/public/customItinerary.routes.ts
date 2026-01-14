@@ -45,6 +45,16 @@ const router = Router();
 
 router.post("/", authenticateToken, createCustomItinerary);
 
+router.post("/", authenticateToken, getMyCustomItineraries);
+
+router.get("/events", authenticateToken, getMyAllCustomItineraryEvents);
+
+router.get(
+  "/events/:eventId",
+  authenticateToken,
+  getMyCustomItineraryEventsById
+);
+
 router.post(
   "/:itineraryId/events",
   authenticateToken,
@@ -62,18 +72,8 @@ router.get(
   authenticateToken,
   getMyCustomItineraryEventsByItineraryId
 );
-router.get(
-  "/events/:eventId",
-  authenticateToken,
-  getMyCustomItineraryEventsById
-  
-);
-
-router.get("/events", authenticateToken, getMyAllCustomItineraryEvents);
 
 router.patch("/:itineraryId", authenticateToken, updateMyCustomItinerary);
-
-router.get("/", authenticateToken, getMyCustomItineraries);
 
 router.get("/:itineraryId", authenticateToken, getMyCustomItineraryById);
 
@@ -151,7 +151,7 @@ registerRoute({
 registerRoute({
   method: "get",
   path: "/api/custom-itinerary",
-  summary: "Get my Custom Itineraries",
+  summary: "Get my all Custom Itineraries",
   tags: ["Custom-Itinerary"],
   security: [{ bearerAuth: [] }],
   request: {
@@ -295,7 +295,7 @@ registerRoute({
 registerRoute({
   method: "get",
   path: "/api/custom-itinerary/events",
-  summary: "Get Custom Itinerary events",
+  summary: "Get all my Custom Itinerary events",
   tags: ["Custom-Itinerary"],
   security: [{ bearerAuth: [] }],
   request: {
