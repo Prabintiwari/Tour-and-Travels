@@ -24,10 +24,29 @@ import {
   internalServerErrorSchema,
   unauthorizedErrorSchema,
 } from "../../schema/common.schema";
+import {createCustomItineraryEvent, updateCustomItineraryEvent} from "../../controllers/cusotmItineraryEvents.controller";
+import {
+  createCustomItineraryEventSchema,
+  customItineraryEventParamsSchema,
+  customItineraryEventResponseSchema,
+  updateCustomItineraryEventSchema,
+} from "../../schema/customItineraryEvent.schema";
 
 const router = Router();
 
 router.post("/", authenticateToken, createCustomItinerary);
+
+router.post(
+  "/:itineraryId/events",
+  authenticateToken,
+  createCustomItineraryEvent
+);
+
+router.patch(
+  "/:itineraryId/events/:eventId",
+  authenticateToken,
+  updateCustomItineraryEvent
+);
 
 router.patch("/:itineraryId", authenticateToken, updateMyCustomItinerary);
 
@@ -73,7 +92,7 @@ registerRoute({
 
 // update a Custom Itinerary
 registerRoute({
-  method: "post",
+  method: "patch",
   path: "/api/custom-itinerary/{itineraryId}",
   summary: "Update Custom Itinerary",
   tags: ["Custom-Itinerary"],
@@ -172,6 +191,74 @@ registerRoute({
   responses: {
     200: {
       description: "Delete my Custom Itinerary",
+    },
+    400: errorResponse(badRequestErrorSchema, "Bad Request"),
+    401: errorResponse(unauthorizedErrorSchema, "Unauthorized"),
+    403: errorResponse(forbiddenErrorSchema, "Forbidden"),
+    409: errorResponse(conflictErrorSchema, "Conflict"),
+    500: errorResponse(internalServerErrorSchema, "Internal Server Error"),
+  },
+});
+
+// create a Custom Itinerary Events
+registerRoute({
+  method: "post",
+  path: "/api/custom-itinerary/{itineraryId}/events",
+  summary: "Create Custom Itinerary Events",
+  tags: ["Custom-Itinerary"],
+  security: [{ bearerAuth: [] }],
+  request: {
+    params: customItineraryParamsSchema,
+    body: {
+      content: {
+        "application/json": {
+          schema: createCustomItineraryEventSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: "Custom Itinerary Events created",
+      content: {
+        "application/json": {
+          schema: customItineraryEventResponseSchema,
+        },
+      },
+    },
+    400: errorResponse(badRequestErrorSchema, "Bad Request"),
+    401: errorResponse(unauthorizedErrorSchema, "Unauthorized"),
+    403: errorResponse(forbiddenErrorSchema, "Forbidden"),
+    409: errorResponse(conflictErrorSchema, "Conflict"),
+    500: errorResponse(internalServerErrorSchema, "Internal Server Error"),
+  },
+});
+
+// update a Custom Itinerary Events
+registerRoute({
+  method: "patch",
+  path: "/api/custom-itinerary/{itineraryId}/events/{eventId}",
+  summary: "Update Custom Itinerary Events",
+  tags: ["Custom-Itinerary"],
+  security: [{ bearerAuth: [] }],
+  request: {
+    params: customItineraryEventParamsSchema,
+    body: {
+      content: {
+        "application/json": {
+          schema: updateCustomItineraryEventSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: "Update Itinerary Events created",
+      content: {
+        "application/json": {
+          schema: customItineraryEventResponseSchema,
+        },
+      },
     },
     400: errorResponse(badRequestErrorSchema, "Bad Request"),
     401: errorResponse(unauthorizedErrorSchema, "Unauthorized"),

@@ -43,10 +43,6 @@ const customItineraryEventBaseSchema = z
 
 const createCustomItineraryEventSchema = z
   .object({
-    itineraryId: z.string().min(1).openapi({
-      example: "itinerary_64fdab123",
-    }),
-
     day: z.number().int().min(1).optional().openapi({
       example: 1,
       description: "Day number in itinerary",
@@ -60,7 +56,7 @@ const createCustomItineraryEventSchema = z
   .merge(customItineraryEventBaseSchema)
   .openapi("CreateCustomItineraryEventRequest");
 
-const updateCustomItineraryEventSchema = customItineraryEventBaseSchema
+const updateCustomItineraryEventSchema = createCustomItineraryEventSchema
   .partial()
   .openapi("UpdateCustomItineraryEventRequest");
 
@@ -74,7 +70,14 @@ const customItineraryEventQuerySchema = z.object({
   }),
 });
 
-
+const customItineraryEventParamsSchema = z.object({
+  itineraryId: z.string().optional().openapi({
+    example: "itinerary_64fdab123",
+  }),
+  eventId: z.string().optional().openapi({
+    example: "event_64fdab123",
+  }),
+});
 
 const customItineraryEventResponseSchema = z
   .object({
@@ -108,6 +111,7 @@ export {
   createCustomItineraryEventSchema,
   updateCustomItineraryEventSchema,
   customItineraryEventQuerySchema,
+  customItineraryEventParamsSchema,
   customItineraryEventResponseSchema,
   customItineraryEventListResponseSchema,
 };
