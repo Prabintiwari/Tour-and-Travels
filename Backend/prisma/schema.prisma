@@ -430,8 +430,8 @@ model CustomItineraryEvent {
   itineraryId   String   @db.ObjectId
   itinerary     CustomItinerary @relation(fields: [itineraryId], references: [id], onDelete: Cascade)
 
-  day           Int     
-  order         Int     
+  day           Int?     
+  order         Int?    
 
   title         String
   description   String?
