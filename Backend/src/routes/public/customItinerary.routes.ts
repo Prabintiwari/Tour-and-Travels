@@ -24,13 +24,20 @@ import {
   internalServerErrorSchema,
   unauthorizedErrorSchema,
 } from "../../schema/common.schema";
-import {createCustomItineraryEvent, getCustomItineraryEvents, updateCustomItineraryEvent} from "../../controllers/cusotmItineraryEvents.controller";
+import {
+  createCustomItineraryEvent,
+  getMyAllCustomItineraryEvents,
+  getMyCustomItineraryEventsById,
+  getMyCustomItineraryEventsByItineraryId,
+  updateCustomItineraryEvent,
+} from "../../controllers/cusotmItineraryEvents.controller";
 import {
   createCustomItineraryEventSchema,
   customItineraryEventListResponseSchema,
   customItineraryEventParamsSchema,
   customItineraryEventQuerySchema,
   customItineraryEventResponseSchema,
+  customItineraryEventWithItineraryParamsSchema,
   updateCustomItineraryEventSchema,
 } from "../../schema/customItineraryEvent.schema";
 
@@ -50,7 +57,19 @@ router.patch(
   updateCustomItineraryEvent
 );
 
-router.get("/events",authenticateToken,getCustomItineraryEvents)
+router.get(
+  "/:itineraryId/events",
+  authenticateToken,
+  getMyCustomItineraryEventsByItineraryId
+);
+router.get(
+  "/events/:eventId",
+  authenticateToken,
+  getMyCustomItineraryEventsById
+  
+);
+
+router.get("/events", authenticateToken, getMyAllCustomItineraryEvents);
 
 router.patch("/:itineraryId", authenticateToken, updateMyCustomItinerary);
 
@@ -246,7 +265,7 @@ registerRoute({
   tags: ["Custom-Itinerary"],
   security: [{ bearerAuth: [] }],
   request: {
-    params: customItineraryEventParamsSchema,
+    params: customItineraryEventWithItineraryParamsSchema,
     body: {
       content: {
         "application/json": {
@@ -272,7 +291,7 @@ registerRoute({
   },
 });
 
-// Get Custom Itinerary Events
+// Get all my Custom Itinerary Events
 registerRoute({
   method: "get",
   path: "/api/custom-itinerary/events",
@@ -285,6 +304,62 @@ registerRoute({
   responses: {
     200: {
       description: "Get Custom Itinerary events",
+      content: {
+        "application/json": {
+          schema: customItineraryEventListResponseSchema,
+        },
+      },
+    },
+    400: errorResponse(badRequestErrorSchema, "Bad Request"),
+    401: errorResponse(unauthorizedErrorSchema, "Unauthorized"),
+    403: errorResponse(forbiddenErrorSchema, "Forbidden"),
+    409: errorResponse(conflictErrorSchema, "Conflict"),
+    500: errorResponse(internalServerErrorSchema, "Internal Server Error"),
+  },
+});
+
+// Get Custom Itinerary Events by itinerary Id
+registerRoute({
+  method: "get",
+  path: "/api/custom-itinerary/{itineraryId}/events",
+  summary: "Get Custom Itinerary events by itinerary Id",
+  tags: ["Custom-Itinerary"],
+  security: [{ bearerAuth: [] }],
+  request: {
+    params: customItineraryParamsSchema,
+    query: customItineraryEventQuerySchema,
+  },
+  responses: {
+    200: {
+      description: "Get Custom Itinerary events by itinerary Id",
+      content: {
+        "application/json": {
+          schema: customItineraryEventListResponseSchema,
+        },
+      },
+    },
+    400: errorResponse(badRequestErrorSchema, "Bad Request"),
+    401: errorResponse(unauthorizedErrorSchema, "Unauthorized"),
+    403: errorResponse(forbiddenErrorSchema, "Forbidden"),
+    409: errorResponse(conflictErrorSchema, "Conflict"),
+    500: errorResponse(internalServerErrorSchema, "Internal Server Error"),
+  },
+});
+
+// Get Custom Itinerary Events by Event Id
+registerRoute({
+  method: "get",
+  path: "/api/custom-itinerary/events/{eventId}",
+  summary: "Get Custom Itinerary events by event Id",
+  tags: ["Custom-Itinerary"],
+  security: [{ bearerAuth: [] }],
+  request: {
+    params: customItineraryEventParamsSchema,
+    query: customItineraryEventQuerySchema,
+  },
+  responses: {
+    200: {
+      description: "Get Custom Itinerary events by event Id",
       content: {
         "application/json": {
           schema: customItineraryEventListResponseSchema,

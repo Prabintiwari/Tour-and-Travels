@@ -2,7 +2,9 @@ import { Request, Response, NextFunction } from "express";
 import prisma from "../config/prisma";
 import {
   createCustomItineraryEventSchema,
+  customItineraryEventParamsSchema,
   customItineraryEventQuerySchema,
+  customItineraryEventWithItineraryParamsSchema,
   updateCustomItineraryEventSchema,
 } from "../schema/customItineraryEvent.schema";
 import { AuthRequest } from "../middleware/auth";
@@ -99,7 +101,8 @@ const updateCustomItineraryEvent = async (
       });
     }
 
-    const { itineraryId, eventId } = req.params;
+    const { itineraryId, eventId } =
+      customItineraryEventWithItineraryParamsSchema.parse(req.params);
 
     const validatedData = updateCustomItineraryEventSchema.parse(req.body);
 
@@ -176,62 +179,251 @@ const updateCustomItineraryEvent = async (
   }
 };
 
-// Get Custom Itinerary Events
-const getCustomItineraryEvents = async (
+// Get Custom Itinerary Events by Itinerary Id
+const getMyCustomItineraryEventsByItineraryId = async (
   req: AuthRequest,
   res: Response,
   next: NextFunction
 ) => {
-  const userId = req.id;
-  if (!userId) {
-    return next({
-      status: 401,
-      success: false,
-      message: "Unauthorized",
-    });
-  }
+  try {
+    const userId = req.id;
+    if (!userId) {
+      return next({
+        status: 401,
+        success: false,
+        message: "Unauthorized",
+      });
+    }
 
-  const { itineraryId, type, page, limit } =
-    customItineraryEventQuerySchema.parse(req.query);
+    const { type, page, limit } = customItineraryEventQuerySchema.parse(
+      req.query
+    );
+    const { itineraryId } = customItineraryParamsSchema.parse(req.params);
 
-  const skip = (page - 1) * limit;
+    const skip = (page - 1) * limit;
 
-  const filters: any = {};
-  if (itineraryId) filters.itineraryId = itineraryId;
-  if (type) filters.type = type;
+    const where: any = {
+      itineraryId,
+      itinerary: {
+        userId: userId,
+      },
+    };
 
-  const [events, total] = await Promise.all([
-    prisma.customItineraryEvent.findMany({
-      where: filters,
-      skip,
-      take: limit,
-      orderBy: { ["createdAt"]: "asc" },
-      include: {
-        itinerary: {
-          select: {
-            id: true,
-            title: true,
-            user: { select: { id: true, fullName: true, email: true } },
+    if (type) {
+      where.type = type;
+    }
+
+    const [events, total] = await Promise.all([
+      prisma.customItineraryEvent.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: [
+          { itineraryId: "asc" },
+          { day: "asc" },
+          { order: "asc" },
+          { createdAt: "asc" },
+        ],
+        include: {
+          itinerary: {
+            select: {
+              id: true,
+              title: true,
+              destination: {
+                select: { id: true, name: true },
+              },
+            },
           },
         },
-      },
-    }),
-    prisma.customItineraryEvent.count({ where: filters }),
-  ]);
+      }),
+      prisma.customItineraryEvent.count({ where }),
+    ]);
 
-  return next({
-    status: 200,
-    success: true,
-    data: {
-      events,
-      pagination: { total, page, limit, totalPage: Math.ceil(total / limit) },
-    },
-  });
+    return next({
+      status: 200,
+      success: true,
+      data: {
+        events,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit),
+        },
+      },
+    });
+  } catch (error: any) {
+    console.error("Error fetching user itinerary events:", error);
+    return next({
+      status: 500,
+      success: false,
+      message: error.message || "Internal server error",
+    });
+  }
 };
 
+// Get Custom Itinerary Events by Itinerary Id
+const getMyCustomItineraryEventsById = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const userId = req.id;
+    if (!userId) {
+      return next({
+        status: 401,
+        success: false,
+        message: "Unauthorized",
+      });
+    }
+
+    const { type, page, limit } = customItineraryEventQuerySchema.parse(
+      req.query
+    );
+    const { eventId } = customItineraryEventParamsSchema.parse(req.params);
+
+    const skip = (page - 1) * limit;
+
+    const where: any = {
+      id: eventId,
+      itinerary: {
+        userId: userId,
+      },
+    };
+
+    if (type) {
+      where.type = type;
+    }
+
+    const [events, total] = await Promise.all([
+      prisma.customItineraryEvent.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: [
+          { itineraryId: "asc" },
+          { day: "asc" },
+          { order: "asc" },
+          { createdAt: "asc" },
+        ],
+        include: {
+          itinerary: {
+            select: {
+              id: true,
+              title: true,
+              destination: {
+                select: { id: true, name: true },
+              },
+            },
+          },
+        },
+      }),
+      prisma.customItineraryEvent.count({ where }),
+    ]);
+
+    return next({
+      status: 200,
+      success: true,
+      data: {
+        events,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit),
+        },
+      },
+    });
+  } catch (error: any) {
+    console.error("Error fetching user itinerary events:", error);
+    return next({
+      status: 500,
+      success: false,
+      message: error.message || "Internal server error",
+    });
+  }
+};
+
+// Get my all Custom Itinerary Events
+const getMyAllCustomItineraryEvents = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const userId = req.id;
+    if (!userId) {
+      return next({
+        status: 401,
+        success: false,
+        message: "Unauthorized",
+      });
+    }
+
+    const { type, page, limit } = customItineraryEventQuerySchema.parse(
+      req.query
+    );
+
+    const skip = (page - 1) * limit;
+
+    const where: any = {
+      itinerary: {
+        userId: userId,
+      },
+    };
+
+    if (type) {
+      where.type = type;
+    }
+
+    const [events, total] = await Promise.all([
+      prisma.customItineraryEvent.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: [{ day: "asc" }, { order: "asc" }, { createdAt: "asc" }],
+        include: {
+          itinerary: {
+            select: {
+              id: true,
+              title: true,
+              destination: {
+                select: { id: true, name: true },
+              },
+            },
+          },
+        },
+      }),
+      prisma.customItineraryEvent.count({ where }),
+    ]);
+
+    return next({
+      status: 200,
+      success: true,
+      data: {
+        events,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit),
+        },
+      },
+    });
+  } catch (error: any) {
+    console.error("Error fetching user itinerary events:", error);
+    return next({
+      status: 500,
+      success: false,
+      message: error.message || "Internal server error",
+    });
+  }
+};
 export {
   createCustomItineraryEvent,
   updateCustomItineraryEvent,
-   getCustomItineraryEvents 
-,
+  getMyCustomItineraryEventsByItineraryId,
+  getMyCustomItineraryEventsById,
+  getMyAllCustomItineraryEvents,
 };

@@ -127,6 +127,14 @@ const getMyCustomItineraries = async (
       prisma.customItinerary.count({ where }),
     ]);
 
+    if (!itineraries) {
+      return next({
+        status: 404,
+        success: false,
+        message: "Itinerary not found!",
+      });
+    }
+
     return next({
       status: 200,
       success: true,

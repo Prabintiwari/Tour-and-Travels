@@ -65,9 +65,6 @@ const updateCustomItineraryEventSchema = createCustomItineraryEventSchema
   .openapi("UpdateCustomItineraryEventRequest");
 
 const customItineraryEventQuerySchema = z.object({
-  itineraryId: z.string().optional().openapi({
-    example: "itinerary_64fdab123",
-  }),
 
   type: z.nativeEnum(CustomItineraryEventType).optional().openapi({
     example: CustomItineraryEventType.ACTIVITY,
@@ -82,10 +79,16 @@ const customItineraryEventQuerySchema = z.object({
   }),
 });
 
-const customItineraryEventParamsSchema = z.object({
+const customItineraryEventWithItineraryParamsSchema  = z.object({
   itineraryId: z.string().optional().openapi({
     example: "itinerary_64fdab123",
   }),
+  eventId: z.string().optional().openapi({
+    example: "event_64fdab123",
+  }),
+});
+
+const customItineraryEventParamsSchema = z.object({
   eventId: z.string().optional().openapi({
     example: "event_64fdab123",
   }),
@@ -124,6 +127,7 @@ export {
   updateCustomItineraryEventSchema,
   customItineraryEventQuerySchema,
   customItineraryEventParamsSchema,
+  customItineraryEventWithItineraryParamsSchema,
   customItineraryEventResponseSchema,
   customItineraryEventListResponseSchema,
 };
