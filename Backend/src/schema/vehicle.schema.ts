@@ -33,14 +33,17 @@ const createVehicleSchema = z
     features: z.array(z.string()).default([]),
     description: z.string().optional(),
   })
-  .refine((data) => data.availableQuantity <= data.totalQuantity, {
-    message: "Available quantity cannot exceed total quantity",
-    path: ["availableQuantity"],
-  })
   .openapi("CreateVehicleRequest");
 
 const updateVehicleSchema = createVehicleSchema
   .partial()
+  .extend({
+    availableQuantity: z
+      .number()
+      .int()
+      .nonnegative("Available quantity cannot be negative")
+      .optional(),
+  })
   .refine(
     (data) => {
       if (

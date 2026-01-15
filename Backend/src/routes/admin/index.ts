@@ -23,6 +23,6 @@ router.use("/tour-booking", adminTourBookingRoutes);
 router.use("/tour-review", adminTourReviewRoutes);
 router.use("/faqs", adminFAQRoutes);
 router.use("/custom-itinerary", adminCustomItineraryRoutes);
-router.use("/api/vehicle", adminVehicleRoutes);
+router.use("/vehicle", adminVehicleRoutes);
 
 export default router;
