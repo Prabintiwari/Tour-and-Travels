@@ -94,6 +94,14 @@ enum FuelType {
   ELECTRIC
 }
 
+enum VehicleStatus {
+  AVAILABLE
+  BOOKED
+  MAINTENANCE
+  INACTIVE
+}
+
+
 // ==================== AUTH & USER MANAGEMENT ====================
 
 model User {
@@ -451,33 +459,46 @@ model CustomItineraryEvent {
 
 // ==================== VEHICLE MANAGEMENT ====================
 model Vehicle {
-  id                    String   @id @default(auto()) @map("_id") @db.ObjectId
-  vehicleType           VehicleType
-  brand                 String
-  model                 String?
-  year                  Int?
-  licensePlate          String?  @unique
-  capacity              Int? // Number of seats
-  pricePerDay           Float
-  totalQuantity         Int // Total vehicles available
-  availableQuantity     Int // Currently available
-  fuelType              FuelType?
-  isActive              Boolean  @default(true)
-  images                String[] // Array of image URLs
-  imagePublicIds        String[]
-  description           String?
-  features              String[] // WIFI, AC, HEATER, etc.
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  id                String   @id @default(auto()) @map("_id") @db.ObjectId
+  vehicleType       VehicleType
+  brand             String
+  model             String?
+  year              Int?
 
-  // Relations
-  bookings              VehicleBooking[]
-  reviews               VehicleReview[]
-  faqs                  VehicleFAQ[]
+  seatCapacity      Int?
+  luggageCapacity   Int?
+
+  pricePerDay       Float
+  pricePerHour      Float?
+  withDriver        Boolean @default(false)
+
+  totalQuantity     Int
+  availableQuantity Int
+
+  fuelType          FuelType  @default(PETROL)
+  status            VehicleStatus @default(AVAILABLE)
+
+  city              String
+  region            String?
+
+  images            String[]
+  imagePublicIds    String[]
+
+  features          String[]
+  description       String?
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  bookings          VehicleBooking[]
+  reviews           VehicleReview[]
+  faqs              VehicleFAQ[]
 
   @@index([vehicleType])
-  @@index([isActive])
+  @@index([status])
+  @@index([city])
 }
+
 
 // ==================== VEHICLE BOOKINGS ====================
 model VehicleBooking {
