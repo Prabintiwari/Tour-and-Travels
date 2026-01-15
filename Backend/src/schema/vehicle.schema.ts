@@ -99,10 +99,14 @@ const vehicleQuerySchema = z.object({
   minPrice: z.coerce.number().positive().optional(),
   maxPrice: z.coerce.number().positive().optional(),
   minSeatCapacity: z.coerce.number().int().positive().optional(),
-  sortBy: z
-    .enum(["pricePerDay", "year", "createdAt", "seatCapacity"])
-    .default("createdAt"),
-  sortOrder: z.enum(["asc", "desc"]).default("desc"),
+  sortBy: z.string().optional().openapi({
+    example: "startDate",
+    description: "Sort by field",
+  }),
+  sortOrder: z.string().optional().default("asc").openapi({
+    example: "asc",
+    description: "Sort order",
+  }),
   search: z.string().optional(),
 });
 
