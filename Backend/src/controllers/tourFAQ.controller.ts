@@ -15,6 +15,7 @@ import {
   updateTourFAQSchema,
 } from "../schema";
 import prisma from "../config/prisma";
+import { ZodError } from "zod";
 
 // Create a new FAQ - Admin
 const createFAQ = async (req: Request, res: Response, next: NextFunction) => {
@@ -85,6 +86,12 @@ const createFAQ = async (req: Request, res: Response, next: NextFunction) => {
       },
     });
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     next({
       status: 500,
       message: error.message || "Internal server error",
@@ -126,6 +133,12 @@ const getTourFAQs = async (req: Request, res: Response, next: NextFunction) => {
       },
     });
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     next({
       status: 500,
       message: error.message || "Internal server error",
@@ -166,6 +179,12 @@ const getFAQById = async (req: Request, res: Response, next: NextFunction) => {
       data: { faq },
     });
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     next({
       status: 500,
       message: error.message || "Internal server error",
@@ -236,6 +255,12 @@ const searchFAQs = async (req: Request, res: Response, next: NextFunction) => {
       },
     });
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     next({
       status: 500,
       message: error.message || "Internal server error",
@@ -312,6 +337,12 @@ const getAllTourFAQs = async (
       },
     });
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     next({
       status: 500,
       message: error.message || "Internal server error",
@@ -397,6 +428,12 @@ const getAllFAQs = async (req: Request, res: Response, next: NextFunction) => {
       },
     });
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     next({
       status: 500,
       message: error.message || "Internal server error",
@@ -438,6 +475,12 @@ const getAdminFAQById = async (
 
     next({ status: 200, success: true, data: faq });
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     next({
       status: 500,
       message: error.message || "Internal server error",
@@ -529,6 +572,12 @@ const updateFAQ = async (req: Request, res: Response, next: NextFunction) => {
       data: { faq },
     });
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     return next({
       status: 500,
       success: false,
@@ -573,6 +622,12 @@ const toggleFAQStatus = async (
       },
     });
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     next({
       status: 500,
       message: error.message || "Internal server error",
@@ -600,6 +655,12 @@ const deleteFAQ = async (req: Request, res: Response, next: NextFunction) => {
 
     next({ status: 200, success: true, message: "FAQ deleted successfully" });
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     next({
       status: 500,
       message: error.message || "Internal server error",
@@ -691,6 +752,12 @@ const bulkCreateFAQs = async (
       },
     });
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     return next({
       status: 500,
       success: false,
@@ -768,6 +835,12 @@ const bulkUpdateFAQs = async (
       },
     });
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     return next({
       status: 500,
       success: false,
@@ -817,6 +890,12 @@ const bulkDeleteFAQs = async (
       data: { deletedCount: result.count },
     });
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     next({
       status: 500,
       success: false,
@@ -917,6 +996,12 @@ const copyFAQs = async (req: Request, res: Response, next: NextFunction) => {
       },
     });
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     next({
       status: 500,
       success: false,
@@ -1007,6 +1092,12 @@ const getFAQStatistics = async (
       },
     });
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     next({
       status: 500,
       message: error.message || "Internal server error",

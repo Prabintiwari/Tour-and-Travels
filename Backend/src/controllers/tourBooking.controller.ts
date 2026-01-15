@@ -13,6 +13,7 @@ import {
   updateBookingSchema,
   updateBookingStatusSchema,
 } from "../schema";
+import { ZodError } from "zod";
 
 // Create a new tour booking
 const createTourBooking = async (
@@ -234,6 +235,12 @@ const createTourBooking = async (
       },
     });
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     next({
       status: 500,
       message: error.message || "Internal server error",
@@ -295,6 +302,12 @@ const getUserTourBookings = async (
       },
     });
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     next({
       status: 500,
       message: error.message || "Internal server error",
@@ -350,6 +363,12 @@ const getUserTourBookingById = async (
 
     next({ status: 200, success: true, data: booking });
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     next({
       status: 500,
       message: error.message || "Internal server error",
@@ -438,6 +457,12 @@ const cancelUserTourBooking = async (
       data: updatedBooking,
     });
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     next({
       status: 500,
       message: error.message || "Internal server error",
@@ -533,6 +558,12 @@ const getAllTourBookings = async (
       },
     });
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     next({
       status: 500,
       message: error.message || "Internal server error",
@@ -587,6 +618,12 @@ const getAdminTourBookingById = async (
 
     next({ status: 200, success: true, data: booking });
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     next({
       status: 500,
       message: error.message || "Internal server error",
@@ -849,6 +886,12 @@ const updateTourBooking = async (
       },
     });
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     next({
       status: 500,
       message: error.message || "Internal server error",
@@ -1108,6 +1151,12 @@ const rescheduleTourBooking = async (
       },
     });
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     next({
       status: 500,
       message: error.message || "Internal server error",
@@ -1188,6 +1237,12 @@ const updateTourBookingStatus = async (
       data: updatedBooking,
     });
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     next({
       status: 500,
       message: error.message || "Internal server error",

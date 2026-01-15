@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import prisma from "../config/prisma";
 import { AuthRequest } from "../middleware/auth";
 import { updateUserRoleSchema, userIdParamSchema } from "../schema";
+import { ZodError } from "zod";
 
 // get all user
 const getAllUsers = async (req: Request, res: Response, next: NextFunction) => {
@@ -91,6 +92,12 @@ const updateUserRole = async (
       data: { user },
     });
   } catch (error) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     console.error("Update role error:", error);
     next({ status: 500, success: false, message: "Internal server error" });
   }
@@ -111,6 +118,12 @@ const blockUser = async (req: Request, res: Response, next: NextFunction) => {
     });
     next({ status: 200, success: true, message: "User blocked succesfully!" });
   } catch (error) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     console.error("Update role error:", error);
     next({ status: 500, success: false, message: "Internal server error" });
   }

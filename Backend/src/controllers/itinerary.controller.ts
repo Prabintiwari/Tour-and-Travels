@@ -10,6 +10,7 @@ import {
   updateItinerarySchema,
 } from "../schema";
 import { Prisma } from "@prisma/client";
+import { ZodError } from "zod";
 
 // CREATE ITINERARY
 const createItinerary = async (
@@ -77,6 +78,12 @@ const createItinerary = async (
       data: itinerary,
     });
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     next({
       status: 500,
       message: "Internal server error",
@@ -125,6 +132,12 @@ const getItinerariesByTour = async (
       data: { itineraries, total: itineraries.length },
     });
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     next({
       status: 500,
       message: "Internal server error",
@@ -173,6 +186,12 @@ const getItineraryById = async (
       data: itinerary,
     });
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     next({
       status: 500,
       message: "Internal server error",
@@ -200,8 +219,6 @@ const updateItinerary = async (
       next({ status: 404, success: false, message: "Itinerary not found" });
       return;
     }
-
-    // const { day, ...updateData } = validateData;
 
     // If updating day, check for conflicts
     if (
@@ -264,6 +281,12 @@ const updateItinerary = async (
       data: updatedItinerary,
     });
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     next({
       status: 500,
       message: "Internal server error",
@@ -301,6 +324,12 @@ const deleteItinerary = async (
       data: { id: itineraryId },
     });
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     next({
       status: 500,
       message: "Internal server error",
@@ -339,6 +368,12 @@ const addActivity = async (req: Request, res: Response, next: NextFunction) => {
       data: updatedItinerary,
     });
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     next({
       status: 500,
       message: "Internal server error",
@@ -399,6 +434,12 @@ const removeActivity = async (
       data: updatedItinerary,
     });
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     return res.status(400).json({
       success: false,
       message: error?.errors?.[0]?.message || error.message,

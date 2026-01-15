@@ -1,7 +1,13 @@
 import { Request, Response, NextFunction } from "express";
 import prisma from "../config/prisma";
 import cloudinary from "../config/cloudinary";
-import { destinationGalleryQuerySchema, destinationIdParamSchema, DestinationQueryParams, removeGalleryImagesSchema } from "../schema";
+import {
+  destinationGalleryQuerySchema,
+  destinationIdParamSchema,
+  DestinationQueryParams,
+  removeGalleryImagesSchema,
+} from "../schema";
+import { ZodError } from "zod";
 
 // Create gallery for a destination (or add images if already exists)
 const createOrUpdateGallery = async (
@@ -91,6 +97,12 @@ const createOrUpdateGallery = async (
       },
     });
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     next({
       status: 500,
       message: "Internal server error",
@@ -155,6 +167,12 @@ const getGalleryByDestination = async (
       },
     });
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     next({
       status: 500,
       message: "Internal server error",
@@ -238,6 +256,12 @@ const getAllGalleries = async (
       },
     });
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     next({
       status: 500,
       message: "Internal server error",
@@ -253,8 +277,8 @@ const removeGalleryImages = async (
   next: NextFunction
 ) => {
   try {
-   const { destinationId } = destinationIdParamSchema.parse(req.params);
-    const { imagePublicIds } = removeGalleryImagesSchema.parse(req.body) 
+    const { destinationId } = destinationIdParamSchema.parse(req.params);
+    const { imagePublicIds } = removeGalleryImagesSchema.parse(req.body);
 
     // Validation
     if (
@@ -341,6 +365,12 @@ const removeGalleryImages = async (
       },
     });
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     return next({
       status: 500,
       success: false,
@@ -404,6 +434,12 @@ const deleteGallery = async (
       },
     });
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     next({
       status: 500,
       message: "Internal server error",

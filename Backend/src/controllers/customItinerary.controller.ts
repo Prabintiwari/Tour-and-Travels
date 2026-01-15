@@ -8,6 +8,7 @@ import {
 } from "../schema/customItinerary.schema";
 import prisma from "../config/prisma";
 import { AuthRequest } from "../middleware/auth";
+import { ZodError } from "zod";
 
 // Create custom Itinerary
 const createCustomItinerary = async (
@@ -69,6 +70,12 @@ const createCustomItinerary = async (
       data: itinerary,
     });
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     console.error("Error creating custom itinerary:", error);
 
     return next({
@@ -149,6 +156,12 @@ const getMyCustomItineraries = async (
       },
     });
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     console.error("Error fetching itineraries:", error);
     return next({
       status: 500,
@@ -207,6 +220,12 @@ const getMyCustomItineraryById = async (
       data: itinerary,
     });
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     console.error("Error fetching itinerary:", error);
     return next({
       status: 500,
@@ -274,9 +293,15 @@ const updateMyCustomItinerary = async (
       data: updatedItinerary,
     });
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     console.error("Error updating itinerary:", error);
     return next({
-      status: 400,
+      status: 500,
       success: false,
       message: error.message || "Failed to update itinerary",
     });
@@ -322,6 +347,12 @@ const deleteMyCustomItinerary = async (
       message: "Itinerary deleted successfully",
     });
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     console.error("Error deleting itinerary:", error);
     return next({
       status: 500,
@@ -395,6 +426,12 @@ const getAllCustomItinerariesAdmin = async (
       },
     });
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     console.error("Admin get all custom itineraries error:", error);
     return next({
       status: 500,
@@ -452,6 +489,12 @@ const getCustomItineraryByIdAdmin = async (
       data: itinerary,
     });
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     console.error("Admin get custom itinerary by id error:", error);
     return next({
       status: 500,

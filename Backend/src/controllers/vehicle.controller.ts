@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { createVehicleSchema } from "../schema/vehicle.schema";
 import prisma from "../config/prisma";
 import { VehicleStatus } from "@prisma/client";
+import { ZodError } from "zod";
 
 //Create a new vehicle
 const createVehicle = async (
@@ -43,9 +44,15 @@ const createVehicle = async (
       data: vehicle,
     });
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues||"Validation failed",
+      });
+    }
     next({
       status: 500,
-      message: "Internal server error",
+      message: error.message || "Internal server error",
       error: error.message,
     });
   }

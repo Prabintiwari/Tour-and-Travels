@@ -8,6 +8,7 @@ import {
   updateTourScheduleSchema,
 } from "../schema";
 import prisma from "../config/prisma";
+import { ZodError } from "zod";
 
 //Create a new tour schedule
 const createTourSchedule = async (
@@ -94,6 +95,12 @@ const createTourSchedule = async (
       data: schedule,
     });
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     next({
       status: 500,
       message: "Internal server error",
@@ -121,7 +128,7 @@ const getTourSchedules = async (
       availableSeatsMin,
       sortBy,
       sortOrder,
-    } = tourScheduleQuerySchema.parse(req.query)
+    } = tourScheduleQuerySchema.parse(req.query);
 
     const pageNumber = page ?? 1;
     const limitNumber = limit ?? 10;
@@ -211,6 +218,12 @@ const getTourSchedules = async (
       },
     });
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     next({
       status: 500,
       message: "Internal server error",
@@ -264,6 +277,12 @@ const getTourScheduleById = async (
 
     next({ status: 200, success: true, data: schedule });
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     next({
       status: 500,
       message: "Internal server error",
@@ -374,6 +393,12 @@ const updateTourSchedule = async (
       data: schedule,
     });
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     next({
       status: 500,
       message: "Internal server error",
@@ -426,6 +451,12 @@ const deleteTourSchedule = async (
       message: "Tour schedule deleted successfully",
     });
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     next({
       status: 500,
       message: "Internal server error",
@@ -468,6 +499,12 @@ const getAvailableSchedules = async (
       data: schedules,
     });
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     next({
       status: 500,
       message: "Internal server error",

@@ -6,6 +6,7 @@ import { transporter } from "../utils/emailServices";
 import Password_Reset_OTP from "../templets/userEmailTemplet/forgot_password_otp";
 import passwordResetSuccessEmail from "../templets/userEmailTemplet/passwordResetSuccessfully";
 import { updateUserSchema, userIdParamSchema } from "../schema";
+import { ZodError } from "zod";
 
 // update user details
 const updateUserDetails = async (
@@ -59,6 +60,12 @@ const updateUserDetails = async (
       data: { user },
     });
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     console.error(error);
     return next({
       status: 500,

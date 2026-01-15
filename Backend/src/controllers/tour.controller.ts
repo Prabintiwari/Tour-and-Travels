@@ -1,12 +1,21 @@
 import { Request, Response, NextFunction } from "express";
 import prisma from "../config/prisma";
 import cloudinary from "../config/cloudinary";
-import { createTourSchema, defaultGuidePricingSchema, removeTourImagesBodySchema, tourParamsSchema, TourQueryParams, tourQuerySchema, updateTourSchema } from "../schema";
+import {
+  createTourSchema,
+  defaultGuidePricingSchema,
+  removeTourImagesBodySchema,
+  tourParamsSchema,
+  TourQueryParams,
+  tourQuerySchema,
+  updateTourSchema,
+} from "../schema";
 
 import {
   calculateDiscountAmount,
   calculateFinalPrice,
 } from "../utils/calculateDiscountedPrice";
+import { ZodError } from "zod";
 
 // CREATE TOUR WITH OPTIONAL GUIDE PRICING AND DISCOUNT
 const createTour = async (req: Request, res: Response, next: NextFunction) => {
@@ -119,6 +128,12 @@ const createTour = async (req: Request, res: Response, next: NextFunction) => {
       },
     });
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     next({
       status: 500,
       message: error.message || "Internal server error",
@@ -201,6 +216,12 @@ const getTourById = async (req: Request, res: Response, next: NextFunction) => {
       },
     });
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     next({
       status: 500,
       message: error.message || "Internal server error",
@@ -210,11 +231,7 @@ const getTourById = async (req: Request, res: Response, next: NextFunction) => {
 };
 
 // GET ALL TOURS WITH FILTERING
-const getAllTours = async (
-  req: Request<{}, {}, {}, TourQueryParams>,
-  res: Response,
-  next: NextFunction
-) => {
+const getAllTours = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const {
       page,
@@ -328,6 +345,12 @@ const getAllTours = async (
       },
     });
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     next({
       status: 500,
       message: error.message || "Internal server error",
@@ -468,6 +491,12 @@ const updateTour = async (req: Request, res: Response, next: NextFunction) => {
       },
     });
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     next({
       status: 500,
       message: error.message || "Internal server error",
@@ -508,6 +537,12 @@ const deleteTour = async (req: Request, res: Response, next: NextFunction) => {
 
     next({ status: 200, success: true, message: "Tour deleted successfully" });
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     next({
       status: 500,
       message: error.message || "Internal server error",
@@ -564,6 +599,12 @@ const addTourImages = async (
       data: updatedTour,
     });
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     next({
       status: 500,
       message: error.message || "Internal server error",
@@ -605,7 +646,10 @@ const removeTourImages = async (
 
     let updatedCoverImage;
     let updatedCoverImagePublicId;
-    if (tour.coverImagePublicId && imagePublicIds.includes(tour.coverImagePublicId)) {
+    if (
+      tour.coverImagePublicId &&
+      imagePublicIds.includes(tour.coverImagePublicId)
+    ) {
       updatedCoverImage = null;
       updatedCoverImagePublicId = null;
     }
@@ -643,6 +687,12 @@ const removeTourImages = async (
       },
     });
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     next({
       status: 500,
       message: error.message || "Internal server error",
@@ -678,6 +728,12 @@ const getGuidePricingForTour = async (
       data: guidePricing,
     });
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     next({
       status: 500,
       message: error.message || "Internal server error",
@@ -693,7 +749,7 @@ const setDefaultGuidePricing = async (
   next: NextFunction
 ) => {
   try {
-    const validateData = defaultGuidePricingSchema.parse(req.body)
+    const validateData = defaultGuidePricingSchema.parse(req.body);
 
     // Check if default pricing already exists
     const existingDefault = await prisma.tourGuidePricing.findFirst({
@@ -738,6 +794,12 @@ const setDefaultGuidePricing = async (
       });
     }
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     next({
       status: 500,
       message: error.message || "Internal server error",
@@ -816,6 +878,12 @@ const deleteTourGuidePricing = async (
         "Tour-specific guide pricing disabled. Tour will now use default pricing.",
     });
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     next({
       status: 500,
       message: error.message || "Internal server error",

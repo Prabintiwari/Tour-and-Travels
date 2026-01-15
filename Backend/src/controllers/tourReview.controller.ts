@@ -16,6 +16,7 @@ import {
 } from "../schema";
 import { AuthRequest } from "../middleware/auth";
 import { BookingStatus } from "@prisma/client";
+import { ZodError } from "zod";
 
 // Create a tour review
 const createReview = async (
@@ -132,6 +133,12 @@ const createReview = async (
       },
     });
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     next({
       status: 500,
       message: error.message || "Internal server error",
@@ -149,7 +156,7 @@ const getTourReviews = async (
   try {
     const { tourId } = tourParamsSchema.parse(req.params);
     const { page, limit, rating, sortBy, sortOrder } =
-      reviewIdQuerySchema.parse(req.query) 
+      reviewIdQuerySchema.parse(req.query);
 
     const pageNumber = page ?? 1;
     const limitNumber = limit ?? 10;
@@ -249,6 +256,12 @@ const getTourReviews = async (
       },
     });
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     next({
       status: 500,
       message: error.message || "Internal server error",
@@ -304,6 +317,12 @@ const getReviewById = async (
       data: review,
     });
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     next({
       status: 500,
       message: error.message || "Internal server error",
@@ -321,7 +340,7 @@ const getDestinationReviews = async (
   try {
     const { destinationId } = destinationIdParamSchema.parse(req.params);
     const { page, limit, rating, sortBy, sortOrder } =
-      reviewIdQuerySchema.parse(req.query)
+      reviewIdQuerySchema.parse(req.query);
 
     const pageNumber = page ?? 1;
     const limitNumber = limit ?? 10;
@@ -408,6 +427,12 @@ const getDestinationReviews = async (
       },
     });
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     next({
       status: 500,
       message: error.message || "Internal server error",
@@ -490,6 +515,12 @@ const updateReview = async (
       },
     });
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     next({
       status: 500,
       message: error.message || "Internal server error",
@@ -542,6 +573,12 @@ const deleteReview = async (
       message: "Review deleted successfully",
     });
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     next({
       status: 500,
       message: error.message || "Internal server error",
@@ -559,7 +596,7 @@ const getUserReviews = async (
   try {
     const userId = req.id;
     const { page, limit, rating, sortBy, sortOrder } =
-      reviewIdQuerySchema.parse(req.query)
+      reviewIdQuerySchema.parse(req.query);
     const pageNumber = page ?? 1;
     const limitNumber = limit ?? 10;
     const skip = (pageNumber - 1) * limitNumber;
@@ -624,6 +661,12 @@ const getUserReviews = async (
       },
     });
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     next({
       status: 500,
       message: error.message || "Internal server error",
@@ -706,6 +749,12 @@ const canReviewTour = async (
       },
     });
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     next({
       status: 500,
       message: error.message || "Internal server error",
@@ -730,7 +779,7 @@ const getAllReviews = async (
       userId,
       sortBy,
       sortOrder,
-    } = reviewQuerySchema.parse(req.query)
+    } = reviewQuerySchema.parse(req.query);
 
     const pageNumber = page ?? 1;
     const limitNumber = limit ?? 10;
@@ -804,6 +853,12 @@ const getAllReviews = async (
       },
     });
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     next({
       status: 500,
       message: error.message || "Internal server error",
@@ -839,6 +894,12 @@ const adminDeleteReview = async (
       message: "Review deleted successfully",
     });
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     next({
       status: 500,
       message: error.message || "Internal server error",
@@ -854,8 +915,9 @@ const getReviewStatistics = async (
   next: NextFunction
 ) => {
   try {
-    const { tourId, destinationId } =
-      reviewStatisticsQuerySchema.parse(req.query)
+    const { tourId, destinationId } = reviewStatisticsQuerySchema.parse(
+      req.query
+    );
 
     const where: any = {};
     if (tourId) {
@@ -925,6 +987,12 @@ const getReviewStatistics = async (
       },
     });
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     next({
       status: 500,
       message: error.message || "Internal server error",
@@ -966,6 +1034,12 @@ const bulkDeleteReviews = async (
       },
     });
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     next({
       status: 500,
       message: error.message || "Internal server error",

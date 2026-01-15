@@ -7,6 +7,7 @@ import { transporter } from "../utils/emailServices";
 import registration_otp_templete from "../templets/userEmailTemplet/registration_otp";
 import { AuthRequest, generateToken } from "../middleware/auth";
 import welcomeEmail from "../templets/userEmailTemplet/WelcomeEmail";
+import { ZodError } from "zod";
 
 // user register
 const register = async (req: Request, res: Response, next: NextFunction) => {
@@ -65,6 +66,12 @@ const register = async (req: Request, res: Response, next: NextFunction) => {
       data: { email: validatedData.email },
     });
   } catch (error) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     console.error("Registration error:", error);
     next({ status: 500, success: false, message: "internal server error" });
   }
@@ -211,6 +218,12 @@ const login = async (req: Request, res: Response, next: NextFunction) => {
       },
     });
   } catch (error) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     console.error("Login error:", error);
     next({ status: 500, success: false, message: "Internal server error!" });
   }
@@ -219,7 +232,7 @@ const login = async (req: Request, res: Response, next: NextFunction) => {
 // my profile
 const getMe = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const { userId } = req.params;
+    const { userId } = userIdParamSchema.parse(req.params);
     const user = await prisma.user.findUnique({
       where: { id: userId },
       select: {
@@ -238,6 +251,12 @@ const getMe = async (req: AuthRequest, res: Response, next: NextFunction) => {
 
     next({ status: 200, success: true, data: { user } });
   } catch (error) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     next({ status: 500, success: false, message: "Failed to fetch user data" });
   }
 };
@@ -263,6 +282,12 @@ const deleteUser = async (req: Request, res: Response, next: NextFunction) => {
     });
     next({ status: 200, success: true, message: "User deleted succesfully!" });
   } catch (error) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     console.error("Update role error:", error);
     next({ status: 500, success: false, message: "Internal server error" });
   }

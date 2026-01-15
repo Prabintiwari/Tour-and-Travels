@@ -10,6 +10,7 @@ import {
 } from "../schema/customItineraryEvent.schema";
 import { AuthRequest } from "../middleware/auth";
 import { customItineraryParamsSchema } from "../schema/customItinerary.schema";
+import { ZodError } from "zod";
 
 // Create Custom Itinerary Events
 const createCustomItineraryEvent = async (
@@ -76,6 +77,12 @@ const createCustomItineraryEvent = async (
       data: event,
     });
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     console.error("Error creating custom itinerary event:", error);
 
     return next({
@@ -170,6 +177,12 @@ const updateCustomItineraryEvent = async (
       data: updatedEvent,
     });
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     console.error("Error updating custom itinerary event:", error);
 
     return next({
@@ -254,6 +267,12 @@ const getMyCustomItineraryEventsByItineraryId = async (
       },
     });
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     console.error("Error fetching user itinerary events:", error);
     return next({
       status: 500,
@@ -281,7 +300,7 @@ const getMyCustomItineraryEventsById = async (
 
     const { eventId } = customItineraryEventParamsSchema.parse(req.params);
     const where: any = {
-      id:eventId,
+      id: eventId,
       itinerary: {
         userId: userId,
       },
@@ -318,6 +337,12 @@ const getMyCustomItineraryEventsById = async (
       },
     });
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     console.error("Error fetching user itinerary events:", error);
     return next({
       status: 500,
@@ -394,6 +419,12 @@ const getMyAllCustomItineraryEvents = async (
       },
     });
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     console.error("Error fetching user itinerary events:", error);
     return next({
       status: 500,
@@ -442,6 +473,12 @@ const getCustomItineraryEventsByIdAdmin = async (
       },
     });
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     console.error("Error fetching user itinerary events:", error);
     return next({
       status: 500,
@@ -509,6 +546,12 @@ const getCustomItineraryEventsByItineraryIdAdmin = async (
       },
     });
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     console.error("Admin get itinerary events error:", error);
     return next({
       status: 500,
@@ -578,6 +621,12 @@ const getAllCustomItineraryEventsAdmin = async (
       },
     });
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     console.error("Admin get all custom itinerary events error:", error);
     return next({
       status: 500,

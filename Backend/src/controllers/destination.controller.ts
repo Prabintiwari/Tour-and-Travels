@@ -8,6 +8,7 @@ import {
 } from "../schema";
 import prisma from "../config/prisma";
 import cloudinary from "../config/cloudinary";
+import { ZodError } from "zod";
 
 // Create a new destination
 const createDestination = async (
@@ -63,6 +64,12 @@ const createDestination = async (
       data: { destination },
     });
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     next({
       status: 500,
       message: "Internal server error",
@@ -134,6 +141,12 @@ const getDestinationById = async (
       data: destination,
     });
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     next({
       status: 500,
       message: "Internal server error",
@@ -144,7 +157,7 @@ const getDestinationById = async (
 
 // Get all destinations with filtering and pagination
 const getAllDestinations = async (
-  req: Request<{}, {}, {}, DestinationQueryParams>,
+  req: Request,
   res: Response,
   next: NextFunction
 ) => {
@@ -223,6 +236,12 @@ const getAllDestinations = async (
       },
     });
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     next({
       status: 500,
       message: "Internal server error",
@@ -295,6 +314,12 @@ const getPopularDestinations = async (
 
     next({ status: 200, success: true, data: destinations });
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     next({
       status: 500,
       message: "Internal server error",
@@ -374,6 +399,12 @@ const updateDestination = async (
       data: updatedDestination,
     });
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     next({
       status: 500,
       message: "Internal server error",
@@ -434,6 +465,12 @@ const deleteDestination = async (
       message: "Destination deleted successfully",
     });
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     next({
       status: 500,
       success: false,
@@ -507,6 +544,12 @@ const getDestinationStats = async (
       },
     });
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
     next({
       status: 500,
       success: false,
