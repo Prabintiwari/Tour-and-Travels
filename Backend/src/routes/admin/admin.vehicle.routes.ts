@@ -1,6 +1,7 @@
 import { Router } from "express";
 import {
   createVehicle,
+  deleteVehicle,
   getAllVehiclesAdmin,
   getVehicleByIdAdmin,
   updateVehicle,
@@ -31,9 +32,14 @@ router.use(authenticateToken, AdminOnly);
 // Admin Vehicle routes
 
 router.post("/", createVehicle);
+
 router.get("/", getAllVehiclesAdmin);
+
 router.get("/:vehicleId", getVehicleByIdAdmin);
+
 router.patch("/:vehicleId", updateVehicle);
+
+router.delete("/:vehicleId", deleteVehicle);
 
 // Swagger registration
 
@@ -52,7 +58,7 @@ registerRoute({
     },
   },
   responses: {
-    200: {
+    201: {
       description: "Vehicle Created",
       content: {
         "application/json": { schema: vehicleResponseSchema },
@@ -134,6 +140,31 @@ registerRoute({
   responses: {
     200: {
       description: "Vehicle Updated",
+      content: {
+        "application/json": { schema: vehicleResponseSchema },
+      },
+    },
+    400: errorResponse(badRequestErrorSchema, "Bad Request"),
+    401: errorResponse(unauthorizedErrorSchema, "Unauthorized"),
+    403: errorResponse(forbiddenErrorSchema, "Forbidden"),
+    409: errorResponse(conflictErrorSchema, "Conflict"),
+    500: errorResponse(internalServerErrorSchema, "Internal Server Error"),
+  },
+});
+
+// Delete or Deactivate a  Vehicle
+registerRoute({
+  method: "delete",
+  path: "/api/admin/vehicle/{vehicleId}",
+  summary: "Deactivate a vehicle",
+  tags: ["Vehicle"],
+  security: [{ bearerAuth: [] }],
+  request: {
+    params: vehicleParamsSchema,
+  },
+  responses: {
+    200: {
+      description: "Vehicle Deactivated",
       content: {
         "application/json": { schema: vehicleResponseSchema },
       },

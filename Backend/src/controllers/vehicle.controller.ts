@@ -7,8 +7,9 @@ import {
   vehicleParamsSchema,
 } from "../schema/vehicle.schema";
 import prisma from "../config/prisma";
-import { VehicleStatus } from "@prisma/client";
+import { RentalStatus, VehicleStatus } from "@prisma/client";
 import { ZodError } from "zod";
+import cloudinary from "../config/cloudinary";
 
 //Create a new vehicle
 const createVehicle = async (
@@ -599,7 +600,59 @@ const updateVehicle = async (
 };
 
 // Delete Vehicle
+const deleteVehicle = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { vehicleId } = vehicleParamsSchema.parse(req.params);
 
+    const existingVehicle = await prisma.vehicle.findUnique({
+      where: { id: vehicleId },
+    });
+    if (!existingVehicle) {
+      return next({ status: 404, message: "Vehicle not found" });
+    }
+
+    // Check if vehicle has active/future bookings
+    const activeBookings = await prisma.vehicleBooking.count({
+      where: {
+        vehicleId,
+        status: { in: [RentalStatus.ACTIVE, RentalStatus.CONFIRMED] },
+        endDate: { gte: new Date() },
+      },
+    });
+
+    if (activeBookings > 0) {
+      return next({
+        status: 400,
+        success: false,
+        message: "Vehicle cannot be inactivated because it has active bookings",
+      });
+    }
+
+    const vehicle = await prisma.vehicle.update({
+      where: { id: vehicleId },
+      data: { status: VehicleStatus.INACTIVE },
+    });
+
+    next({
+      status: 200,
+      success: true,
+      message: "Vehicle marked as inactive",
+      data: vehicle,
+    });
+  } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
+    next({
+      status: 500,
+      message: error.message || "Internal server error",
+      error: error.message,
+    });
+  }
+};
 
 export {
   createVehicle,
@@ -608,4 +661,5 @@ export {
   getAllVehiclesAdmin,
   getAllVehiclesPublic,
   updateVehicle,
+  deleteVehicle,
 };
