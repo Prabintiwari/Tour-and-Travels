@@ -470,7 +470,6 @@ model Vehicle {
 
   pricePerDay       Float
   pricePerHour      Float?
-  withDriver        Boolean @default(false)
 
   totalQuantity     Int
   availableQuantity Int

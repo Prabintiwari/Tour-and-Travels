@@ -1,7 +1,12 @@
 import { Router } from "express";
-import { getVehicleById } from "../../controllers/vehicle.controller";
+import {
+  getAllVehiclesPublic,
+  getVehicleByIdPubic,
+} from "../../controllers/vehicle.controller";
 import { registerRoute } from "../../utils/openapi.utils";
 import {
+  publicVehicleQuerySchema,
+  vehicleListResponseSchema,
   vehicleParamsSchema,
   vehicleResponseSchema,
 } from "../../schema/vehicle.schema";
@@ -18,11 +23,38 @@ const router = Router();
 
 // Vehicle routes
 
-router.get("/:vehicleId", getVehicleById);
+router.get("/", getAllVehiclesPublic);
+router.get("/:vehicleId", getVehicleByIdPubic);
+
 
 // Swagger registration
 
-// Get vehicle by id
+// Get all Vehicles - (Public)
+registerRoute({
+  method: "get",
+  path: "/api/vehicle",
+  summary: "Get all Vehicles",
+  tags: ["Vehicle"],
+  security: [{ bearerAuth: [] }],
+  request: {
+    query: publicVehicleQuerySchema,
+  },
+  responses: {
+    200: {
+      description: "Get all Vehicles",
+      content: {
+        "application/json": { schema: vehicleListResponseSchema },
+      },
+    },
+    400: errorResponse(badRequestErrorSchema, "Bad Request"),
+    401: errorResponse(unauthorizedErrorSchema, "Unauthorized"),
+    403: errorResponse(forbiddenErrorSchema, "Forbidden"),
+    409: errorResponse(conflictErrorSchema, "Conflict"),
+    500: errorResponse(internalServerErrorSchema, "Internal Server Error"),
+  },
+});
+
+// Get vehicle by id - (Public)
 registerRoute({
   method: "get",
   path: "/api/vehicle/{vehicleId}",

@@ -20,7 +20,6 @@ const createVehicleSchema = z
     luggageCapacity: z.number().int().nonnegative().optional(),
     pricePerDay: z.number().positive("Price per day must be positive"),
     pricePerHour: z.number().positive().optional(),
-    withDriver: z.boolean().default(false),
     totalQuantity: z.number().int().positive("Total quantity must be positive"),
     fuelType: z.nativeEnum(FuelType).default(FuelType.PETROL),
     status: z.nativeEnum(VehicleStatus).default(VehicleStatus.AVAILABLE),
@@ -68,7 +67,6 @@ const vehicleResponseSchema = z
     luggageCapacity: z.number().nullable(),
     pricePerDay: z.number(),
     pricePerHour: z.number().nullable(),
-    withDriver: z.boolean(),
     totalQuantity: z.number(),
     availableQuantity: z.number(),
     fuelType: z.nativeEnum(FuelType),
@@ -86,7 +84,7 @@ const vehicleResponseSchema = z
 
 const vehicleListResponseSchema = paginatedResponse(vehicleResponseSchema);
 
-const vehicleQuerySchema = z.object({
+const adminVehicleQuerySchema = z.object({
   page: z.coerce.number().int().positive().default(1),
   limit: z.coerce.number().int().positive().max(50).default(10),
   vehicleType: z.nativeEnum(VehicleType).optional(),
@@ -94,7 +92,27 @@ const vehicleQuerySchema = z.object({
   region: z.string().optional(),
   status: z.nativeEnum(VehicleStatus).optional(),
   fuelType: z.nativeEnum(FuelType).optional(),
-  withDriver: z.coerce.boolean().optional(),
+  minPrice: z.coerce.number().positive().optional(),
+  maxPrice: z.coerce.number().positive().optional(),
+  minSeatCapacity: z.coerce.number().int().positive().optional(),
+  sortBy: z.string().optional().openapi({
+    example: "startDate",
+    description: "Sort by field",
+  }),
+  sortOrder: z.string().optional().default("asc").openapi({
+    example: "asc",
+    description: "Sort order",
+  }),
+  search: z.string().optional(),
+});
+
+const publicVehicleQuerySchema = z.object({
+  page: z.coerce.number().int().positive().default(1),
+  limit: z.coerce.number().int().positive().max(50).default(10),
+  vehicleType: z.nativeEnum(VehicleType).optional(),
+  city: z.string().optional(),
+  region: z.string().optional(),
+  fuelType: z.nativeEnum(FuelType).optional(),
   minPrice: z.coerce.number().positive().optional(),
   maxPrice: z.coerce.number().positive().optional(),
   minSeatCapacity: z.coerce.number().int().positive().optional(),
@@ -122,5 +140,6 @@ export {
   vehicleResponseSchema,
   vehicleListResponseSchema,
   vehicleParamsSchema,
-  vehicleQuerySchema,
+  adminVehicleQuerySchema,
+  publicVehicleQuerySchema,
 };

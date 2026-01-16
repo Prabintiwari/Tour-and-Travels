@@ -1,6 +1,9 @@
 import { Request, Response, NextFunction } from "express";
 import {
+  adminVehicleQuerySchema,
   createVehicleSchema,
+  publicVehicleQuerySchema,
+  updateVehicleSchema,
   vehicleParamsSchema,
 } from "../schema/vehicle.schema";
 import prisma from "../config/prisma";
@@ -61,8 +64,8 @@ const createVehicle = async (
   }
 };
 
-// Get vehicle By id
-const getVehicleById = async (
+// Get vehicle By id - (Public)
+const getVehicleByIdPubic = async (
   req: Request,
   res: Response,
   next: NextFunction
@@ -72,6 +75,68 @@ const getVehicleById = async (
 
     const vehicle = await prisma.vehicle.findUnique({
       where: { id: vehicleId, status: { not: VehicleStatus.INACTIVE } },
+      include: {
+        faqs: { where: { isActive: true } },
+        reviews: {
+          include: {
+            user: {
+              select: { id: true, fullName: true, profileImage: true },
+            },
+          },
+          orderBy: { createdAt: "desc" },
+          take: 5,
+        },
+      },
+    });
+
+    if (!vehicle) {
+      return next({
+        status: 404,
+        success: false,
+        message: "Vehicle not found or Inactive",
+      });
+    }
+    const totalReviews = vehicle.reviews.length;
+    const avgRating =
+      vehicle.reviews.length > 0
+        ? vehicle.reviews.reduce((a, r) => a + r.rating, 0) /
+          vehicle.reviews.length
+        : 0;
+    next({
+      status: 200,
+      success: true,
+      data: {
+        vehicle,
+        averageRating: Number(avgRating.toFixed(1)),
+        totalReviews: totalReviews,
+      },
+    });
+  } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
+    next({
+      status: 500,
+      message: error.message || "Internal server error",
+      error: error.message,
+    });
+  }
+};
+
+// Get vehicle By id including Inactive - (Admin)
+const getVehicleByIdAdmin = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { vehicleId } = vehicleParamsSchema.parse(req.params);
+
+    const vehicle = await prisma.vehicle.findUnique({
+      where: { id: vehicleId },
       include: {
         faqs: { where: { isActive: true } },
         reviews: {
@@ -123,4 +188,424 @@ const getVehicleById = async (
   }
 };
 
-export { createVehicle,getVehicleById };
+// Get all vehicle - (Public)
+const getAllVehiclesPublic = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const {
+      vehicleType,
+      city,
+      region,
+      fuelType,
+      minPrice,
+      maxPrice,
+      minSeatCapacity,
+      search,
+      page,
+      limit,
+      sortBy,
+      sortOrder,
+    } = publicVehicleQuerySchema.parse(req.query);
+
+    const skip = (page - 1) * limit;
+
+    const where: any = { status: VehicleStatus.AVAILABLE };
+
+    // Filter by vehicle type
+    if (vehicleType) {
+      where.vehicleType = vehicleType;
+    }
+
+    // Filter by location
+    if (city) {
+      where.city = { contains: city, mode: "insensitive" };
+    }
+
+    if (region) {
+      where.region = { contains: region, mode: "insensitive" };
+    }
+
+    // Filter by fuel type
+    if (fuelType) {
+      where.fuelType = fuelType;
+    }
+
+    // Filter by price range
+    if (minPrice !== undefined || maxPrice !== undefined) {
+      where.pricePerDay = {};
+      if (minPrice !== undefined) {
+        where.pricePerDay.gte = minPrice;
+      }
+      if (maxPrice !== undefined) {
+        where.pricePerDay.lte = maxPrice;
+      }
+    }
+
+    // Filter by minimum seat capacity
+    if (minSeatCapacity !== undefined) {
+      where.seatCapacity = {
+        gte: minSeatCapacity,
+      };
+    }
+
+    if (search) {
+      where.OR = [
+        { brand: { contains: search, mode: "insensitive" } },
+        { model: { contains: search, mode: "insensitive" } },
+        { description: { contains: search, mode: "insensitive" } },
+        { city: { contains: search, mode: "insensitive" } },
+        { region: { contains: search, mode: "insensitive" } },
+      ];
+    }
+
+    const validSortFields = [
+      "pricePerDay",
+      "year",
+      "createdAt",
+      "seatCapacity",
+    ];
+    const sortField = validSortFields.includes(sortBy as string)
+      ? (sortBy as string)
+      : "createdAt";
+
+    const sortOrderValue = sortOrder?.toLowerCase() === "desc" ? "desc" : "asc";
+
+    const [vehicles, total] = await Promise.all([
+      prisma.vehicle.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { [sortField]: sortOrderValue },
+        include: {
+          _count: {
+            select: {
+              bookings: true,
+              reviews: true,
+            },
+          },
+          reviews: {
+            select: {
+              rating: true,
+            },
+          },
+        },
+      }),
+      prisma.vehicle.count({ where }),
+    ]);
+
+    // Calculate average rating for each vehicle
+    const vehiclesWithStats = vehicles.map((vehicle) => {
+      const avgRating =
+        vehicle.reviews.length > 0
+          ? vehicle.reviews.reduce((sum, r) => sum + r.rating, 0) /
+            vehicle.reviews.length
+          : 0;
+
+      const { reviews, ...vehicleData } = vehicle;
+
+      return {
+        ...vehicleData,
+        averageRating: Math.round(avgRating * 10) / 10,
+        totalReviews: vehicle._count.reviews,
+        totalBookings: vehicle._count.bookings,
+      };
+    });
+
+    next({
+      status: 200,
+      success: true,
+      data: {
+        vehiclesWithStats,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit),
+          hasNextPage: page < Math.ceil(total / limit),
+          hasPreviousPage: page > 1,
+        },
+      },
+    });
+  } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        success: false,
+        message: error.issues || "Validation failed",
+        errors: error.issues,
+      });
+    }
+    next({
+      status: 500,
+      success: false,
+      message: error.message || "Internal server error",
+      error: error.message,
+    });
+  }
+};
+
+// Get all vehicle including Inactive - (Admin)
+const getAllVehiclesAdmin = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const {
+      vehicleType,
+      city,
+      region,
+      status,
+      fuelType,
+      minPrice,
+      maxPrice,
+      minSeatCapacity,
+      search,
+      page,
+      limit,
+      sortBy,
+      sortOrder,
+    } = adminVehicleQuerySchema.parse(req.query);
+
+    const skip = (page - 1) * limit;
+
+    const where: any = {};
+
+    // Filter by vehicle type
+    if (vehicleType) {
+      where.vehicleType = vehicleType;
+    }
+
+    // Filter by location
+    if (city) {
+      where.city = { contains: city, mode: "insensitive" };
+    }
+
+    if (region) {
+      where.region = { contains: region, mode: "insensitive" };
+    }
+
+    // Filter by status
+    if (status) {
+      where.status = status;
+    }
+
+    // Filter by fuel type
+    if (fuelType) {
+      where.fuelType = fuelType;
+    }
+
+    // Filter by price range
+    if (minPrice !== undefined || maxPrice !== undefined) {
+      where.pricePerDay = {};
+      if (minPrice !== undefined) {
+        where.pricePerDay.gte = minPrice;
+      }
+      if (maxPrice !== undefined) {
+        where.pricePerDay.lte = maxPrice;
+      }
+    }
+
+    // Filter by minimum seat capacity
+    if (minSeatCapacity !== undefined) {
+      where.seatCapacity = {
+        gte: minSeatCapacity,
+      };
+    }
+
+    if (search) {
+      where.OR = [
+        { brand: { contains: search, mode: "insensitive" } },
+        { model: { contains: search, mode: "insensitive" } },
+        { description: { contains: search, mode: "insensitive" } },
+        { city: { contains: search, mode: "insensitive" } },
+        { region: { contains: search, mode: "insensitive" } },
+      ];
+    }
+
+    const validSortFields = [
+      "pricePerDay",
+      "year",
+      "createdAt",
+      "seatCapacity",
+    ];
+    const sortField = validSortFields.includes(sortBy as string)
+      ? (sortBy as string)
+      : "createdAt";
+
+    const sortOrderValue = sortOrder?.toLowerCase() === "desc" ? "desc" : "asc";
+
+    const [vehicles, total] = await Promise.all([
+      prisma.vehicle.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { [sortField]: sortOrderValue },
+        include: {
+          _count: {
+            select: {
+              bookings: true,
+              reviews: true,
+            },
+          },
+          reviews: {
+            take: 5,
+            select: {
+              rating: true,
+            },
+          },
+        },
+      }),
+      prisma.vehicle.count({ where }),
+    ]);
+
+    // Calculate average rating for each vehicle
+    const vehiclesWithStats = vehicles.map((vehicle) => {
+      const avgRating =
+        vehicle.reviews.length > 0
+          ? vehicle.reviews.reduce((sum, r) => sum + r.rating, 0) /
+            vehicle.reviews.length
+          : 0;
+
+      const { reviews, ...vehicleData } = vehicle;
+
+      return {
+        ...vehicleData,
+        averageRating: Math.round(avgRating * 10) / 10,
+        totalReviews: vehicle._count.reviews,
+        totalBookings: vehicle._count.bookings,
+      };
+    });
+
+    next({
+      status: 200,
+      success: true,
+      data: {
+        vehiclesWithStats,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit),
+          hasNextPage: page < Math.ceil(total / limit),
+          hasPreviousPage: page > 1,
+        },
+      },
+    });
+  } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        success: false,
+        message: error.issues || "Validation failed",
+        errors: error.issues,
+      });
+    }
+    next({
+      status: 500,
+      success: false,
+      message: error.message || "Internal server error",
+      error: error.message,
+    });
+  }
+};
+
+// Update Vehicle
+const updateVehicle = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { vehicleId } = vehicleParamsSchema.parse(req.params);
+    const validatedData = updateVehicleSchema.parse(req.body);
+
+    const existingVehicle = await prisma.vehicle.findUnique({
+      where: { id: vehicleId },
+    });
+
+    if (!existingVehicle) {
+      return next({
+        status: 404,
+        success: false,
+        message: "Vehicle not found!",
+      });
+    }
+
+    if (
+      validatedData.brand ||
+      validatedData.model ||
+      validatedData.year ||
+      validatedData.city
+    ) {
+      const duplicateVehicle = await prisma.vehicle.findFirst({
+        where: {
+          id: { not: vehicleId },
+          brand: validatedData.brand ?? existingVehicle.brand,
+          model: validatedData.model ?? existingVehicle.model,
+          year: validatedData.year ?? existingVehicle.year,
+          city: validatedData.city ?? existingVehicle.city,
+        },
+      });
+
+      if (duplicateVehicle) {
+        return next({
+          status: 409,
+          message: "Vehicle with same details already exists",
+        });
+      }
+    }
+
+    const newAvailable =
+      validatedData.availableQuantity ?? existingVehicle.availableQuantity;
+    const newTotal =
+      validatedData.totalQuantity ?? existingVehicle.totalQuantity;
+
+    if (newAvailable > newTotal) {
+      return next({
+        status: 400,
+        success: false,
+        message: "Available quantity cannot exceed total quantity",
+      });
+    }
+
+    const vehicle = await prisma.vehicle.update({
+      where: { id: vehicleId },
+      data: validatedData,
+    });
+
+    next({
+      status: 200,
+      success: true,
+      message: "Vehicle updated successfully",
+      data: vehicle,
+    });
+  } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
+    next({
+      status: 500,
+      message: error.message || "Internal server error",
+      error: error.message,
+    });
+  }
+};
+
+// Delete Vehicle
+
+
+export {
+  createVehicle,
+  getVehicleByIdPubic,
+  getVehicleByIdAdmin,
+  getAllVehiclesAdmin,
+  getAllVehiclesPublic,
+  updateVehicle,
+};
