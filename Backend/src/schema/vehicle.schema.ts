@@ -22,10 +22,6 @@ const createVehicleSchema = z
     pricePerHour: z.number().positive().optional(),
     withDriver: z.boolean().default(false),
     totalQuantity: z.number().int().positive("Total quantity must be positive"),
-    availableQuantity: z
-      .number()
-      .int()
-      .nonnegative("Available quantity cannot be negative"),
     fuelType: z.nativeEnum(FuelType).default(FuelType.PETROL),
     status: z.nativeEnum(VehicleStatus).default(VehicleStatus.AVAILABLE),
     city: z.string().min(1, "City is required"),

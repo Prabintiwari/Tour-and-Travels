@@ -1,5 +1,8 @@
 import { Request, Response, NextFunction } from "express";
-import { createVehicleSchema } from "../schema/vehicle.schema";
+import {
+  createVehicleSchema,
+  vehicleParamsSchema,
+} from "../schema/vehicle.schema";
 import prisma from "../config/prisma";
 import { VehicleStatus } from "@prisma/client";
 import { ZodError } from "zod";
@@ -47,7 +50,7 @@ const createVehicle = async (
     if (error instanceof ZodError) {
       return next({
         status: 400,
-        message: error.issues||"Validation failed",
+        message: error.issues || "Validation failed",
       });
     }
     next({
@@ -58,4 +61,66 @@ const createVehicle = async (
   }
 };
 
-export { createVehicle };
+// Get vehicle By id
+const getVehicleById = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { vehicleId } = vehicleParamsSchema.parse(req.params);
+
+    const vehicle = await prisma.vehicle.findUnique({
+      where: { id: vehicleId, status: { not: VehicleStatus.INACTIVE } },
+      include: {
+        faqs: { where: { isActive: true } },
+        reviews: {
+          include: {
+            user: {
+              select: { id: true, fullName: true, profileImage: true },
+            },
+          },
+          orderBy: { createdAt: "desc" },
+          take: 5,
+        },
+      },
+    });
+
+    if (!vehicle) {
+      return next({
+        status: 404,
+        success: false,
+        message: "Vehicle not found!",
+      });
+    }
+    const totalReviews = vehicle.reviews.length;
+    const avgRating =
+      vehicle.reviews.length > 0
+        ? vehicle.reviews.reduce((a, r) => a + r.rating, 0) /
+          vehicle.reviews.length
+        : 0;
+    next({
+      status: 200,
+      success: true,
+      data: {
+        vehicle,
+        averageRating: Number(avgRating.toFixed(1)),
+        totalReviews: totalReviews,
+      },
+    });
+  } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
+    next({
+      status: 500,
+      message: error.message || "Internal server error",
+      error: error.message,
+    });
+  }
+};
+
+export { createVehicle,getVehicleById };
