@@ -18,13 +18,15 @@ const responseHandler = (
     return res.status(response.status).json({
       success: false,
       message: response.message,
+      error: response.error,
       data: response.data,
     });
-  } catch (error) {
+  } catch (error: any) {
     console.log(error);
     return res.status(response.status).json({
       success: false,
-      message: "Internal server error",
+      message: error.message || "Internal server error",
+      error: response.error,
     });
   }
 };

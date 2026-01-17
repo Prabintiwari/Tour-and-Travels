@@ -7,6 +7,7 @@ import {
   getVehicleByIdAdmin,
   removeVehicleImages,
   updateVehicle,
+  updateVehicleStatus,
 } from "../../controllers/vehicle.controller";
 import { AdminOnly, authenticateToken } from "../../middleware/auth";
 import { registerRoute } from "../../utils/openapi.utils";
@@ -15,6 +16,7 @@ import {
   createVehicleSchema,
   removeVehicleImagesBodySchema,
   updateVehicleSchema,
+  updateVehicleStatusSchema,
   vehicleListResponseSchema,
   vehicleParamsSchema,
   vehicleResponseSchema,
@@ -51,15 +53,13 @@ router.post(
 
 router.delete("/:vehicleId/images", removeVehicleImages);
 
-router.patch("/:vehicleId", updateVehicle);
+router.patch("/:vehicleId/status", updateVehicleStatus);
 
-router.delete("/:vehicleId", deleteVehicle);
+router.patch("/:vehicleId", updateVehicle);
 
 router.get("/", getAllVehiclesAdmin);
 
 router.get("/:vehicleId", getVehicleByIdAdmin);
-
-router.patch("/:vehicleId", updateVehicle);
 
 router.delete("/:vehicleId", deleteVehicle);
 
@@ -250,6 +250,36 @@ registerRoute({
   responses: {
     200: {
       description: "Vehicle Updated",
+      content: {
+        "application/json": { schema: vehicleResponseSchema },
+      },
+    },
+    400: errorResponse(badRequestErrorSchema, "Bad Request"),
+    401: errorResponse(unauthorizedErrorSchema, "Unauthorized"),
+    403: errorResponse(forbiddenErrorSchema, "Forbidden"),
+    409: errorResponse(conflictErrorSchema, "Conflict"),
+    500: errorResponse(internalServerErrorSchema, "Internal Server Error"),
+  },
+});
+
+// Update a  Vehicle Status
+registerRoute({
+  method: "patch",
+  path: "/api/admin/vehicle/{vehicleId}/status",
+  summary: "Update a vehicle Status",
+  tags: ["Vehicle"],
+  security: [{ bearerAuth: [] }],
+  request: {
+    params: vehicleParamsSchema,
+    body: {
+      content: {
+        "application/json": { schema: updateVehicleStatusSchema },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: "Vehicle Updated Status",
       content: {
         "application/json": { schema: vehicleResponseSchema },
       },

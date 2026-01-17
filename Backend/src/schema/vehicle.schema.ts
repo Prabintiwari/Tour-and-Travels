@@ -84,6 +84,10 @@ const vehicleResponseSchema = z
 
 const vehicleListResponseSchema = paginatedResponse(vehicleResponseSchema);
 
+const updateVehicleStatusSchema = z.object({
+  status: z.nativeEnum(VehicleStatus),
+});
+
 const removeVehicleImagesBodySchema = z
   .object({
     imagePublicIds: z
@@ -148,6 +152,7 @@ const vehicleParamsSchema = z.object({
 export {
   createVehicleSchema,
   updateVehicleSchema,
+  updateVehicleStatusSchema,
   vehicleResponseSchema,
   vehicleListResponseSchema,
   vehicleParamsSchema,

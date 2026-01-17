@@ -5,6 +5,7 @@ import {
   publicVehicleQuerySchema,
   removeVehicleImagesBodySchema,
   updateVehicleSchema,
+  updateVehicleStatusSchema,
   vehicleParamsSchema,
 } from "../schema/vehicle.schema";
 import prisma from "../config/prisma";
@@ -844,6 +845,55 @@ const removeVehicleImages = async (
   }
 };
 
+// Update vehicle status
+const updateVehicleStatus = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { vehicleId } = vehicleParamsSchema.parse(req.params);
+    const { status } = updateVehicleStatusSchema.parse(req.body);
+
+    const vehicle = await prisma.vehicle.findUnique({
+      where: { id: vehicleId },
+    });
+    if (!vehicle) {
+      return next({
+        status: 404,
+        success: false,
+        message: "Vehicle not found!",
+      });
+    }
+
+    const updatedStatus = await prisma.vehicle.update({
+      where: { id: vehicleId },
+      data: { status },
+    });
+
+    return next({
+      status: 200,
+      success: true,
+      message: "Vehicle status updated successfully",
+      data: updatedStatus,
+    });
+  } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        success: false,
+        message: error.issues || "Validation failed",
+      });
+    }
+    next({
+      status: 500,
+      success: false,
+      message: error.message || "Internal server error",
+      error: error.message,
+    });
+  }
+};
+
 export {
   createVehicle,
   getVehicleByIdPubic,
@@ -854,4 +904,5 @@ export {
   deleteVehicle,
   addVehicleImages,
   removeVehicleImages,
+  updateVehicleStatus,
 };
