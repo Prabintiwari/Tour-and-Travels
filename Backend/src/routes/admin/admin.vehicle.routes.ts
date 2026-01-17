@@ -1,5 +1,6 @@
 import { Router } from "express";
 import {
+  addVehicleImages,
   createVehicle,
   deleteVehicle,
   getAllVehiclesAdmin,
@@ -22,8 +23,11 @@ import {
   errorResponse,
   forbiddenErrorSchema,
   internalServerErrorSchema,
+  notFoundErrorSchema,
   unauthorizedErrorSchema,
 } from "../../schema/common.schema";
+import { cloudinaryUploadFromParams } from "../../middleware/upload";
+import z from "zod";
 
 const router = Router();
 
@@ -32,6 +36,15 @@ router.use(authenticateToken, AdminOnly);
 // Admin Vehicle routes
 
 router.post("/", createVehicle);
+
+router.post(
+  "/:vehicleId/images",
+  cloudinaryUploadFromParams("vehicles/images", "vehicleId").array(
+    "images",
+    10
+  ),
+  addVehicleImages
+);
 
 router.get("/", getAllVehiclesAdmin);
 
@@ -68,6 +81,55 @@ registerRoute({
     401: errorResponse(unauthorizedErrorSchema, "Unauthorized"),
     403: errorResponse(forbiddenErrorSchema, "Forbidden"),
     409: errorResponse(conflictErrorSchema, "Conflict"),
+    500: errorResponse(internalServerErrorSchema, "Internal Server Error"),
+  },
+});
+
+// Upload images for a vehicle
+registerRoute({
+  method: "post",
+  path: "/api/admin/vehicle/{vehicleId}/images",
+  summary: "Upload images for a vehicle",
+  tags: ["Vehicle"],
+  security: [{ bearerAuth: [] }],
+  request: {
+    params: vehicleParamsSchema,
+    body: {
+      content: {
+        "multipart/form-data": {
+          schema: {
+            type: "object",
+            properties: {
+              imageUrl: {
+                type: "array",
+                items: {
+                  type: "string",
+                  format: "binary",
+                },
+              },
+            },
+            required: ["imageUrl"],
+          },
+        },
+      },
+    },
+  },
+  responses: {
+    201: {
+      description: "Images uploaded successfully",
+      content: {
+        "application/json": {
+          schema: z.object({
+            message: z.string(),
+          }),
+        },
+      },
+    },
+
+    400: errorResponse(badRequestErrorSchema, "Bad Request"),
+    401: errorResponse(unauthorizedErrorSchema, "Unauthorized"),
+    403: errorResponse(forbiddenErrorSchema, "Forbidden"),
+    404: errorResponse(notFoundErrorSchema, "Vehicle not found"),
     500: errorResponse(internalServerErrorSchema, "Internal Server Error"),
   },
 });

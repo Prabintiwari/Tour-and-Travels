@@ -9,7 +9,9 @@ import {
 import prisma from "../config/prisma";
 import { RentalStatus, VehicleStatus } from "@prisma/client";
 import { ZodError } from "zod";
+import { IMAGE_LIMITS } from "../config/constants/image.constants";
 import cloudinary from "../config/cloudinary";
+import { cleanupCloudinary } from "../middleware/upload";
 
 //Create a new vehicle
 const createVehicle = async (
@@ -190,7 +192,7 @@ const getVehicleByIdAdmin = async (
 };
 
 // Get all vehicle - (Public)
-const getAllVehiclesPublic = async (
+const getAvailableVehicles = async (
   req: Request,
   res: Response,
   next: NextFunction
@@ -600,7 +602,11 @@ const updateVehicle = async (
 };
 
 // Delete Vehicle
-const deleteVehicle = async (req: Request, res: Response, next: NextFunction) => {
+const deleteVehicle = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const { vehicleId } = vehicleParamsSchema.parse(req.params);
 
@@ -654,12 +660,116 @@ const deleteVehicle = async (req: Request, res: Response, next: NextFunction) =>
   }
 };
 
+// Add Images
+const addVehicleImages = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  let imagePublicIds: string[] = [];
+  try {
+    const { vehicleId } = vehicleParamsSchema.parse(req.params);
+    const files = req.files as Express.Multer.File[];
+
+    if (!files || files.length === 0) {
+      return next({
+        status: 400,
+        success: false,
+        message: "At least one image is required",
+      });
+    }
+    const imageUrls = files.map((file) => file.path);
+    imagePublicIds = files.map((file) => file.filename);
+
+    const vehicle = await prisma.vehicle.findUnique({
+      where: { id: vehicleId },
+      select: {
+        id: true,
+        images: true,
+        imagePublicIds: true,
+      },
+    });
+
+    if (!vehicle) {
+      await cleanupCloudinary(imagePublicIds);
+      return next({
+        status: 404,
+        success: false,
+        message: "Vehicle not found",
+      });
+    }
+
+    // Max image limit check
+    if (vehicle.images.length + files.length > IMAGE_LIMITS.VEHICLE) {
+      await cleanupCloudinary(imagePublicIds);
+      return next({
+        status: 400,
+        success: false,
+        message: `Maximum ${IMAGE_LIMITS.VEHICLE} images allowed per vehicle`,
+      });
+    }
+
+    const updatedVehicle = await prisma.vehicle.update({
+      where: { id: vehicleId },
+      data: {
+        images: {
+          push: imageUrls,
+        },
+        imagePublicIds: {
+          push: imagePublicIds,
+        },
+      },
+      select: {
+        id: true,
+        brand: true,
+        model: true,
+        images: true,
+        imagePublicIds: true,
+      },
+    });
+
+    return next({
+      status: 200,
+      success: true,
+      message: `${files.length} image(s) added successfully`,
+      data: {
+        vehicleId: updatedVehicle.id,
+        vehicleName: `${updatedVehicle.brand} ${
+          updatedVehicle.model || ""
+        }`.trim(),
+        previousCount: vehicle.images.length,
+        addedCount: files.length,
+        totalCount: updatedVehicle.images.length,
+        remainingSlots: IMAGE_LIMITS.VEHICLE - updatedVehicle.images.length,
+        images: updatedVehicle.images,
+      },
+    });
+  } catch (error: any) {
+    if (imagePublicIds.length > 0) {
+      await cleanupCloudinary(imagePublicIds);
+    }
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
+    next({
+      status: 500,
+      success: false,
+      message: error.message || "Internal server error",
+      error: error.message,
+    });
+  }
+};
+
 export {
   createVehicle,
   getVehicleByIdPubic,
   getVehicleByIdAdmin,
   getAllVehiclesAdmin,
-  getAllVehiclesPublic,
+  getAvailableVehicles,
   updateVehicle,
   deleteVehicle,
+  addVehicleImages,
 };

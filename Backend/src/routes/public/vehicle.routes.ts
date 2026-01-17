@@ -1,6 +1,6 @@
 import { Router } from "express";
 import {
-  getAllVehiclesPublic,
+    getAvailableVehicles,
   getVehicleByIdPubic,
 } from "../../controllers/vehicle.controller";
 import { registerRoute } from "../../utils/openapi.utils";
@@ -23,7 +23,8 @@ const router = Router();
 
 // Vehicle routes
 
-router.get("/", getAllVehiclesPublic);
+router.get("/", getAvailableVehicles);
+
 router.get("/:vehicleId", getVehicleByIdPubic);
 
 

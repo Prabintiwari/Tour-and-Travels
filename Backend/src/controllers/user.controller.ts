@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import prisma from "../config/prisma";
 import bcrypt from "bcryptjs";
 import generateOTP from "../utils/generateOtp";
-import { transporter } from "../utils/emailServices";
+import { transporter } from "../services/emailServices";
 import Password_Reset_OTP from "../templets/userEmailTemplet/forgot_password_otp";
 import passwordResetSuccessEmail from "../templets/userEmailTemplet/passwordResetSuccessfully";
 import { updateUserSchema, userIdParamSchema } from "../schema";

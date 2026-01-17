@@ -569,6 +569,7 @@ const addTourImages = async (
     if (!files || files.length === 0) {
       return next({
         status: 400,
+        success: false,
         message: "At least one image is required",
       });
     }

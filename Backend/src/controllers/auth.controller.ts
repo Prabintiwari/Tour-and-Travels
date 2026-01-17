@@ -3,7 +3,7 @@ import { loginSchema, registerSchema, userIdParamSchema } from "../schema";
 import prisma from "../config/prisma";
 import bcrypt from "bcryptjs";
 import generateOTP from "../utils/generateOtp";
-import { transporter } from "../utils/emailServices";
+import { transporter } from "../services/emailServices";
 import registration_otp_templete from "../templets/userEmailTemplet/registration_otp";
 import { AuthRequest, generateToken } from "../middleware/auth";
 import welcomeEmail from "../templets/userEmailTemplet/WelcomeEmail";
