@@ -48,7 +48,7 @@ router.post(
   addTourImages
 );
 
-router.patch(
+router.delete(
   "/:tourId/images",
   removeTourImages
 );
@@ -179,7 +179,7 @@ registerRoute({
 
 // Remove tour images
 registerRoute({
-  method: "patch",
+  method: "delete",
   path: "/api/admin/tour/{tourId}/images",
   summary: "Remove tour images",
   tags: ["Tours"],

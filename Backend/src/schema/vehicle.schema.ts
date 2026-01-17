@@ -84,6 +84,17 @@ const vehicleResponseSchema = z
 
 const vehicleListResponseSchema = paginatedResponse(vehicleResponseSchema);
 
+const removeVehicleImagesBodySchema = z
+  .object({
+    imagePublicIds: z
+      .array(z.string())
+      .min(1, "At least one image publicId is required")
+      .openapi({
+        example: ["vehicle/abc123/img1", "vehicle/abc123/img2"],
+      }),
+  })
+  .openapi("RemoveVehicleImagesBody");
+
 const adminVehicleQuerySchema = z.object({
   page: z.coerce.number().int().positive().default(1),
   limit: z.coerce.number().int().positive().max(50).default(10),
@@ -142,4 +153,5 @@ export {
   vehicleParamsSchema,
   adminVehicleQuerySchema,
   publicVehicleQuerySchema,
+  removeVehicleImagesBodySchema,
 };

@@ -5,6 +5,7 @@ import {
   deleteVehicle,
   getAllVehiclesAdmin,
   getVehicleByIdAdmin,
+  removeVehicleImages,
   updateVehicle,
 } from "../../controllers/vehicle.controller";
 import { AdminOnly, authenticateToken } from "../../middleware/auth";
@@ -12,6 +13,7 @@ import { registerRoute } from "../../utils/openapi.utils";
 import {
   adminVehicleQuerySchema,
   createVehicleSchema,
+  removeVehicleImagesBodySchema,
   updateVehicleSchema,
   vehicleListResponseSchema,
   vehicleParamsSchema,
@@ -26,7 +28,10 @@ import {
   notFoundErrorSchema,
   unauthorizedErrorSchema,
 } from "../../schema/common.schema";
-import { cloudinaryUploadFromParams, handleMulterError } from "../../middleware/upload";
+import {
+  cloudinaryUploadFromParams,
+  handleMulterError,
+} from "../../middleware/upload";
 import z from "zod";
 
 const router = Router();
@@ -43,6 +48,12 @@ router.post(
   handleMulterError,
   addVehicleImages
 );
+
+router.delete("/:vehicleId/images", removeVehicleImages);
+
+router.patch("/:vehicleId", updateVehicle);
+
+router.delete("/:vehicleId", deleteVehicle);
 
 router.get("/", getAllVehiclesAdmin);
 
@@ -119,6 +130,45 @@ registerRoute({
         "application/json": {
           schema: z.object({
             message: z.string(),
+          }),
+        },
+      },
+    },
+
+    400: errorResponse(badRequestErrorSchema, "Bad Request"),
+    401: errorResponse(unauthorizedErrorSchema, "Unauthorized"),
+    403: errorResponse(forbiddenErrorSchema, "Forbidden"),
+    404: errorResponse(notFoundErrorSchema, "Vehicle not found"),
+    500: errorResponse(internalServerErrorSchema, "Internal Server Error"),
+  },
+});
+
+// Remove Vehicle images
+registerRoute({
+  method: "delete",
+  path: "/api/admin/vehicle/{vehicleId}/images",
+  summary: "Remove Vehicle images",
+  tags: ["Vehicle"],
+  security: [{ bearerAuth: [] }],
+  request: {
+    params: vehicleParamsSchema,
+    body: {
+      content: {
+        "application/json": {
+          schema: removeVehicleImagesBodySchema,
+        },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: "Vehicle images removed successfully",
+      content: {
+        "application/json": {
+          schema: z.object({
+            message: z.string().openapi({
+              example: "Images removed successfully",
+            }),
           }),
         },
       },

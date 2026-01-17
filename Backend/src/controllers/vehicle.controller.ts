@@ -3,6 +3,7 @@ import {
   adminVehicleQuerySchema,
   createVehicleSchema,
   publicVehicleQuerySchema,
+  removeVehicleImagesBodySchema,
   updateVehicleSchema,
   vehicleParamsSchema,
 } from "../schema/vehicle.schema";
@@ -660,8 +661,7 @@ const deleteVehicle = async (
   }
 };
 
-// Add Images
-
+// add Images
 const addVehicleImages = async (
   req: Request,
   res: Response,
@@ -690,7 +690,6 @@ const addVehicleImages = async (
         imagePublicIds: true,
       },
     });
-    
 
     if (!vehicle) {
       await cleanupCloudinary(imagePublicIds);
@@ -753,7 +752,86 @@ const addVehicleImages = async (
     if (error instanceof ZodError) {
       return next({
         status: 400,
-        success:false,
+        success: false,
+        message: error.issues || "Validation failed",
+      });
+    }
+    next({
+      status: 500,
+      success: false,
+      message: error.message || "Internal server error",
+      error: error.message,
+    });
+  }
+};
+
+// Remove Images
+const removeVehicleImages = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { vehicleId } = vehicleParamsSchema.parse(req.params);
+    const { imagePublicIds } = removeVehicleImagesBodySchema.parse(req.body);
+
+    const vehicle = await prisma.vehicle.findUnique({
+      where: { id: vehicleId },
+    });
+    if (!vehicle) {
+      return next({
+        status: 404,
+        success: false,
+        message: "Vehicle not found",
+      });
+    }
+
+    const successfulDeletions: string[] = [];
+    const failedDeletions: string[] = [];
+
+    for (const publicId of imagePublicIds) {
+      try {
+        const result = await cloudinary.uploader.destroy(publicId);
+        if (result.result === "ok") {
+          successfulDeletions.push(publicId);
+        } else {
+          failedDeletions.push(publicId);
+        }
+      } catch (error) {
+        failedDeletions.push(publicId);
+      }
+    }
+    const updatedImageUrls = vehicle.images.filter(
+      (_, index) => !imagePublicIds.includes(vehicle.imagePublicIds[index])
+    );
+    const updatedPublicIds = vehicle.imagePublicIds.filter(
+      (id) => !imagePublicIds.includes(id)
+    );
+
+    const updatedVehicle = await prisma.vehicle.update({
+      where: { id: vehicleId },
+      data: { images: updatedImageUrls, imagePublicIds: updatedPublicIds },
+    });
+
+    next({
+      status: 200,
+      success: true,
+      message: `Successfully removed ${successfulDeletions.length} image(s)`,
+      data: {
+        ...updatedVehicle,
+        totalImages: updatedVehicle.images.length,
+        summary: {
+          requested: imagePublicIds.length,
+          successful: successfulDeletions.length,
+          failed: failedDeletions.length,
+        },
+      },
+    });
+  } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        success: false,
         message: error.issues || "Validation failed",
       });
     }
@@ -775,4 +853,5 @@ export {
   updateVehicle,
   deleteVehicle,
   addVehicleImages,
+  removeVehicleImages,
 };
