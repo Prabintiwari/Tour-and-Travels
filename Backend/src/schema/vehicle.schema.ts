@@ -88,6 +88,32 @@ const updateVehicleStatusSchema = z.object({
   status: z.nativeEnum(VehicleStatus),
 });
 
+const searchVehicleSchema = z.object({
+  city: z
+    .string()
+    .min(1)
+    .openapi({ example: "kathmandu", description: "Filter search by city" }),
+  region: z
+    .string()
+    .min(1)
+    .openapi({
+      example: "Bagmati",
+      description: "Filter search by ciregionty",
+    }),
+  startDate: z.string().openapi({
+    example: "2024-06-15",
+    description: "Filter schedules starting from this date",
+    format: "date",
+  }),
+  endDate: z.string().openapi({
+    example: "2024-12-31",
+    description: "Filter schedules ending before this date",
+    format: "date",
+  }),
+  vehicleType: z.nativeEnum(VehicleType).optional(),
+  minSeats: z.number().int().positive().optional(),
+});
+
 const removeVehicleImagesBodySchema = z
   .object({
     imagePublicIds: z
@@ -155,6 +181,7 @@ export {
   updateVehicleStatusSchema,
   vehicleResponseSchema,
   vehicleListResponseSchema,
+  searchVehicleSchema,
   vehicleParamsSchema,
   adminVehicleQuerySchema,
   publicVehicleQuerySchema,

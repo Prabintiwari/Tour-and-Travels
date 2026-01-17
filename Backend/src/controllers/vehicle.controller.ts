@@ -4,6 +4,7 @@ import {
   createVehicleSchema,
   publicVehicleQuerySchema,
   removeVehicleImagesBodySchema,
+  searchVehicleSchema,
   updateVehicleSchema,
   updateVehicleStatusSchema,
   vehicleParamsSchema,
@@ -894,6 +895,118 @@ const updateVehicleStatus = async (
   }
 };
 
+// Search Vehicle
+const searchVehicles = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { city, region, startDate, endDate, vehicleType, minSeats } =
+      searchVehicleSchema.parse(req.body);
+
+    const where: any = {
+      city: { contains: city, mode: "insensitive" },
+      region: { contains: region, mode: "insensitive" },
+      status: VehicleStatus.AVAILABLE,
+      availableQuantity: { gt: 0 },
+    };
+    const parsedStartDate = startDate ? new Date(startDate) : null;
+    const parsedEndDate = endDate ? new Date(endDate) : null;
+
+    if (vehicleType) where.vehicleType = vehicleType;
+    if (minSeats) where.seatCapacity = { gte: minSeats };
+
+    const vehicles = await prisma.vehicle.findMany({
+      where: {
+        ...where,
+        NOT: {
+          bookings: {
+            some: {
+              AND: [
+                { status: { in: ["CONFIRMED", "PENDING"] } },
+                {
+                  OR: [
+                    {
+                      AND: [
+                        { startDate: { lte: parsedStartDate } },
+                        { endDate: { gte: parsedStartDate } },
+                      ],
+                    },
+                    {
+                      AND: [
+                        { startDate: { lte: parsedEndDate } },
+                        { endDate: { gte: parsedEndDate } },
+                      ],
+                    },
+                    {
+                      AND: [
+                        { startDate: { gte: parsedStartDate } },
+                        { endDate: { lte: parsedEndDate } },
+                      ],
+                    },
+                  ],
+                },
+              ],
+            },
+          },
+        },
+      },
+      select: {
+        id: true,
+        vehicleType: true,
+        brand: true,
+        model: true,
+        year: true,
+        seatCapacity: true,
+        pricePerDay: true,
+        pricePerHour: true,
+        images: true,
+        features: true,
+        city: true,
+        fuelType: true,
+        reviews: {
+          select: { rating: true },
+        },
+      },
+    });
+
+    const vehiclesWithRating = vehicles.map((vehicle) => {
+      const avgRating =
+        vehicle.reviews.length > 0
+          ? vehicle.reviews.reduce((sum, r) => sum + r.rating, 0) /
+            vehicle.reviews.length
+          : 0;
+
+      const { reviews, ...rest } = vehicle;
+      return {
+        ...rest,
+        averageRating: Math.round(avgRating * 10) / 10,
+      };
+    });
+
+    next({
+      status: 200,
+      success: true,
+      data: { vehicles: vehiclesWithRating, count: vehiclesWithRating.length },
+    });
+  } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        success: false,
+        message: error.issues || "Validation failed",
+      });
+    }
+    next({
+      status: 500,
+      success: false,
+      message: error.message || "Internal server error",
+      error: error.message,
+    });
+  }
+};
+
 export {
   createVehicle,
   getVehicleByIdPubic,
@@ -905,4 +1018,5 @@ export {
   addVehicleImages,
   removeVehicleImages,
   updateVehicleStatus,
+  searchVehicles,
 };
