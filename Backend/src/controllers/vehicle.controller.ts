@@ -661,6 +661,7 @@ const deleteVehicle = async (
 };
 
 // Add Images
+
 const addVehicleImages = async (
   req: Request,
   res: Response,
@@ -689,6 +690,7 @@ const addVehicleImages = async (
         imagePublicIds: true,
       },
     });
+    
 
     if (!vehicle) {
       await cleanupCloudinary(imagePublicIds);
@@ -751,6 +753,7 @@ const addVehicleImages = async (
     if (error instanceof ZodError) {
       return next({
         status: 400,
+        success:false,
         message: error.issues || "Validation failed",
       });
     }

@@ -26,7 +26,7 @@ import {
   notFoundErrorSchema,
   unauthorizedErrorSchema,
 } from "../../schema/common.schema";
-import { cloudinaryUploadFromParams } from "../../middleware/upload";
+import { cloudinaryUploadFromParams, handleMulterError } from "../../middleware/upload";
 import z from "zod";
 
 const router = Router();
@@ -39,10 +39,8 @@ router.post("/", createVehicle);
 
 router.post(
   "/:vehicleId/images",
-  cloudinaryUploadFromParams("vehicles/images", "vehicleId").array(
-    "images",
-    10
-  ),
+  cloudinaryUploadFromParams("vehicle", "vehicleId").array("images", 10),
+  handleMulterError,
   addVehicleImages
 );
 
@@ -100,7 +98,7 @@ registerRoute({
           schema: {
             type: "object",
             properties: {
-              imageUrl: {
+              images: {
                 type: "array",
                 items: {
                   type: "string",
@@ -108,7 +106,7 @@ registerRoute({
                 },
               },
             },
-            required: ["imageUrl"],
+            required: ["images"],
           },
         },
       },

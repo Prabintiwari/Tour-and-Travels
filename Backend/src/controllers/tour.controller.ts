@@ -603,11 +603,13 @@ const addTourImages = async (
     if (error instanceof ZodError) {
       return next({
         status: 400,
+        success:false,
         message: error.issues || "Validation failed",
       });
     }
     next({
       status: 500,
+      success:false,
       message: error.message || "Internal server error",
       error: error.message,
     });
