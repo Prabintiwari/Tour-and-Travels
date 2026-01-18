@@ -16,6 +16,8 @@ import {
   calculateFinalPrice,
 } from "../utils/calculateDiscountedPrice";
 import { ZodError } from "zod";
+import { cleanupCloudinary } from "../middleware/upload";
+import { IMAGE_LIMITS } from "../config/constants/image.constants";
 
 // CREATE TOUR WITH OPTIONAL GUIDE PRICING AND DISCOUNT
 const createTour = async (req: Request, res: Response, next: NextFunction) => {
@@ -37,7 +39,7 @@ const createTour = async (req: Request, res: Response, next: NextFunction) => {
       const calculatedDiscountAmount = calculateDiscountAmount(
         validatedData.basePrice,
         validatedData.discountRate,
-        validatedData.discountAmount
+        validatedData.discountAmount,
       );
 
       // Validate discount doesn't exceed base price
@@ -63,7 +65,7 @@ const createTour = async (req: Request, res: Response, next: NextFunction) => {
     }
     const finalPrice = calculateFinalPrice(
       validatedData.basePrice,
-      validatedData.discountAmount ?? 0
+      validatedData.discountAmount ?? 0,
     );
 
     const tour = await prisma.tour.create({
@@ -191,7 +193,7 @@ const getTourById = async (req: Request, res: Response, next: NextFunction) => {
       ? calculateDiscountAmount(
           tour.basePrice,
           tour.discountRate,
-          tour.discountAmount
+          tour.discountAmount,
         )
       : 0;
 
@@ -309,7 +311,7 @@ const getAllTours = async (req: Request, res: Response, next: NextFunction) => {
         ? calculateDiscountAmount(
             tour.basePrice,
             tour.discountRate,
-            tour.discountAmount
+            tour.discountAmount,
           )
         : 0;
 
@@ -390,7 +392,7 @@ const updateTour = async (req: Request, res: Response, next: NextFunction) => {
       const calculatedDiscountAmount = calculateDiscountAmount(
         basePrice,
         discountRate,
-        discountAmount
+        discountAmount,
       );
 
       if (calculatedDiscountAmount >= basePrice) {
@@ -416,7 +418,7 @@ const updateTour = async (req: Request, res: Response, next: NextFunction) => {
     }
     const finalPrice = calculateFinalPrice(
       tourData.basePrice ?? tour.basePrice,
-      tourData.discountAmount ?? tour.discountAmount ?? 0
+      tourData.discountAmount ?? tour.discountAmount ?? 0,
     );
 
     const guideUpdateData: any = {};
@@ -555,16 +557,13 @@ const deleteTour = async (req: Request, res: Response, next: NextFunction) => {
 const addTourImages = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
+  let uploadedPublicIds: string[] = [];
+
   try {
     const { tourId } = tourParamsSchema.parse(req.params);
     const files = req.files as Express.Multer.File[];
-
-    const tour = await prisma.tour.findUnique({ where: { id: tourId } });
-    if (!tour) {
-      return next({ status: 404, message: "Tour not found" });
-    }
 
     if (!files || files.length === 0) {
       return next({
@@ -574,44 +573,119 @@ const addTourImages = async (
       });
     }
 
-    const coverImageUrl = files[0].path;
-    const coverImagePublicId = files[0].filename;
-    const imageUrls = files.slice(1).map((file: any) => file.path);
-    const imagePublicIds = files.slice(1).map((file: any) => file.filename);
+    uploadedPublicIds = files.map((file) => file.filename);
 
-    const updatedTour = await prisma.tour.update({
+    const tour = await prisma.tour.findUnique({
       where: { id: tourId },
-      data: {
-        coverImage: coverImageUrl,
-        coverImagePublicId: coverImagePublicId,
-        images: {
-          push: imageUrls,
-        },
-        imagePublicIds: {
-          push: imagePublicIds,
-        },
+      select: {
+        id: true,
+        coverImage: true,
+        images: true,
       },
     });
 
-    next({
+    if (!tour) {
+      await cleanupCloudinary(uploadedPublicIds);
+      return next({
+        status: 404,
+        success: false,
+        message: "Tour not found",
+      });
+    }
+
+    const existingTotalImages =
+      (tour.coverImage ? 1 : 0) + tour.images.length;
+
+    const newTotalImages = files.length;
+
+    if (existingTotalImages + newTotalImages > IMAGE_LIMITS.TOUR) {
+      await cleanupCloudinary(uploadedPublicIds);
+      return next({
+        status: 400,
+        success: false,
+        message: `Maximum ${IMAGE_LIMITS.TOUR} total images (cover + gallery) allowed`,
+      });
+    }
+
+    const hasCoverImage = tour.coverImage !== null;
+
+    let coverImageUrl: string | undefined;
+    let coverImagePublicId: string | undefined;
+    let galleryImageUrls: string[] = [];
+    let galleryImagePublicIds: string[] = [];
+
+    if (hasCoverImage) {
+      // All uploaded images go to gallery
+      galleryImageUrls = files.map((file) => file.path);
+      galleryImagePublicIds = files.map((file) => file.filename);
+    } else {
+      // First image becomes cover
+      coverImageUrl = files[0].path;
+      coverImagePublicId = files[0].filename;
+
+      galleryImageUrls = files.slice(1).map((file) => file.path);
+      galleryImagePublicIds = files.slice(1).map((file) => file.filename);
+    }
+
+    const updateData: any = {
+      images: {
+        push: galleryImageUrls,
+      },
+      imagePublicIds: {
+        push: galleryImagePublicIds,
+      },
+    };
+
+    if (coverImageUrl && coverImagePublicId) {
+      updateData.coverImage = coverImageUrl;
+      updateData.coverImagePublicId = coverImagePublicId;
+    }
+
+    const updatedTour = await prisma.tour.update({
+      where: { id: tourId },
+      data: updateData,
+      select: {
+        id: true,
+        title: true,
+        coverImage: true,
+        images: true,
+      },
+    });
+
+    return next({
       status: 200,
       success: true,
-      message: "Images added successfully",
-      data: updatedTour,
+      message: `${files.length} image(s) added successfully`,
+      data: {
+        tourId: updatedTour.id,
+        totalImages:
+          (updatedTour.coverImage ? 1 : 0) +
+          updatedTour.images.length,
+        remainingSlots:
+          IMAGE_LIMITS.TOUR -
+          ((updatedTour.coverImage ? 1 : 0) +
+            updatedTour.images.length),
+        coverImage: updatedTour.coverImage,
+        images: updatedTour.images,
+      },
     });
   } catch (error: any) {
+    if (uploadedPublicIds.length > 0) {
+      await cleanupCloudinary(uploadedPublicIds);
+    }
+
     if (error instanceof ZodError) {
       return next({
         status: 400,
-        success:false,
-        message: error.issues || "Validation failed",
+        success: false,
+        message: error.issues,
       });
     }
-    next({
+
+    return next({
       status: 500,
-      success:false,
+      success: false,
       message: error.message || "Internal server error",
-      error: error.message,
     });
   }
 };
@@ -620,7 +694,7 @@ const addTourImages = async (
 const removeTourImages = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const { tourId } = tourParamsSchema.parse(req.params);
@@ -658,10 +732,10 @@ const removeTourImages = async (
     }
 
     const updatedImageUrls = tour.images.filter(
-      (_, index) => !imagePublicIds.includes(tour.imagePublicIds[index])
+      (_, index) => !imagePublicIds.includes(tour.imagePublicIds[index]),
     );
     const updatedPublicIds = tour.imagePublicIds.filter(
-      (id) => !imagePublicIds.includes(id)
+      (id) => !imagePublicIds.includes(id),
     );
 
     const updatedTour = await prisma.tour.update({
@@ -708,7 +782,7 @@ const removeTourImages = async (
 const getGuidePricingForTour = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const { tourId } = tourParamsSchema.parse(req.params);
@@ -749,7 +823,7 @@ const getGuidePricingForTour = async (
 const setDefaultGuidePricing = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const validateData = defaultGuidePricingSchema.parse(req.body);
@@ -815,7 +889,7 @@ const setDefaultGuidePricing = async (
 const getDefaultGuidePricing = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const defaultPricing = await prisma.tourGuidePricing.findFirst({
@@ -847,7 +921,7 @@ const getDefaultGuidePricing = async (
 const deleteTourGuidePricing = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const { tourId } = tourParamsSchema.parse(req.params);

@@ -31,13 +31,9 @@ router.get("/", getAllTours);
 
 router.get("/guide-pricing/default", authenticateToken, getDefaultGuidePricing);
 
-router.get(
-  "/:tourId/guide-pricing",
-  authenticateToken,
-  getGuidePricingForTour
-);
+router.get("/:tourId/guide-pricing", authenticateToken, getGuidePricingForTour);
 
-router.get("/:tourId",  getTourById);
+router.get("/:tourId", getTourById);
 
 // Swagger registration
 
@@ -47,6 +43,7 @@ registerRoute({
   path: "/api/tour",
   summary: "List of tours",
   tags: ["Tours"],
+  request: { query: tourQuerySchema },
   responses: {
     200: {
       description: "List of tours",
