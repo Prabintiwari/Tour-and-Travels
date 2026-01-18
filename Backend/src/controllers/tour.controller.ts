@@ -593,8 +593,7 @@ const addTourImages = async (
       });
     }
 
-    const existingTotalImages =
-      (tour.coverImage ? 1 : 0) + tour.images.length;
+    const existingTotalImages = (tour.coverImage ? 1 : 0) + tour.images.length;
 
     const newTotalImages = files.length;
 
@@ -659,12 +658,10 @@ const addTourImages = async (
       data: {
         tourId: updatedTour.id,
         totalImages:
-          (updatedTour.coverImage ? 1 : 0) +
-          updatedTour.images.length,
+          (updatedTour.coverImage ? 1 : 0) + updatedTour.images.length,
         remainingSlots:
           IMAGE_LIMITS.TOUR -
-          ((updatedTour.coverImage ? 1 : 0) +
-            updatedTour.images.length),
+          ((updatedTour.coverImage ? 1 : 0) + updatedTour.images.length),
         coverImage: updatedTour.coverImage,
         images: updatedTour.images,
       },
@@ -774,6 +771,94 @@ const removeTourImages = async (
       status: 500,
       message: error.message || "Internal server error",
       error: error.message,
+    });
+  }
+};
+
+// CHANGE COVER IMAGE
+const changeTourCoverImage = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  let uploadedPublicId: string | undefined;
+
+  try {
+    const { tourId } = tourParamsSchema.parse(req.params);
+    const files = req.files as Express.Multer.File[];
+
+    if (!files || files.length === 0) {
+      return next({
+        status: 400,
+        success: false,
+        message: "Image file is required",
+      });
+    }
+
+    const file = files[0];
+
+    uploadedPublicId = file.filename;
+
+    const tour = await prisma.tour.findUnique({
+      where: { id: tourId },
+      select: {
+        id: true,
+        coverImagePublicId: true,
+      },
+    });
+
+    if (!tour) {
+      await cleanupCloudinary([uploadedPublicId]);
+      return next({
+        status: 404,
+        success: false,
+        message: "Tour not found",
+      });
+    }
+
+    // Delete old cover image if exists
+    if (tour.coverImagePublicId) {
+      await cleanupCloudinary([tour.coverImagePublicId]);
+    }
+
+    const updatedTour = await prisma.tour.update({
+      where: { id: tourId },
+      data: {
+        coverImage: file.path,
+        coverImagePublicId: uploadedPublicId,
+      },
+      select: {
+        id: true,
+        coverImage: true,
+      },
+    });
+
+    return next({
+      status: 200,
+      success: true,
+      message: "Cover image updated successfully",
+      data: {
+        tourId: updatedTour.id,
+        coverImage: updatedTour.coverImage,
+      },
+    });
+  } catch (error: any) {
+    if (uploadedPublicId) {
+      await cleanupCloudinary([uploadedPublicId]);
+    }
+
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        success: false,
+        message: error.issues,
+      });
+    }
+
+    return next({
+      status: 500,
+      success: false,
+      message: error.message || "Internal server error",
     });
   }
 };
@@ -977,6 +1062,7 @@ export {
   deleteTour,
   addTourImages,
   removeTourImages,
+  changeTourCoverImage,
   getGuidePricingForTour,
   setDefaultGuidePricing,
   getDefaultGuidePricing,

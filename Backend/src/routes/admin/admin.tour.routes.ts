@@ -1,6 +1,7 @@
 import { Router } from "express";
 import {
   addTourImages,
+  changeTourCoverImage,
   createTour,
   deleteTour,
   deleteTourGuidePricing,
@@ -35,33 +36,27 @@ const router = Router();
 router.use(authenticateToken, AdminOnly);
 
 // Admin tour routes
-router.post(
-  "/guide-pricing/default",
-  setDefaultGuidePricing
-);
+router.post("/guide-pricing/default", setDefaultGuidePricing);
 
-router.post("/",  createTour);
+router.post("/", createTour);
 
 router.post(
   "/:tourId",
-  cloudinaryUploadFromParams("tour", "tourId").array("imageUrl", 10),
-  addTourImages
-);
-
-router.delete(
-  "/:tourId/images",
-  removeTourImages
+  cloudinaryUploadFromParams("tour", "tourId").array("images", 10),
+  addTourImages,
 );
 
 router.patch(
-  "/:tourId",
-  updateTour
+  "/:tourId/image",
+  cloudinaryUploadFromParams("tour", "tourId").array("image", 1),
+  changeTourCoverImage,
 );
 
-router.delete(
-  "/:tourId/guide-pricing",
-  deleteTourGuidePricing
-);
+router.delete("/:tourId/images", removeTourImages);
+
+router.patch("/:tourId", updateTour);
+
+router.delete("/:tourId/guide-pricing", deleteTourGuidePricing);
 
 router.delete("/:tourId", deleteTour);
 
@@ -143,7 +138,7 @@ registerRoute({
           schema: {
             type: "object",
             properties: {
-              imageUrl: {
+              images: {
                 type: "array",
                 items: {
                   type: "string",
@@ -151,7 +146,7 @@ registerRoute({
                 },
               },
             },
-            required: ["imageUrl"],
+            required: ["images"],
           },
         },
       },
@@ -160,6 +155,52 @@ registerRoute({
   responses: {
     201: {
       description: "Images uploaded successfully",
+      content: {
+        "application/json": {
+          schema: z.object({
+            message: z.string(),
+          }),
+        },
+      },
+    },
+
+    400: errorResponse(badRequestErrorSchema, "Bad Request"),
+    401: errorResponse(unauthorizedErrorSchema, "Unauthorized"),
+    403: errorResponse(forbiddenErrorSchema, "Forbidden"),
+    404: errorResponse(notFoundErrorSchema, "Tour not found"),
+    500: errorResponse(internalServerErrorSchema, "Internal Server Error"),
+  },
+});
+
+// Chnage or create cover image for a tour
+registerRoute({
+  method: "patch",
+  path: "/api/admin/tour/{tourId}/image",
+  summary: "Change or create cover image for a tour",
+  tags: ["Tours"],
+  security: [{ bearerAuth: [] }],
+  request: {
+    params: tourParamsSchema,
+    body: {
+      content: {
+        "multipart/form-data": {
+          schema: {
+            type: "object",
+            properties: {
+              image: {
+                type: "string",
+                format: "binary",
+              },
+            },
+            required: ["image"],
+          },
+        },
+      },
+    },
+  },
+  responses: {
+    201: {
+      description: "Cover Image changed or created successfully",
       content: {
         "application/json": {
           schema: z.object({
