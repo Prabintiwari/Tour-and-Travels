@@ -804,10 +804,10 @@ const removeVehicleImages = async (
       }
     }
     const updatedImageUrls = vehicle.images.filter(
-      (_, index) => !imagePublicIds.includes(vehicle.imagePublicIds[index])
+      (_, index) => !successfulDeletions.includes(vehicle.imagePublicIds[index])
     );
     const updatedPublicIds = vehicle.imagePublicIds.filter(
-      (id) => !imagePublicIds.includes(id)
+      (id) => !successfulDeletions.includes(id)
     );
 
     const updatedVehicle = await prisma.vehicle.update({

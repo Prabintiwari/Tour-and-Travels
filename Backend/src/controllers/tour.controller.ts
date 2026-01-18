@@ -729,10 +729,10 @@ const removeTourImages = async (
     }
 
     const updatedImageUrls = tour.images.filter(
-      (_, index) => !imagePublicIds.includes(tour.imagePublicIds[index]),
+      (_, index) => !successfulDeletions.includes(tour.imagePublicIds[index]),
     );
     const updatedPublicIds = tour.imagePublicIds.filter(
-      (id) => !imagePublicIds.includes(id),
+      (id) => !successfulDeletions.includes(id),
     );
 
     const updatedTour = await prisma.tour.update({
