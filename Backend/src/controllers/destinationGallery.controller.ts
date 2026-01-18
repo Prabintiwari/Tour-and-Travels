@@ -8,29 +8,19 @@ import {
   removeGalleryImagesSchema,
 } from "../schema";
 import { ZodError } from "zod";
+import { cleanupCloudinary } from "../middleware/upload";
+import { IMAGE_LIMITS } from "../config/constants/image.constants";
 
 // Create gallery for a destination (or add images if already exists)
 const createOrUpdateGallery = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
+  let uploadedPublicIds: string[] = [];
   try {
     const { destinationId } = destinationIdParamSchema.parse(req.params);
     const files = req.files as Express.Multer.File[];
-
-    // Validate destination exists
-    const destination = await prisma.destination.findUnique({
-      where: { id: destinationId },
-    });
-
-    if (!destination) {
-      return next({
-        status: 400,
-        success: false,
-        message: "Destination not found",
-      });
-    }
 
     if (!files || files.length === 0) {
       return next({
@@ -40,12 +30,42 @@ const createOrUpdateGallery = async (
       });
     }
 
+    uploadedPublicIds = files.map((file) => file.filename);
+
+    // Validate destination exists
+    const destination = await prisma.destination.findUnique({
+      where: { id: destinationId },
+    });
+
+    if (!destination) {
+      await cleanupCloudinary(uploadedPublicIds);
+      return next({
+        status: 400,
+        success: false,
+        message: "Destination not found",
+      });
+    }
+
     const imageUrls = files.map((file: any) => file.path);
     const imagePublicIds = files.map((file: any) => file.filename);
 
     let gallery = await prisma.destinationGallery.findUnique({
       where: { destinationId },
     });
+
+    const newTotalImages = files.length;
+
+    if (
+      (gallery ? gallery.imageUrl.length : 0) + newTotalImages >
+      IMAGE_LIMITS.DESTINATION
+    ) {
+      await cleanupCloudinary(uploadedPublicIds);
+      return next({
+        status: 400,
+        success: false,
+        message: `Maximum ${IMAGE_LIMITS.DESTINATION} total images allowed`,
+      });
+    }
 
     if (gallery) {
       gallery = await prisma.destinationGallery.update({
@@ -90,13 +110,17 @@ const createOrUpdateGallery = async (
     next({
       status: 200,
       success: true,
-      message: "Gallery images added successfully",
+      message: `${files.length} Gallery image(s) added successfully`,
       data: {
         ...gallery,
         totalImages: gallery.imageUrl.length,
+        remainingSlots: IMAGE_LIMITS.DESTINATION - gallery.imageUrl.length,
       },
     });
   } catch (error: any) {
+    if (uploadedPublicIds.length > 0) {
+      await cleanupCloudinary(uploadedPublicIds);
+    }
     if (error instanceof ZodError) {
       return next({
         status: 400,
@@ -115,7 +139,7 @@ const createOrUpdateGallery = async (
 const getGalleryByDestination = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const { destinationId } = destinationIdParamSchema.parse(req.params);
@@ -185,7 +209,7 @@ const getGalleryByDestination = async (
 const getAllGalleries = async (
   req: Request<{}, {}, {}, DestinationQueryParams>,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const {
@@ -274,7 +298,7 @@ const getAllGalleries = async (
 const removeGalleryImages = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const { destinationId } = destinationIdParamSchema.parse(req.params);
@@ -326,10 +350,10 @@ const removeGalleryImages = async (
 
     // Remove ONLY successfully deleted images from database
     const updatedImageUrls = gallery.imageUrl.filter(
-      (_, index) => !successfulDeletions.includes(gallery.imagePublicId[index])
+      (_, index) => !successfulDeletions.includes(gallery.imagePublicId[index]),
     );
     const updatedPublicIds = gallery.imagePublicId.filter(
-      (id) => !successfulDeletions.includes(id)
+      (id) => !successfulDeletions.includes(id),
     );
 
     // Update database with remaining images
@@ -384,7 +408,7 @@ const removeGalleryImages = async (
 const deleteGallery = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const { destinationId } = destinationIdParamSchema.parse(req.params);

@@ -22,8 +22,6 @@ import {
   notFoundErrorSchema,
   unauthorizedErrorSchema,
 } from "../../schema/common.schema";
-import { Param } from "@prisma/client/runtime/library";
-import { validateParams } from "../../middleware/validate";
 
 const router = Router();
 router.use(authenticateToken, AdminOnly);
@@ -32,7 +30,7 @@ router.use(authenticateToken, AdminOnly);
 router.post(
   "/:destinationId",
   cloudinaryUploadFromParams("destination/gallery", "destinationId").array(
-    "imageUrl",
+    "images",
     10
   ),
   createOrUpdateGallery
@@ -58,7 +56,7 @@ registerRoute({
   tags: ["Destinations"],
   security: [{ bearerAuth: [] }],
   request: {
-    Params: destinationIdParamSchema,
+    params: destinationIdParamSchema,
     body: {
       content: {
         "multipart/form-data": {
