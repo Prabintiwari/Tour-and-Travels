@@ -1,5 +1,10 @@
 import { Request, Response, NextFunction } from "express";
-import { loginSchema, registerSchema, userIdParamSchema } from "../schema";
+import {
+  loginSchema,
+  registerSchema,
+  userIdParamSchema,
+  verifyRegistrationSchema,
+} from "../schema";
 import prisma from "../config/prisma";
 import bcrypt from "bcryptjs";
 import generateOTP from "../utils/generateOtp";
@@ -13,67 +18,71 @@ import { ZodError } from "zod";
 const register = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const validatedData = registerSchema.parse(req.body);
-    let tempUser;
+    const normalizedEmail = validatedData.email.toLowerCase();
 
-    // Check if user exists
     const existingUser = await prisma.user.findUnique({
-      where: { email: validatedData.email },
+      where: { email: normalizedEmail },
     });
     if (existingUser) {
       return next({
         status: 400,
         success: false,
-        message: "User already exist!!",
+        message: "User already exists",
       });
     }
 
-    // Hash password
     const hashedPassword = await bcrypt.hash(validatedData.password, 10);
-    const date = new Date();
-    date.setMinutes(date.getMinutes() + 10);
+    const expiry = new Date(Date.now() + 10 * 60 * 1000);
     const otp = generateOTP();
 
-    const existinguser = await prisma.tempUser.findFirst({
-      where: { email: validatedData.email },
+    const tempUser = await prisma.tempUser.upsert({
+      where: { email: normalizedEmail },
+      update: {
+        otp,
+        expiry,
+        fullName: validatedData.fullName,
+        password: hashedPassword,
+      },
+      create: {
+        email: normalizedEmail,
+        fullName: validatedData.fullName,
+        password: hashedPassword,
+        otp,
+        expiry,
+      },
     });
-    if (existinguser) {
-      tempUser = await prisma.tempUser.update({
-        where: { email: validatedData.email },
-        data: { otp: otp, expiry: date },
+
+    try {
+      await transporter.sendMail({
+        from: `"Tour & Travels Team" <${process.env.SMTP_USER}>`,
+        to: normalizedEmail,
+        subject: "Your registration OTP",
+        html: registration_otp_templete(otp, validatedData.fullName),
       });
-    } else {
-      tempUser = await prisma.tempUser.create({
-        data: {
-          email: validatedData.email,
-          fullName: validatedData.fullName,
-          password: hashedPassword,
-          otp: otp,
-          expiry: date,
-        },
-      });
+    } catch (err) {
+      await prisma.tempUser.delete({ where: { email: normalizedEmail } });
+      throw err;
     }
-    await transporter.sendMail({
-      from: `"Tour & Travels Teams" <${process.env.SMTP_USER}>`,
-      to: `${validatedData.email}`,
-      subject: "Your registration OTP!",
-      text: "Here is your registration OTP!",
-      html: registration_otp_templete(otp, validatedData.fullName),
-    });
+
     next({
-      status: 200,
+      status: 201,
       success: true,
-      message: `otp sends successfully to ${validatedData.email}`,
-      data: { email: validatedData.email },
+      message: "OTP sent successfully",
+      data: { normalizedEmail },
     });
-  } catch (error) {
+  } catch (error: any) {
     if (error instanceof ZodError) {
       return next({
         status: 400,
-        message: error.issues || "Validation failed",
+        success: false,
+        message: error.issues,
       });
     }
-    console.error("Registration error:", error);
-    next({ status: 500, success: false, message: "internal server error" });
+    next({
+      status: 500,
+      success: false,
+      message: error.message || "Internal server error",
+    });
   }
 };
 
@@ -81,86 +90,104 @@ const register = async (req: Request, res: Response, next: NextFunction) => {
 const verifyRegistration = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
-    const { email, otp } = req.body;
-    if (!email || !otp) {
+    const { email, otp } = verifyRegistrationSchema.parse(req.body);
+
+    const normalizedEmail = email.toLowerCase();
+
+    const tempUser = await prisma.tempUser.findUnique({
+      where: { email: normalizedEmail },
+    });
+    if (!tempUser) {
       return next({
         status: 400,
         success: false,
-        message: "Email and otp is required!",
+        message: "Please register first",
       });
     }
-    console.log(otp);
-    // Check if user exists
-    const existingTempUser = await prisma.tempUser.findUnique({
-      where: { email },
+
+    if (new Date() > tempUser.expiry) {
+      return next({ status: 400, success: false, message: "OTP expired" });
+    }
+
+    if (String(otp) !== String(tempUser.otp)) {
+      return next({ status: 401, success: false, message: "Invalid OTP" });
+    }
+
+    const existingUser = await prisma.user.findUnique({
+      where: { email: normalizedEmail },
     });
-    if (!existingTempUser) {
+    if (existingUser) {
+      await prisma.tempUser.delete({ where: { email: normalizedEmail } });
       return next({
-        status: 400,
+        status: 409,
         success: false,
-        message: "Email not found! Please register first",
+        message: "User already verified",
       });
     }
-    const date = new Date();
-    if (otp !== existingTempUser.otp) {
-      next({ status: 401, success: false, message: "invalid OTP!!" });
-      return;
-    }
-    if (date > existingTempUser.expiry) {
-      next({
-        status: 400,
-        success: false,
-        message: "OTP has expired please send again!!",
+
+    const user = await prisma.$transaction(async (tx) => {
+      const createdUser = await tx.user.create({
+        data: {
+          email: tempUser.email,
+          fullName: tempUser.fullName,
+          password: tempUser.password,
+          profileImage: process.env.DEFAULT_PROFILE_IMAGE,
+        },
       });
 
-      return;
-    }
-    // Create user
-    const user = await prisma.user.create({
-      data: {
-        email: existingTempUser.email,
-        fullName: existingTempUser.fullName,
-        password: existingTempUser.password,
-        profileImage: process.env.DEFAULT_PROFILE_IMAGE,
-      },
+      await tx.tempUser.delete({ where: { email: normalizedEmail } });
+      return createdUser;
     });
-    await prisma.tempUser.delete({ where: { email: existingTempUser.email } });
 
-    // Generate token
     const token = generateToken(user);
     res.cookie("token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
-    await transporter.sendMail({
-      from: `"Tour & Travels Teams" <${process.env.SMTP_USER}>`,
-      to: `${email}`,
-      subject: "Welcome to our community!",
-      text: "Welcome to our community!",
-      html: welcomeEmail(user.fullName),
-    });
+
+    try {
+      await transporter.sendMail({
+        from: `"Tour & Travels Team" <${process.env.SMTP_USER}>`,
+        to: normalizedEmail,
+        subject: "Welcome!",
+        html: welcomeEmail(user.fullName),
+      });
+    } catch (e) {
+      console.warn("Welcome email failed", e);
+    }
+
     next({
-      status: 200,
+      status: 201,
       success: true,
-      message: "User created successfully",
+      message: "User verified successfully",
       data: {
-        token,
         user: {
           id: user.id,
           email: user.email,
-          userName: user.fullName,
+          name: user.fullName,
           image: user.profileImage,
           role: user.role,
         },
       },
     });
-  } catch (error) {
-    console.error("Registration error:", error);
-    next({ status: 500, success: false, message: "internal server error" });
+  } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        success: false,
+        message: error.issues,
+      });
+    }
+    console.error("Verify registration error:", error);
+    next({
+      status: 500,
+      success: false,
+      message: error.message || "Internal server error",
+    });
   }
 };
 
@@ -169,9 +196,11 @@ const login = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const validatedData = loginSchema.parse(req.body);
 
+    const email = validatedData.email.toLowerCase();
+
     // Find user
     const user = await prisma.user.findUnique({
-      where: { email: validatedData.email },
+      where: { email: email },
     });
     if (!user) {
       return next({
@@ -184,7 +213,7 @@ const login = async (req: Request, res: Response, next: NextFunction) => {
     // Check password
     const isValidPassword = await bcrypt.compare(
       validatedData.password,
-      user.password
+      user.password,
     );
     if (!isValidPassword) {
       return next({
@@ -217,15 +246,20 @@ const login = async (req: Request, res: Response, next: NextFunction) => {
         token,
       },
     });
-  } catch (error) {
+  } catch (error: any) {
     if (error instanceof ZodError) {
       return next({
         status: 400,
+        success: false,
         message: error.issues || "Validation failed",
       });
     }
     console.error("Login error:", error);
-    next({ status: 500, success: false, message: "Internal server error!" });
+    next({
+      status: 500,
+      success: false,
+      message: error.message || "Internal server error!",
+    });
   }
 };
 
@@ -250,14 +284,19 @@ const getMe = async (req: AuthRequest, res: Response, next: NextFunction) => {
     }
 
     next({ status: 200, success: true, data: { user } });
-  } catch (error) {
+  } catch (error: any) {
     if (error instanceof ZodError) {
       return next({
         status: 400,
+        success: false,
         message: error.issues || "Validation failed",
       });
     }
-    next({ status: 500, success: false, message: "Failed to fetch user data" });
+    next({
+      status: 500,
+      success: false,
+      message: error.message || "Failed to fetch user data",
+    });
   }
 };
 
@@ -281,15 +320,20 @@ const deleteUser = async (req: Request, res: Response, next: NextFunction) => {
       where: { id: userId },
     });
     next({ status: 200, success: true, message: "User deleted succesfully!" });
-  } catch (error) {
+  } catch (error: any) {
     if (error instanceof ZodError) {
       return next({
         status: 400,
+        success: false,
         message: error.issues || "Validation failed",
       });
     }
     console.error("Update role error:", error);
-    next({ status: 500, success: false, message: "Internal server error" });
+    next({
+      status: 500,
+      success: false,
+      message: error.message || "Internal server error",
+    });
   }
 };
 

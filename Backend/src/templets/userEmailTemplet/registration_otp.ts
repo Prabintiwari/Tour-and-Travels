@@ -1,5 +1,5 @@
 const registration_otp_template = (
-  otp: number,
+  otp: string,
   name: string,
   expiryMinutes = 10
 ) => {
