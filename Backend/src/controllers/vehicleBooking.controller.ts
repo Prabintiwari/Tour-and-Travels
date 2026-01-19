@@ -2,9 +2,16 @@ import { Request, Response, NextFunction } from "express";
 import prisma from "../config/prisma";
 import { ZodError } from "zod";
 import { AuthRequest } from "../middleware/auth";
-import { DiscountValueType, RentalStatus, TourType } from "@prisma/client";
+import {
+  RentalStatus,
+  VehicleStatus,
+} from "@prisma/client";
 import { generateBookingCode } from "../utils/generateBookingCode";
 import { CreateVehicleBookingSchema } from "../schema/vehicleBooking.schema";
+import {
+  calculateDiscounts,
+  calculateDriverPricing,
+} from "../utils/vehicle_utils/calculatePricing";
 
 // Create a new vehicle booking
 const createVehicleBooking = async (
@@ -13,181 +20,186 @@ const createVehicleBooking = async (
   next: NextFunction,
 ) => {
   try {
-    // 1️⃣ Validate input
-    const data = CreateVehicleBookingSchema.parse(req.body);
     const userId = req.id;
-
     if (!userId) {
-      return next({
-        status: 400,
-        success: false,
-        message: "User id is required!",
-      });
+      return next({status:401,success:false, message: "Unauthorized" });
     }
 
-    // 2️⃣ Fetch vehicle
+    const validatedData = CreateVehicleBookingSchema.parse(req.body);
+
+    // Fetch vehicle details
     const vehicle = await prisma.vehicle.findUnique({
-      where: { id: data.vehicleId },
+      where: { id: validatedData.vehicleId },
     });
 
     if (!vehicle) {
-      return res.status(404).json({ message: "Vehicle not found" });
+      return next({
+        status: 404,
+        success: false,
+        message: "Vehicle not found",
+      });
     }
 
-    if (data.needsDriver && !vehicle.hasDriver) {
-      return res
-        .status(400)
-        .json({ message: "Driver not available for this vehicle" });
+    if (vehicle.status !== VehicleStatus.AVAILABLE) {
+      return next({
+        status: 400,
+        success: false,
+        message: "Vehicle is not available",
+      });
     }
 
-    // 3️⃣ Dates & duration
-    const startDate = new Date(data.startDate);
-    const endDate = new Date(data.endDate);
+    // Calculate duration
+    const startDate = new Date(validatedData.startDate);
+    const endDate = new Date(validatedData.endDate);
+    const durationDays = Math.ceil(
+      (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24),
+    );
 
-    const durationDays =
-      Math.ceil(
-        (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24),
-      ) || 1;
+    // Check vehicle availability
+    const overlappingBookings = await prisma.vehicleBooking.count({
+      where: {
+        vehicleId: validatedData.vehicleId,
+        status: {
+          in: [
+            RentalStatus.PENDING,
+            RentalStatus.CONFIRMED,
+            RentalStatus.ACTIVE,
+          ],
+        },
+        OR: [
+          {
+            startDate: { lte: endDate },
+            endDate: { gte: startDate },
+          },
+        ],
+      },
+    });
 
-    // 4️⃣ Vehicle pricing
-    const pricePerDay = vehicle.pricePerDay;
+    const totalBookedVehicles = overlappingBookings;
+    const availableCount = vehicle.availableQuantity - totalBookedVehicles;
+
+    if (availableCount < validatedData.numberOfVehicles) {
+      return next({
+        status: 400,
+        success: false,
+        message: "Insufficient vehicles available for selected dates",
+        data: {
+          available: availableCount,
+          requested: validatedData.numberOfVehicles,
+        },
+      });
+    }
+
+    // Calculate pricing
     const vehicleBaseAmount =
-      pricePerDay * durationDays * data.numberOfVehicles;
+      vehicle.pricePerDay * durationDays * validatedData.numberOfVehicles;
+    let grossAmount = vehicleBaseAmount;
 
-    // 5️⃣ Driver pricing
+    // Driver pricing calculation
+    let driverTotalAmount = 0;
     let baseDriverRate: number | null = null;
     let distanceCharge = 0;
     let terrainCharge = 0;
-    let driverTotalAmount: number | null = null;
 
-    if (data.needsDriver && data.numberOfDrivers > 0) {
-      const driverConfig = await prisma.pricingConfig.findFirst({
-        where: {
-          type: "DRIVER",
-          tourType: data.tourType,
-          isActive: true,
-        },
-        orderBy: { createdAt: "desc" },
-      });
+    if (validatedData.needsDriver && validatedData.numberOfDrivers > 0) {
+      const driverPricing = await calculateDriverPricing(
+        validatedData.tourType,
+        durationDays,
+        validatedData.numberOfDrivers,
+      );
 
-      if (!driverConfig?.baseDriverRate) {
-        return res
-          .status(400)
-          .json({ message: "Driver pricing not configured" });
-      }
-
-      baseDriverRate = driverConfig.baseDriverRate;
-
-      if (data.estimatedDistance && driverConfig.pricePerKm) {
-        distanceCharge = data.estimatedDistance * driverConfig.pricePerKm;
-      }
-
-      if (data.tourType === TourType.MOUNTAIN) {
-        terrainCharge = baseDriverRate * (driverConfig.terrainMultiplier - 1);
-      }
-
-      driverTotalAmount =
-        (baseDriverRate * durationDays + distanceCharge + terrainCharge) *
-        data.numberOfDrivers;
+      baseDriverRate = driverPricing.baseRate;
+      distanceCharge = driverPricing.distanceCharge;
+      terrainCharge = driverPricing.terrainCharge;
+      driverTotalAmount = driverPricing.total;
+      grossAmount += driverTotalAmount;
     }
 
-    // 6️⃣ Gross amount
-    const grossAmount = vehicleBaseAmount + (driverTotalAmount ?? 0);
+    // Apply discounts
+    const discountResult = await calculateDiscounts(
+      grossAmount,
+      durationDays,
+      validatedData.couponCode,
+      userId,
+      vehicle.vehicleType,
+    );
 
-    // 7️⃣ Discount
-    let discountAmount = 0;
-    let appliedDiscounts: any[] = [];
-    let couponCode: string | null = null;
+    const totalPrice = grossAmount - discountResult.totalDiscount;
+    const remainingAmount = totalPrice - validatedData.advanceAmount;
 
-    if (data.couponCode) {
-      const coupon = await prisma.pricingConfig.findFirst({
-        where: {
-          type: "DISCOUNT",
-          code: data.couponCode,
-          isActive: true,
-        },
-      });
-
-      if (!coupon) {
-        return res.status(400).json({ message: "Invalid coupon code" });
-      }
-
-      if (coupon.minBookingAmount && grossAmount < coupon.minBookingAmount) {
-        return res.status(400).json({ message: "Coupon not applicable" });
-      }
-
-      if (coupon.discountValueType === DiscountValueType.PERCENTAGE) {
-        discountAmount = (grossAmount * (coupon.discountValue ?? 0)) / 100;
-      } else {
-        discountAmount = coupon.discountValue ?? 0;
-      }
-
-      if (coupon.maxDiscount && discountAmount > coupon.maxDiscount) {
-        discountAmount = coupon.maxDiscount;
-      }
-
-      appliedDiscounts.push({
-        source: coupon.discountSource,
-        valueType: coupon.discountValueType,
-        value: coupon.discountValue,
-        amount: discountAmount,
-        code: coupon.code,
-      });
-
-      couponCode = coupon.code;
-    }
-
+    // Generate unique booking code
     const bookingCode = generateBookingCode("VBK");
 
-    // 8️⃣ Totals
-    const totalPrice = Math.max(grossAmount - discountAmount, 0);
-    const remainingAmount = totalPrice - data.advanceAmount;
-
-    // 9️⃣ Create booking
+    // Create booking
     const booking = await prisma.vehicleBooking.create({
       data: {
-        bookingCode: bookingCode,
+        bookingCode,
         userId,
-        vehicleId: data.vehicleId,
+        vehicleId: validatedData.vehicleId,
 
         startDate,
         endDate,
         durationDays,
-        numberOfVehicles: data.numberOfVehicles,
+        numberOfVehicles: validatedData.numberOfVehicles,
 
-        destination: data.destination,
-        pickupLocation: data.pickupLocation,
-        dropoffLocation: data.dropoffLocation,
-        estimatedDistance: data.estimatedDistance,
-        tourType: data.tourType,
+        destination: validatedData.destination,
+        pickupLocation: validatedData.pickupLocation,
+        dropoffLocation: validatedData.dropoffLocation,
+        tourType: validatedData.tourType,
 
-        pricePerDayAtBooking: pricePerDay,
+        pricePerDayAtBooking: vehicle.pricePerDay,
         vehicleBaseAmount,
 
-        needsDriver: data.needsDriver,
-        numberOfDrivers: data.numberOfDrivers,
+        needsDriver: validatedData.needsDriver,
+        numberOfDrivers: validatedData.numberOfDrivers,
         baseDriverRate,
         distanceCharge,
         terrainCharge,
-        driverTotalAmount,
+        driverTotalAmount: validatedData.needsDriver ? driverTotalAmount : null,
 
-        appliedDiscounts,
-        discountAmount,
-        couponCode,
+        appliedDiscounts: discountResult.discounts,
+        discountAmount: discountResult.totalDiscount,
+        couponCode: validatedData.couponCode,
 
         grossAmount,
         totalPrice,
-        advanceAmount: data.advanceAmount,
+        advanceAmount: validatedData.advanceAmount,
         remainingAmount,
 
-        specialRequests: data.specialRequests,
+        specialRequests: validatedData.specialRequests,
         status: RentalStatus.PENDING,
+      },
+      include: {
+        vehicle: true,
+        user: {
+          select: {
+            id: true,
+            fullName: true,
+            email: true,
+            phone: true,
+          },
+        },
       },
     });
 
-    return res.status(201).json({
-      message: "Vehicle booking created successfully",
-      booking,
+    // Update coupon usage if applicable
+    if (validatedData.couponCode) {
+      await prisma.pricingConfig.updateMany({
+        where: {
+          code: validatedData.couponCode,
+          type: "DISCOUNT",
+        },
+        data: {
+          usageCount: { increment: 1 },
+        },
+      });
+    }
+
+    return next({
+      status: 201,
+      success: true,
+      message: "Booking created successfully",
+      data: booking,
     });
   } catch (error: any) {
     if (error instanceof ZodError) {
@@ -203,3 +215,5 @@ const createVehicleBooking = async (
     });
   }
 };
+
+export { createVehicleBooking };

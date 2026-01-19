@@ -19,7 +19,7 @@ import { ZodError } from "zod";
 const createTourBooking = async (
   req: AuthRequest,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const userId = req.id;
@@ -27,7 +27,7 @@ const createTourBooking = async (
       return next({
         status: 400,
         success: false,
-        message: "User id is required!",
+        message: "Authentication required",
       });
     }
 
@@ -253,7 +253,7 @@ const createTourBooking = async (
 const getUserTourBookings = async (
   req: AuthRequest,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const userId = req.id;
@@ -320,7 +320,7 @@ const getUserTourBookings = async (
 const getUserTourBookingById = async (
   req: AuthRequest,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const userId = req.id;
@@ -381,7 +381,7 @@ const getUserTourBookingById = async (
 const cancelUserTourBooking = async (
   req: AuthRequest,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const userId = req.id;
@@ -475,7 +475,7 @@ const cancelUserTourBooking = async (
 const getAllTourBookings = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const {
@@ -576,7 +576,7 @@ const getAllTourBookings = async (
 const getAdminTourBookingById = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const { bookingId } = bookingParamsSchema.parse(req.params);
@@ -636,7 +636,7 @@ const getAdminTourBookingById = async (
 const updateTourBooking = async (
   req: AuthRequest,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const validateData = updateBookingSchema.parse(req.body);
@@ -904,7 +904,7 @@ const updateTourBooking = async (
 const rescheduleTourBooking = async (
   req: AuthRequest,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const userId = req.id;
@@ -942,7 +942,7 @@ const rescheduleTourBooking = async (
     // Only allow rescheduling for PENDING or CONFIRMED bookings
     if (
       ![BookingStatus.PENDING, BookingStatus.CONFIRMED].includes(
-        booking.status as "PENDING" | "CONFIRMED"
+        booking.status as "PENDING" | "CONFIRMED",
       )
     ) {
       return next({
@@ -1141,13 +1141,13 @@ const rescheduleTourBooking = async (
         message:
           priceDifference > 0
             ? `Price increased by ${Math.abs(
-                priceDifference
+                priceDifference,
               )}. Please pay the difference.`
             : priceDifference < 0
-            ? `Price decreased by ${Math.abs(
-                priceDifference
-              )}. Refund will be processed.`
-            : "Price remains the same.",
+              ? `Price decreased by ${Math.abs(
+                  priceDifference,
+                )}. Refund will be processed.`
+              : "Price remains the same.",
       },
     });
   } catch (error: any) {
@@ -1169,7 +1169,7 @@ const rescheduleTourBooking = async (
 const updateTourBookingStatus = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const { bookingId } = bookingParamsSchema.parse(req.params);
@@ -1255,7 +1255,7 @@ const updateTourBookingStatus = async (
 const getTourBookingStats = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const [

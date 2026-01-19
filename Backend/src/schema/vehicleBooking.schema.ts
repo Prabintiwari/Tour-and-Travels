@@ -39,7 +39,6 @@ const CreateVehicleBookingSchema = z
     destination: z.string().optional(),
     pickupLocation: z.string().optional(),
     dropoffLocation: z.string().optional(),
-    estimatedDistance: z.number().min(0).optional(),
     tourType: z.nativeEnum(TourType).optional(),
 
     needsDriver: z.boolean().default(false),
@@ -51,6 +50,15 @@ const CreateVehicleBookingSchema = z
 
     specialRequests: z.string().optional(),
   })
+  .refine(
+    (data) =>
+      !data.needsDriver ||
+      (data.numberOfDrivers !== undefined && data.numberOfDrivers > 0),
+    {
+      message: "Number of drivers must be specified when driver is needed",
+      path: ["numberOfDrivers"],
+    },
+  )
   .refine(
     (data) => {
       const start = new Date(data.startDate);
