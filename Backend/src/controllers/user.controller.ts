@@ -82,7 +82,8 @@ const forgotPassword = async (
 ) => {
   try {
     const { email } = req.body;
-    if (!email) {
+    const normalizedEmail = email.toLowerCase();
+    if (!normalizedEmail) {
       return next({
         status: 400,
         success: false,
@@ -90,7 +91,7 @@ const forgotPassword = async (
       });
     }
     const existingUser = await prisma.user.findUnique({
-      where: { email: email },
+      where: { email: normalizedEmail },
     });
     if (!existingUser) {
       return next({
@@ -104,11 +105,11 @@ const forgotPassword = async (
     const otp = generateOTP();
 
     const tempUser = await prisma.tempUser.findUnique({
-      where: { email: email },
+      where: { email: normalizedEmail },
     });
     if (tempUser) {
       await prisma.tempUser.update({
-        where: { email: email },
+        where: { email: normalizedEmail },
         data: { otp: otp, expiry: date },
       });
     } else {
@@ -125,12 +126,12 @@ const forgotPassword = async (
     next({
       status: 200,
       success: true,
-      message: `otp sends successfully to ${email}`,
+      message: `otp sends successfully to ${normalizedEmail}`,
       data: { expiry: tempUser?.expiry },
     });
     await transporter.sendMail({
       from: `"Tour & Travels Teams" <${process.env.SMTP_USER}>`,
-      to: `${email}`,
+      to: `${normalizedEmail}`,
       subject: "Your reset password OTP!",
       text: "Here is your reset password OTP!",
       html: Password_Reset_OTP(otp, existingUser.fullName),
@@ -148,8 +149,11 @@ const forgotPassword = async (
 const resendOtp = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { email } = req.body;
+
+    const normalizedEmail = email.toLowerCase();
+
     let tempUser;
-    if (!email) {
+    if (!normalizedEmail) {
       return next({
         status: 400,
         success: false,
@@ -157,7 +161,7 @@ const resendOtp = async (req: Request, res: Response, next: NextFunction) => {
       });
     }
     const existingTempUser = await prisma.tempUser.findUnique({
-      where: { email: email },
+      where: { email: normalizedEmail },
     });
     if (!existingTempUser) {
       return next({
@@ -171,20 +175,20 @@ const resendOtp = async (req: Request, res: Response, next: NextFunction) => {
     const otp = generateOTP();
     if (existingTempUser) {
       tempUser = await prisma.tempUser.update({
-        where: { email: email },
+        where: { email: normalizedEmail },
         data: { otp: otp, expiry: date },
       });
     }
     next({
       status: 200,
       success: true,
-      message: `otp sends successfully to ${email}`,
+      message: `otp sends successfully to ${normalizedEmail}`,
       data: { expiry: tempUser?.expiry },
     });
 
     await transporter.sendMail({
       from: `"Tour & Travels Teams" <${process.env.SMTP_USER}>`,
-      to: `${email}`,
+      to: `${normalizedEmail}`,
       subject: "Your reset password OTP!",
       text: "Here is your reset password OTP!",
       html: Password_Reset_OTP(otp, existingTempUser.fullName),
@@ -202,7 +206,9 @@ const resendOtp = async (req: Request, res: Response, next: NextFunction) => {
 const verifyOtp = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { email, otp } = req.body;
-    if (!email || !otp) {
+
+    const normalizedEmail = email.toLowerCase();
+    if (!normalizedEmail || !otp) {
       return next({
         status: 500,
         success: false,
@@ -211,7 +217,7 @@ const verifyOtp = async (req: Request, res: Response, next: NextFunction) => {
     }
     // Check if user exists
     const existingTempUser = await prisma.tempUser.findUnique({
-      where: { email },
+      where: { email:normalizedEmail },
     });
     if (!existingTempUser) {
       return next({
@@ -266,14 +272,15 @@ const resetPassword = async (
 ) => {
   try {
     const { email, newPassword } = req.body;
-    if (!email || !newPassword) {
+    const normalizedEmail = email.toLowerCase()
+    if (!normalizedEmail || !newPassword) {
       return next({
         status: 400,
         success: false,
         message: "Email and newPassword is required!",
       });
     }
-    const user = await prisma.user.findUnique({ where: { email: email } });
+    const user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
     if (!user) {
       next({
         status: 400,
@@ -295,7 +302,7 @@ const resetPassword = async (
     }
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     const updatedUser = await prisma.user.update({
-      where: { email: email },
+      where: { email: normalizedEmail },
       data: { password: hashedPassword },
       select: {
         id: true,
@@ -313,7 +320,7 @@ const resetPassword = async (
     });
     await transporter.sendMail({
       from: `"Tour & Travels Teams" <${process.env.SMTP_USER}>`,
-      to: `${email}`,
+      to: `${normalizedEmail}`,
       subject: "Password Changed Successfully",
       text: "Your password has been changed successfully!",
       html: passwordResetSuccessEmail(user.fullName),

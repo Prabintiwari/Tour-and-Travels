@@ -103,6 +103,32 @@ enum VehicleStatus {
   INACTIVE
 }
 
+enum TourType {
+  LOCAL
+  REGIONAL
+  NATIONAL
+  MOUNTAIN
+}
+
+enum DiscountValueType {
+  PERCENTAGE
+  FIXED
+}
+
+enum DiscountSource {
+  COUPON
+  SEASONAL
+  LOYALTY
+  BULK
+  LONG_TERM
+}
+
+enum PricingConfigType {
+  DRIVER
+  DISCOUNT
+  SEASONAL
+}
+
 
 // ==================== AUTH & USER MANAGEMENT ====================
 
@@ -478,6 +504,7 @@ model Vehicle {
 
   fuelType          FuelType  @default(PETROL)
   status            VehicleStatus @default(AVAILABLE)
+  hasDriver         Boolean @default(false)
 
   city              String
   region            String?
@@ -502,6 +529,7 @@ model Vehicle {
 
 
 // ==================== VEHICLE BOOKINGS ====================
+
 model VehicleBooking {
   id                    String   @id @default(auto()) @map("_id") @db.ObjectId
   bookingCode           String   @unique
@@ -512,26 +540,60 @@ model VehicleBooking {
   vehicleId             String   @db.ObjectId
   vehicle               Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
 
+  // ===== DATES =====
   startDate             DateTime
   endDate               DateTime
   durationDays          Int
-
   numberOfVehicles      Int
 
-  pricePerDayAtBooking  Float     
-  needsDriver           Boolean   @default(false)
-  driverPricePerDay     Float?
-  driverTotalPrice      Float?
+  // ===== TRIP INFO =====
+  destination           String?
+  pickupLocation        String?
+  dropoffLocation       String?
+  estimatedDistance     Float?
+  tourType              TourType?
 
+  // ===== VEHICLE PRICING SNAPSHOT =====
+  pricePerDayAtBooking  Float
+  vehicleBaseAmount     Float
+
+  // ===== DRIVER PRICING SNAPSHOT =====
+  needsDriver           Boolean   @default(false)
+  numberOfDrivers       Int       @default(0)
+
+  baseDriverRate        Float?
+  distanceCharge        Float     @default(0)
+  terrainCharge         Float     @default(0)
+  driverTotalAmount     Float?
+
+  // ===== EXTRA CHARGES =====
+  fuelCharge            Float     @default(0)
+  tollCharge            Float     @default(0)
+  otherCharges          Float     @default(0)
+
+  // ===== DISCOUNTS =====
+  appliedDiscounts      Json[]           // [{source, valueType, value, amount}]
+  discountAmount        Float     @default(0)
+  couponCode            String?
+
+  // ===== TOTALS =====
+  grossAmount           Float
   totalPrice            Float
 
-  discountRate          Float?    @default(0)
-  discountAmount        Float?    @default(0)
+  advanceAmount         Float     @default(0)
+  remainingAmount       Float
 
+  // ===== CANCELLATION / REFUND =====
+  cancelledAt           DateTime?
+  cancellationReason    String?
+  cancelledBy           String?          // USER / ADMIN 
+  refundAmount          Float     @default(0)
+
+  // ===== META =====
+  specialRequests       String?
   status                RentalStatus @default(PENDING)
 
   bookingDate           DateTime  @default(now())
-  cancelledAt           DateTime?
   completedAt           DateTime?
   updatedAt             DateTime  @updatedAt
 
@@ -540,7 +602,67 @@ model VehicleBooking {
   @@index([userId])
   @@index([vehicleId])
   @@index([status])
+  @@index([tourType])
+  @@index([bookingDate])
+  @@index([startDate, endDate])
 }
+
+// ==================== PRICING CONFIG ====================
+model PricingConfig {
+  id                    String   @id @default(auto()) @map("_id") @db.ObjectId
+  type                  PricingConfigType
+
+  // ===== DRIVER PRICING =====
+  tourType              TourType?
+  baseDriverRate        Float?
+  pricePerKm            Float     @default(0)
+  terrainMultiplier     Float     @default(1.0)
+  minDistance           Float?
+  maxDistance           Float?
+
+  // ===== DISCOUNT / COUPON =====
+  code                  String?   @unique
+  discountValueType     DiscountValueType?
+  discountSource        DiscountSource?
+  discountValue         Float?
+  minBookingAmount      Float?
+  minDays               Int?
+  maxDiscount           Float?
+
+  perUserLimit          Int?              // Max coupon use per user
+  priority              Int       @default(0) // Overlapping rule priority
+
+  // ===== SEASONAL =====
+  seasonName            String?
+  priceMultiplier       Float     @default(1.0)
+
+  // ===== VALIDITY =====
+  validFrom             DateTime?
+  validUntil            DateTime?
+  usageLimit            Int?
+  usageCount            Int       @default(0)
+
+  // ===== APPLICABILITY =====
+  vehicleTypes          VehicleType[]
+  regions               String[]
+
+  // ===== ADMIN AUDIT =====
+  createdBy             String?
+  lastModifiedBy        String?
+
+  isActive              Boolean   @default(true)
+  description           String?
+
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([type])
+  @@index([tourType])
+  @@index([isActive])
+  @@index([validFrom, validUntil])
+  @@index([priority])
+}
+
 
 // ==================== VEHICLE PAYMENTS ====================
 model VehiclePayment {

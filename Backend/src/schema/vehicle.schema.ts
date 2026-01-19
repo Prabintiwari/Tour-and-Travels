@@ -23,6 +23,7 @@ const createVehicleSchema = z
     totalQuantity: z.number().int().positive("Total quantity must be positive"),
     fuelType: z.nativeEnum(FuelType).default(FuelType.PETROL),
     status: z.nativeEnum(VehicleStatus).default(VehicleStatus.AVAILABLE),
+    hasDriver:z.boolean().default(false),
     city: z.string().min(1, "City is required"),
     region: z.string().optional(),
     features: z.array(z.string()).default([]),

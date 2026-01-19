@@ -1,4 +1,4 @@
-const Password_Reset_OTP = (otp: number, name: string, expiryMinutes = 10) => {
+const Password_Reset_OTP = (otp: string, name: string, expiryMinutes = 10) => {
   return `
 <!DOCTYPE html>
 <html>
