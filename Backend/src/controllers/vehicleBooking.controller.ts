@@ -2,15 +2,13 @@ import { Request, Response, NextFunction } from "express";
 import prisma from "../config/prisma";
 import { ZodError } from "zod";
 import { AuthRequest } from "../middleware/auth";
-import {
-  RentalStatus,
-  VehicleStatus,
-} from "@prisma/client";
+import { RentalStatus, VehicleStatus } from "@prisma/client";
 import { generateBookingCode } from "../utils/generateBookingCode";
 import { CreateVehicleBookingSchema } from "../schema/vehicleBooking.schema";
 import {
   calculateDiscounts,
   calculateDriverPricing,
+  getSeasonalMultiplier,
 } from "../utils/vehicle_utils/calculatePricing";
 
 // Create a new vehicle booking
@@ -22,7 +20,7 @@ const createVehicleBooking = async (
   try {
     const userId = req.id;
     if (!userId) {
-      return next({status:401,success:false, message: "Unauthorized" });
+      return res.status(401).json({ error: "Unauthorized" });
     }
 
     const validatedData = CreateVehicleBookingSchema.parse(req.body);
@@ -33,19 +31,11 @@ const createVehicleBooking = async (
     });
 
     if (!vehicle) {
-      return next({
-        status: 404,
-        success: false,
-        message: "Vehicle not found",
-      });
+      return res.status(404).json({ error: "Vehicle not found" });
     }
 
     if (vehicle.status !== VehicleStatus.AVAILABLE) {
-      return next({
-        status: 400,
-        success: false,
-        message: "Vehicle is not available",
-      });
+      return res.status(400).json({ error: "Vehicle is not available" });
     }
 
     // Calculate duration
@@ -79,10 +69,8 @@ const createVehicleBooking = async (
     const availableCount = vehicle.availableQuantity - totalBookedVehicles;
 
     if (availableCount < validatedData.numberOfVehicles) {
-      return next({
-        status: 400,
-        success: false,
-        message: "Insufficient vehicles available for selected dates",
+      return res.status(400).json({
+        error: "Insufficient vehicles available for selected dates",
         data: {
           available: availableCount,
           requested: validatedData.numberOfVehicles,
@@ -90,9 +78,17 @@ const createVehicleBooking = async (
       });
     }
 
-    // Calculate pricing
+    // Calculate pricing with seasonal adjustment
+    const seasonalMultiplier = await getSeasonalMultiplier(
+      startDate,
+      endDate,
+      vehicle.vehicleType,
+      vehicle.region || vehicle.city,
+    );
+
+    const adjustedPricePerDay = vehicle.pricePerDay * seasonalMultiplier;
     const vehicleBaseAmount =
-      vehicle.pricePerDay * durationDays * validatedData.numberOfVehicles;
+      adjustedPricePerDay * durationDays * validatedData.numberOfVehicles;
     let grossAmount = vehicleBaseAmount;
 
     // Driver pricing calculation
@@ -147,7 +143,7 @@ const createVehicleBooking = async (
         dropoffLocation: validatedData.dropoffLocation,
         tourType: validatedData.tourType,
 
-        pricePerDayAtBooking: vehicle.pricePerDay,
+        pricePerDayAtBooking: adjustedPricePerDay, // Store seasonally adjusted price
         vehicleBaseAmount,
 
         needsDriver: validatedData.needsDriver,
@@ -195,8 +191,7 @@ const createVehicleBooking = async (
       });
     }
 
-    return next({
-      status: 201,
+    return res.status(201).json({
       success: true,
       message: "Booking created successfully",
       data: booking,

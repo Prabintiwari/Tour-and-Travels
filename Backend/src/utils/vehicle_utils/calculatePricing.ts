@@ -174,4 +174,49 @@ const calculateRefund = async (booking: any) => {
   return (booking.totalPrice * refundPercentage) / 100;
 };
 
-export { calculateDriverPricing, calculateDiscounts, calculateRefund };
+const getSeasonalMultiplier = async (
+  startDate: Date,
+  endDate: Date,
+  vehicleType: any,
+  region: string,
+) => {
+  const seasonalConfigs = await prisma.pricingConfig.findMany({
+    where: {
+      type: PricingConfigType.SEASONAL,
+      isActive: true,
+      validFrom: { lte: endDate },
+      validUntil: { gte: startDate },
+      AND: [
+        {
+          OR: [
+            { vehicleTypes: { isEmpty: true } }, // No vehicle type restriction
+            { vehicleTypes: { has: vehicleType } }, // Specific vehicle type
+          ],
+        },
+        {
+          OR: [
+            { regions: { isEmpty: true } }, // No region restriction
+            { regions: { has: region } }, // Specific region
+          ],
+        },
+      ],
+    },
+    orderBy: {
+      priority: "desc",
+    },
+  });
+
+  if (seasonalConfigs.length === 0) {
+    return 1.0;
+  }
+
+  const applicableConfig = seasonalConfigs[0];
+  return applicableConfig.priceMultiplier ?? 1.0;
+};
+
+export {
+  calculateDriverPricing,
+  calculateDiscounts,
+  calculateRefund,
+  getSeasonalMultiplier,
+};
