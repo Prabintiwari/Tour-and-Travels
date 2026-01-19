@@ -2,6 +2,7 @@ import {
   DiscountSource,
   DiscountValueType,
   PricingConfigType,
+  RentalStatus,
   TourType,
 } from "@prisma/client";
 import prisma from "../../config/prisma";
@@ -72,8 +73,29 @@ const calculateDiscounts = async (
     });
 
     if (coupon && coupon.discountValue) {
-      // Check usage limit
+      // Check global usage limit
       if (!coupon.usageLimit || coupon.usageCount < coupon.usageLimit) {
+        // Check per-user usage limit
+        if (coupon.perUserLimit) {
+          const userUsageCount = await prisma.vehicleBooking.count({
+            where: {
+              userId,
+              couponCode,
+              status: {
+                notIn: [RentalStatus.CANCELLED],
+              },
+            },
+          });
+
+          if (userUsageCount >= coupon.perUserLimit) {
+            return {
+              discounts,
+              totalDiscount,
+              error: `You have already used this coupon ${coupon.perUserLimit} time(s). Per-user limit reached.`,
+            };
+          }
+        }
+
         // Check minimum booking amount
         if (
           !coupon.minBookingAmount ||
@@ -81,32 +103,69 @@ const calculateDiscounts = async (
         ) {
           // Check minimum days
           if (!coupon.minDays || durationDays >= coupon.minDays) {
-            let discountAmount = 0;
+            // Check vehicle type restriction
+            const isVehicleTypeApplicable =
+              coupon.vehicleTypes.length === 0 ||
+              coupon.vehicleTypes.includes(vehicleType);
 
-            if (coupon.discountValueType === DiscountValueType.PERCENTAGE) {
-              discountAmount = (grossAmount * coupon.discountValue) / 100;
+            if (isVehicleTypeApplicable) {
+              let discountAmount = 0;
 
-              // Apply max discount cap
-              if (coupon.maxDiscount && discountAmount > coupon.maxDiscount) {
-                discountAmount = coupon.maxDiscount;
+              if (coupon.discountValueType === DiscountValueType.PERCENTAGE) {
+                discountAmount = (grossAmount * coupon.discountValue) / 100;
+
+                // Apply max discount cap
+                if (coupon.maxDiscount && discountAmount > coupon.maxDiscount) {
+                  discountAmount = coupon.maxDiscount;
+                }
+              } else if (coupon.discountValueType === DiscountValueType.FIXED) {
+                discountAmount = coupon.discountValue;
               }
-            } else if (coupon.discountValueType === DiscountValueType.FIXED) {
-              discountAmount = coupon.discountValue;
-            }
 
-            if (discountAmount > 0) {
-              discounts.push({
-                source: DiscountSource.COUPON,
-                valueType: coupon.discountValueType,
-                value: coupon.discountValue,
-                amount: discountAmount,
-                code: couponCode,
-              });
-              totalDiscount += discountAmount;
+              if (discountAmount > 0) {
+                discounts.push({
+                  source: DiscountSource.COUPON,
+                  valueType: coupon.discountValueType,
+                  value: coupon.discountValue,
+                  amount: discountAmount,
+                  code: couponCode,
+                });
+                totalDiscount += discountAmount;
+              }
+            } else {
+              return {
+                discounts,
+                totalDiscount,
+                error: `This coupon is not applicable for ${vehicleType} vehicle type.`,
+              };
             }
+          } else {
+            return {
+              discounts,
+              totalDiscount,
+              error: `Minimum ${coupon.minDays} days required for this coupon.`,
+            };
           }
+        } else {
+          return {
+            discounts,
+            totalDiscount,
+            error: `Minimum booking amount of NPR ${coupon.minBookingAmount} required for this coupon.`,
+          };
         }
+      } else {
+        return {
+          discounts,
+          totalDiscount,
+          error: "This coupon has reached its usage limit.",
+        };
       }
+    } else {
+      return {
+        discounts,
+        totalDiscount,
+        error: "Invalid or expired coupon code.",
+      };
     }
   }
 

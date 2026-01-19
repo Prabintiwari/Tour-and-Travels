@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import prisma from "../config/prisma";
 import { ZodError } from "zod";
 import { AuthRequest } from "../middleware/auth";
-import { RentalStatus, VehicleStatus } from "@prisma/client";
+import { PricingConfigType, RentalStatus, VehicleStatus } from "@prisma/client";
 import { generateBookingCode } from "../utils/generateBookingCode";
 import { CreateVehicleBookingSchema } from "../schema/vehicleBooking.schema";
 import {
@@ -20,7 +20,7 @@ const createVehicleBooking = async (
   try {
     const userId = req.id;
     if (!userId) {
-      return res.status(401).json({ error: "Unauthorized" });
+      return next({ status: 401, success: false, message: "Unauthorized" });
     }
 
     const validatedData = CreateVehicleBookingSchema.parse(req.body);
@@ -31,11 +31,19 @@ const createVehicleBooking = async (
     });
 
     if (!vehicle) {
-      return res.status(404).json({ error: "Vehicle not found" });
+      return next({
+        status: 404,
+        success: false,
+        message: "Vehicle not found",
+      });
     }
 
     if (vehicle.status !== VehicleStatus.AVAILABLE) {
-      return res.status(400).json({ error: "Vehicle is not available" });
+      return next({
+        status: 400,
+        success: false,
+        message: "Vehicle is not available",
+      });
     }
 
     // Calculate duration
@@ -69,8 +77,10 @@ const createVehicleBooking = async (
     const availableCount = vehicle.availableQuantity - totalBookedVehicles;
 
     if (availableCount < validatedData.numberOfVehicles) {
-      return res.status(400).json({
-        error: "Insufficient vehicles available for selected dates",
+      return next({
+        status: 400,
+        success: false,
+        message: "Insufficient vehicles available for selected dates",
         data: {
           available: availableCount,
           requested: validatedData.numberOfVehicles,
@@ -119,6 +129,14 @@ const createVehicleBooking = async (
       userId,
       vehicle.vehicleType,
     );
+
+    if (discountResult.error) {
+      return next({
+        status: 400,
+        success: false,
+        message: discountResult.error,
+      });
+    }
 
     const totalPrice = grossAmount - discountResult.totalDiscount;
     const remainingAmount = totalPrice - validatedData.advanceAmount;
@@ -183,7 +201,7 @@ const createVehicleBooking = async (
       await prisma.pricingConfig.updateMany({
         where: {
           code: validatedData.couponCode,
-          type: "DISCOUNT",
+          type: PricingConfigType.DISCOUNT,
         },
         data: {
           usageCount: { increment: 1 },
@@ -191,7 +209,8 @@ const createVehicleBooking = async (
       });
     }
 
-    return res.status(201).json({
+    return next({
+      status: 201,
       success: true,
       message: "Booking created successfully",
       data: booking,
