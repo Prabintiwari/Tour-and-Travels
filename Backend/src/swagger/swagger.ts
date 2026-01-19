@@ -24,11 +24,12 @@ export const generateOpenApiDocument = () => {
       { name: "Destinations", description: "Destination management" },
       { name: "Itineraries", description: "Itinerary management" },
       { name: "Tour Schedule", description: "Tour Schedule management" },
-      { name: "Bookings", description: "Tour Booking management" },
+      { name: "Tour Bookings", description: "Tour Booking management" },
       { name: "Tour Review", description: "Tour Review management" },
       { name: "FAQS", description: "FAQS management" },
       { name: "Custom-Itinerary", description: "Custom-Itinerary management" },
       { name: "Vehicle", description: "Vehicle management" },
+      { name: "Vehicle Bookings", description: "Vehicle Bookking management" },
     ],
   });
 

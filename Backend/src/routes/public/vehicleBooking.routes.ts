@@ -1,11 +1,50 @@
 import { Router } from "express";
+import { createVehicleBooking } from "../../controllers/vehicleBooking.controller";
+import { authenticateToken } from "../../middleware/auth";
+import { registerRoute } from "../../utils/openapi.utils";
+import {
+  CreateVehicleBookingSchema,
+  VehicleBookingResponseSchema,
+} from "../../schema/vehicleBooking.schema";
+import {
+  badRequestErrorSchema,
+  conflictErrorSchema,
+  errorResponse,
+  forbiddenErrorSchema,
+  internalServerErrorSchema,
+  unauthorizedErrorSchema,
+} from "../../schema/common.schema";
 
-const router = Router()
+const router = Router();
 
 //  vehicle booking routes
 
+router.post("/", authenticateToken, createVehicleBooking);
 
 // Swagger registration
+// Create a new vehicle booking
+registerRoute({
+  method: "post",
+  path: "/api/vehicle-booking",
+  summary: "Create a new booking",
+  tags: ["Vehicle Bookings"],
+  security: [{ bearerAuth: [] }],
+  request: {
+    body: {
+      content: { "application/json": { schema: CreateVehicleBookingSchema } },
+    },
+  },
+  responses: {
+    201: {
+      description: "Booking created successfully",
+      content: { "application/json": { schema: VehicleBookingResponseSchema } },
+    },
+    400: errorResponse(badRequestErrorSchema, "Bad Request"),
+    401: errorResponse(unauthorizedErrorSchema, "Unauthorized"),
+    403: errorResponse(forbiddenErrorSchema, "Forbidden"),
+    409: errorResponse(conflictErrorSchema, "Conflict"),
+    500: errorResponse(internalServerErrorSchema, "Internal Server Error"),
+  },
+});
 
-
-export default router
+export default router;

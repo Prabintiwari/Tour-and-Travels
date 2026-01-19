@@ -68,7 +68,7 @@ registerRoute({
   method: "post",
   path: "/api/tour-booking",
   summary: "Create a new booking",
-  tags: ["Bookings"],
+  tags: ["Tour Bookings"],
   security: [{ bearerAuth: [] }],
   request: {
     body: { content: { "application/json": { schema: createBookingSchema } } },
@@ -91,7 +91,7 @@ registerRoute({
   method: "patch",
   path: "/api/tour-booking/my-booking/{bookingId}/reschedule",
   summary: "reschedule a user tour booking",
-  tags: ["Bookings"],
+  tags: ["Tour Bookings"],
   security: [{ bearerAuth: [] }],
   request: {
     params: bookingParamsSchema,
@@ -117,7 +117,7 @@ registerRoute({
   method: "patch",
   path: "/api/tour-booking/my-booking/{bookingId}",
   summary: "Update a user tour booking",
-  tags: ["Bookings"],
+  tags: ["Tour Bookings"],
   security: [{ bearerAuth: [] }],
   request: {
     params: bookingParamsSchema,
@@ -144,7 +144,7 @@ registerRoute({
   path: "/api/tour-booking/my-booking",
   summary: "Get user tour booking ",
   security: [{ bearerAuth: [] }],
-  tags: ["Bookings"],
+  tags: ["Tour Bookings"],
   request: {
     params: bookingParamsSchema,
   },
@@ -173,7 +173,7 @@ registerRoute({
   path: "/api/tour-booking/my-booking/{bookingId}",
   summary: "Get tour booking by Id",
   security: [{ bearerAuth: [] }],
-  tags: ["Bookings"],
+  tags: ["Tour Bookings"],
   request: {
     params: bookingParamsSchema,
   },
@@ -201,7 +201,7 @@ registerRoute({
   method: "patch",
   path: "/api/tour-booking/my-booking/{bookingId}/cancel",
   summary: "Cancel tour booking by Id",
-  tags: ["Bookings"],
+  tags: ["Tour Bookings"],
   security: [{ bearerAuth: [] }],
   request: {
     params: bookingParamsSchema,

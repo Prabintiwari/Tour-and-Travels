@@ -22,25 +22,23 @@ import {
   notFoundErrorSchema,
   unauthorizedErrorSchema,
 } from "../../schema/common.schema";
-import { validateParams, validateQuery, validateRequest } from "../../middleware/validate";
+import {
+  validateParams,
+  validateQuery,
+  validateRequest,
+} from "../../middleware/validate";
 
 const router = Router();
 router.use(authenticateToken, AdminOnly);
 // Admin tour booking routes
 
-router.get("/",  getAllTourBookings);
+router.get("/", getAllTourBookings);
 
-router.patch(
-  "/:bookingId",
-  updateTourBookingStatus
-);
+router.patch("/:bookingId", updateTourBookingStatus);
 
 router.get("/booking-stats", getTourBookingStats);
 
-router.get(
-  "/:bookingId",
-  getAdminTourBookingById
-);
+router.get("/:bookingId", getAdminTourBookingById);
 
 /* Swagger registration */
 
@@ -50,7 +48,7 @@ registerRoute({
   path: "/api/admin/tour-booking",
   summary: "List of tour booking",
   security: [{ bearerAuth: [] }],
-  tags: ["Bookings"],
+  tags: ["Tour Bookings"],
   responses: {
     200: {
       description: "List of tour booking",
@@ -76,7 +74,7 @@ registerRoute({
   path: "/api/admin/tour-booking/{bookingId}",
   summary: "Get tour booking by id",
   security: [{ bearerAuth: [] }],
-  tags: ["Bookings"],
+  tags: ["Tour Bookings"],
   request: { params: bookingParamsSchema },
   responses: {
     200: {
@@ -103,7 +101,7 @@ registerRoute({
   path: "/api/admin/tour-booking/{bookingId}",
   summary: "Update tour booking status by id",
   security: [{ bearerAuth: [] }],
-  tags: ["Bookings"],
+  tags: ["Tour Bookings"],
   request: {
     params: bookingParamsSchema,
     body: {
@@ -140,7 +138,7 @@ registerRoute({
   summary: "Get tour booking statistics",
   description:
     "Returns overall booking statistics including counts by status and total revenue",
-  tags: ["Bookings"],
+  tags: ["Tour Bookings"],
   security: [{ bearerAuth: [] }],
   responses: {
     200: {
