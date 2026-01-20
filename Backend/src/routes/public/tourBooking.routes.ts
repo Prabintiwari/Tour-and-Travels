@@ -3,6 +3,7 @@ import { authenticateToken } from "../../middleware/auth";
 import {
   bookingParamsSchema,
   createBookingSchema,
+  getBookingQuerySchema,
   rescheduleBookingSchema,
   tourBookingResponseSchema,
   updateBookingSchema,
@@ -146,7 +147,7 @@ registerRoute({
   security: [{ bearerAuth: [] }],
   tags: ["Tour Bookings"],
   request: {
-    params: bookingParamsSchema,
+    query: getBookingQuerySchema,
   },
   responses: {
     200: {

@@ -203,7 +203,7 @@ const bookingParamsSchema = z.object({
 });
 
 const getBookingQuerySchema = z.object({
-  status: z.nativeEnum(BookingStatus).openapi({
+  status: z.nativeEnum(BookingStatus).optional().openapi({
     example: BookingStatus.CANCELLED,
     description: "New booking status",
   }),

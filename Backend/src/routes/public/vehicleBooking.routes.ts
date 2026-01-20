@@ -1,9 +1,10 @@
 import { Router } from "express";
-import { createVehicleBooking } from "../../controllers/vehicleBooking.controller";
+import { createVehicleBooking, getUserVehicleBookings } from "../../controllers/vehicleBooking.controller";
 import { authenticateToken } from "../../middleware/auth";
 import { registerRoute } from "../../utils/openapi.utils";
 import {
   CreateVehicleBookingSchema,
+  getVehicleBookingQuerySchema,
   VehicleBookingResponseSchema,
 } from "../../schema/vehicleBooking.schema";
 import {
@@ -12,6 +13,7 @@ import {
   errorResponse,
   forbiddenErrorSchema,
   internalServerErrorSchema,
+  notFoundErrorSchema,
   unauthorizedErrorSchema,
 } from "../../schema/common.schema";
 
@@ -20,6 +22,8 @@ const router = Router();
 //  vehicle booking routes
 
 router.post("/", authenticateToken, createVehicleBooking);
+
+router.get("/my-booking",authenticateToken,getUserVehicleBookings)
 
 // Swagger registration
 // Create a new vehicle booking
@@ -46,5 +50,35 @@ registerRoute({
     500: errorResponse(internalServerErrorSchema, "Internal Server Error"),
   },
 });
+
+// Get user vehicle booking
+registerRoute({
+  method: "get",
+  path: "/api/vehicle-booking/my-booking",
+  summary: "Get user vehicle booking ",
+  security: [{ bearerAuth: [] }],
+  tags: ["Vehicle Bookings"],
+  request: {
+    query: getVehicleBookingQuerySchema,
+  },
+  responses: {
+    200: {
+      description: "Get Vehicle Bookings details",
+      content: {
+        "application/json": {
+          schema: VehicleBookingResponseSchema,
+        },
+      },
+    },
+    401: errorResponse(unauthorizedErrorSchema, "Unauthorized"),
+
+    403: errorResponse(forbiddenErrorSchema, "Forbidden"),
+
+    404: errorResponse(notFoundErrorSchema, "Not Found"),
+
+    500: errorResponse(internalServerErrorSchema, "Internal Server Error"),
+  },
+});
+
 
 export default router;

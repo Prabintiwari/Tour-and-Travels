@@ -115,6 +115,24 @@ const GetBookingsQuerySchema = z.object({
   sortOrder: z.enum(["asc", "desc"]).default("desc"),
 });
 
+const getVehicleBookingQuerySchema = z.object({
+  status: z.nativeEnum(RentalStatus).optional().openapi({
+    example: RentalStatus.ACTIVE,
+    description: "New booking status",
+  }),
+  tourType: z.nativeEnum(TourType).optional(),
+  page: z.coerce.number().int().positive().optional(),
+  limit: z.coerce.number().int().positive().optional(),
+  sortBy: z.string().optional().openapi({
+    example: "startDate",
+    description: "Sort by field",
+  }),
+  sortOrder: z.string().optional().default("asc").openapi({
+    example: "asc",
+    description: "Sort order",
+  }),
+});
+
 const BookingIdParamSchema = z.object({
   bookingId: z.string().min(1),
 });
@@ -183,6 +201,7 @@ export {
   UpdateVehicleBookingSchema,
   CancelBookingSchema,
   GetBookingsQuerySchema,
+  getVehicleBookingQuerySchema,
   BookingIdParamSchema,
   VehicleBookingResponseSchema,
   vehicleBookingListResponseSchema,

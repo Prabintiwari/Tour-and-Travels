@@ -269,6 +269,19 @@ const getUserTourBookings = async (
       where.status = status as BookingStatus;
     }
 
+    const validSortFields = [
+      "bookingDate",
+      "updatedAt",
+      "cancelledAt",
+      "completedAt",
+    ];
+
+    const sortField = validSortFields.includes(sortBy as string)
+      ? (sortBy as string)
+      : "bookingDate";
+
+    const sortOrderValue = sortOrder?.toLowerCase() === "desc" ? "desc" : "asc";
+
     const [bookings, total] = await Promise.all([
       prisma.tourBooking.findMany({
         where,
@@ -283,7 +296,7 @@ const getUserTourBookings = async (
           schedule: true,
           payment: true,
         },
-        orderBy: { [sortBy as string]: sortOrder as string },
+        orderBy: { [sortField]: sortOrderValue },
       }),
       prisma.tourBooking.count({ where }),
     ]);

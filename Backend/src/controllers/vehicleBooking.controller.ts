@@ -4,7 +4,11 @@ import { ZodError } from "zod";
 import { AuthRequest } from "../middleware/auth";
 import { PricingConfigType, RentalStatus, VehicleStatus } from "@prisma/client";
 import { generateBookingCode } from "../utils/generateBookingCode";
-import { CreateVehicleBookingSchema } from "../schema/vehicleBooking.schema";
+import {
+  CreateVehicleBookingSchema,
+  GetBookingsQuerySchema,
+  getVehicleBookingQuerySchema,
+} from "../schema/vehicleBooking.schema";
 import {
   calculateDiscounts,
   calculateDriverPricing,
@@ -230,4 +234,81 @@ const createVehicleBooking = async (
   }
 };
 
-export { createVehicleBooking };
+// Get my booking
+const getUserVehicleBookings = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const userId = req.id;
+    if (!userId) {
+      return next({ status: 401, success: false, message: "Unauthorized" });
+    }
+    const { page, limit, status, tourType, sortOrder, sortBy } =
+      getVehicleBookingQuerySchema.parse(req.query);
+    const pageNumber = page || 1;
+    const limitNumber = limit || 10;
+    const skip = (pageNumber - 1) * limitNumber;
+
+    const where: any = { userId };
+    if (status) where.status = status;
+    if (tourType) where.tourType = tourType;
+
+    const validSortFields = [
+      "bookingDate",
+      "updatedAt",
+      "cancelledAt",
+      "completedAt",
+    ];
+
+    const sortField = validSortFields.includes(sortBy as string)
+      ? (sortBy as string)
+      : "bookingDate";
+
+    const sortOrderValue = sortOrder?.toLowerCase() === "desc" ? "desc" : "asc";
+
+    const [vehicleBooking, total] = await Promise.all([
+      prisma.vehicleBooking.findMany({
+        where,
+        skip,
+        take: limit,
+        include: {
+          vehicle: {
+            select: { id: true, brand: true, model: true, images: true },
+          },
+        },
+        orderBy: { [sortField]: sortOrderValue },
+      }),
+      prisma.vehicleBooking.count({ where }),
+    ]);
+
+    next({
+      status: 200,
+      success: true,
+      data: {
+        vehicleBooking,
+        pagination: {
+          total,
+          page: pageNumber,
+          limit: limitNumber,
+          totalPages: Math.ceil(total / limitNumber),
+        },
+      },
+    });
+  } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
+    next({
+      status: 500,
+      message: error.message || "Internal server error",
+      error: error.message,
+    });
+  }
+};
+
+export { createVehicleBooking, getUserVehicleBookings };
