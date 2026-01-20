@@ -90,7 +90,6 @@ const UpdateVehicleBookingSchema = CreateVehicleBookingSchema.omit({
 
 const CancelBookingSchema = z.object({
   cancellationReason: z.string().min(1),
-  cancelledBy: z.nativeEnum(UserRole),
 });
 
 const GetBookingsQuerySchema = z.object({

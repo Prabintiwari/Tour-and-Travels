@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { createVehicleBooking, getUserVehicleBookings } from "../../controllers/vehicleBooking.controller";
+import { createVehicleBooking, getUserVehicleBookingById, getUserVehicleBookings } from "../../controllers/vehicleBooking.controller";
 import { authenticateToken } from "../../middleware/auth";
 import { registerRoute } from "../../utils/openapi.utils";
 import {
@@ -26,9 +26,10 @@ router.post("/", authenticateToken, createVehicleBooking);
 
 router.get("/my-booking",authenticateToken,getUserVehicleBookings)
 
-router.get("/my-booking/:bookingId",authenticateToken,getUserVehicleBookings)
+router.get("/my-booking/:bookingId",authenticateToken,getUserVehicleBookingById)
 
 // Swagger registration
+
 // Create a new vehicle booking
 registerRoute({
   method: "post",

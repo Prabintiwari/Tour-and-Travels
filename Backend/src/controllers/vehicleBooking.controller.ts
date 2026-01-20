@@ -6,6 +6,7 @@ import { PricingConfigType, RentalStatus, VehicleStatus } from "@prisma/client";
 import { generateBookingCode } from "../utils/generateBookingCode";
 import {
   BookingIdParamSchema,
+  CancelBookingSchema,
   CreateVehicleBookingSchema,
   GetBookingsQuerySchema,
   getVehicleBookingQuerySchema,
@@ -13,6 +14,7 @@ import {
 import {
   calculateDiscounts,
   calculateDriverPricing,
+  calculateRefund,
   getSeasonalMultiplier,
 } from "../utils/vehicle_utils/calculatePricing";
 
@@ -214,6 +216,30 @@ const createVehicleBooking = async (
       });
     }
 
+    // Update vehicle availability - decrease available quantity
+    await prisma.vehicle.update({
+      where: { id: validatedData.vehicleId },
+      data: {
+        availableQuantity: {
+          decrement: validatedData.numberOfVehicles,
+        },
+      },
+    });
+
+    // Update vehicle status if fully booked
+    const updatedVehicle = await prisma.vehicle.findUnique({
+      where: { id: validatedData.vehicleId },
+    });
+
+    if (updatedVehicle && updatedVehicle.availableQuantity <= 0) {
+      await prisma.vehicle.update({
+        where: { id: validatedData.vehicleId },
+        data: {
+          status: VehicleStatus.BOOKED,
+        },
+      });
+    }
+
     return next({
       status: 201,
       success: true,
@@ -313,7 +339,7 @@ const getUserVehicleBookings = async (
 };
 
 //  Get single vehicle booking by ID (own booking)
-const getUserTourBookingById = async (
+const getUserVehicleBookingById = async (
   req: AuthRequest,
   res: Response,
   next: NextFunction,
@@ -358,4 +384,120 @@ const getUserTourBookingById = async (
   }
 };
 
-export { createVehicleBooking, getUserVehicleBookings };
+// Cancel user's own booking
+const cancelUserVehicleBooking = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const userId = req.id;
+    const { bookingId } = BookingIdParamSchema.parse(req.params);
+    const { cancellationReason } = CancelBookingSchema.parse(req.body);
+
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      next({ status: 401, success: false, message: "Unauthorized" });
+    }
+
+    const vehicleBooking = await prisma.vehicleBooking.findFirst({
+      where: {
+        id: bookingId,
+        userId,
+      },
+    });
+
+    if (!vehicleBooking) {
+      return next({
+        status: 404,
+        success: false,
+        message: "Booking not found",
+      });
+    }
+
+    if (vehicleBooking.status === RentalStatus.CANCELLED) {
+      return next({
+        status: 400,
+        success: false,
+        message: "Booking already cancelled",
+      });
+    }
+
+    if (vehicleBooking.status === RentalStatus.COMPLETED) {
+      return next({
+        status: 400,
+        success: false,
+        message: "Cannot cancel completed booking",
+      });
+    }
+
+    const refundAmount = await calculateRefund(vehicleBooking);
+
+    // Update booking and schedule in transaction
+
+    // Update booking status
+    const cancelledBooking = await prisma.vehicleBooking.update({
+      where: { id: bookingId },
+      data: {
+        status: RentalStatus.CANCELLED,
+        cancelledAt: new Date(),
+        cancellationReason,
+        cancelledBy: user?.fullName,
+        refundAmount: refundAmount,
+      },
+    });
+
+    // Restore vehicle availability
+    await prisma.vehicle.update({
+      where: { id: vehicleBooking.vehicleId },
+      data: {
+        availableQuantity: {
+          increment: vehicleBooking.numberOfVehicles,
+        },
+      },
+    });
+
+    // Update vehicle status back to AVAILABLE if it was BOOKED
+    const vehicle = await prisma.vehicle.findUnique({
+      where: { id: vehicleBooking.vehicleId },
+    });
+
+    if (vehicle && vehicle.status === VehicleStatus.BOOKED) {
+      await prisma.vehicle.update({
+        where: { id: vehicleBooking.vehicleId },
+        data: {
+          status: VehicleStatus.AVAILABLE,
+        },
+      });
+    }
+
+    next({
+      status: 200,
+      success: true,
+      message: "Booking cancelled successfully",
+      data: {
+        booking: cancelledBooking,
+        refundAmount,
+      },
+    });
+  } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
+    next({
+      status: 500,
+      message: error.message || "Internal server error",
+      error: error.message,
+    });
+  }
+};
+
+export {
+  createVehicleBooking,
+  getUserVehicleBookings,
+  getUserVehicleBookingById,
+  cancelUserVehicleBooking,
+};
