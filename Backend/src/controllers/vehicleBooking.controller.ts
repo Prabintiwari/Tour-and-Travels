@@ -397,7 +397,7 @@ const cancelUserVehicleBooking = async (
 
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) {
-      next({ status: 401, success: false, message: "Unauthorized" });
+      return next({ status: 401, success: false, message: "Unauthorized" });
     }
 
     const vehicleBooking = await prisma.vehicleBooking.findFirst({
@@ -431,9 +431,7 @@ const cancelUserVehicleBooking = async (
       });
     }
 
-    const refundAmount = await calculateRefund(vehicleBooking);
-
-    // Update booking and schedule in transaction
+    const refund = await calculateRefund(vehicleBooking);
 
     // Update booking status
     const cancelledBooking = await prisma.vehicleBooking.update({
@@ -442,8 +440,8 @@ const cancelUserVehicleBooking = async (
         status: RentalStatus.CANCELLED,
         cancelledAt: new Date(),
         cancellationReason,
-        cancelledBy: user?.fullName,
-        refundAmount: refundAmount,
+        cancelledBy: user.fullName,
+        refundAmount: refund.refundAmount,
       },
     });
 
@@ -477,7 +475,10 @@ const cancelUserVehicleBooking = async (
       message: "Booking cancelled successfully",
       data: {
         booking: cancelledBooking,
-        refundAmount,
+        refundPercentage: refund.refundPercentage,
+        refundAmount: refund.refundAmount,
+        refundReason: refund.reason,
+        refundPloicy: refund.policy,
       },
     });
   } catch (error: any) {

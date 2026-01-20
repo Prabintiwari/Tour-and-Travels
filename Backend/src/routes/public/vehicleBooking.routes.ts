@@ -1,9 +1,10 @@
 import { Router } from "express";
-import { createVehicleBooking, getUserVehicleBookingById, getUserVehicleBookings } from "../../controllers/vehicleBooking.controller";
+import { cancelUserVehicleBooking, createVehicleBooking, getUserVehicleBookingById, getUserVehicleBookings } from "../../controllers/vehicleBooking.controller";
 import { authenticateToken } from "../../middleware/auth";
 import { registerRoute } from "../../utils/openapi.utils";
 import {
   BookingIdParamSchema,
+  CancelBookingSchema,
   CreateVehicleBookingSchema,
   getVehicleBookingQuerySchema,
   VehicleBookingResponseSchema,
@@ -27,6 +28,8 @@ router.post("/", authenticateToken, createVehicleBooking);
 router.get("/my-booking",authenticateToken,getUserVehicleBookings)
 
 router.get("/my-booking/:bookingId",authenticateToken,getUserVehicleBookingById)
+
+router.patch("/my-booking/:bookingId/cancel",authenticateToken,cancelUserVehicleBooking)
 
 // Swagger registration
 
@@ -112,6 +115,34 @@ registerRoute({
     500: errorResponse(internalServerErrorSchema, "Internal Server Error"),
   },
 });
+
+// Cancel user vehicle booking by id
+registerRoute({
+  method: "patch",
+  path: "/api/vehicle-booking/my-booking/{bookingId}/cancel",
+  summary: "Cancel vehicle booking by Id",
+  tags: ["Vehicle Bookings"],
+  security: [{ bearerAuth: [] }],
+  request: {
+    params: BookingIdParamSchema,
+    body:{
+     content: { "application/json": { schema: CancelBookingSchema } },
+    }
+  },
+  responses: {
+    200: {
+      description: "Cancel Vehicle bookings",
+    },
+    401: errorResponse(unauthorizedErrorSchema, "Unauthorized"),
+
+    403: errorResponse(forbiddenErrorSchema, "Forbidden"),
+
+    404: errorResponse(notFoundErrorSchema, "Not Found"),
+
+    500: errorResponse(internalServerErrorSchema, "Internal Server Error"),
+  },
+});
+
 
 
 export default router;

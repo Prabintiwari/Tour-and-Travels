@@ -250,30 +250,49 @@ const calculateDiscounts = async (
   };
 };
 
-const calculateRefund = async (booking: any) => {
+const calculateRefund = (booking: any) => {
   const now = new Date();
   const startDate = new Date(booking.startDate);
+
   const daysUntilStart = Math.ceil(
     (startDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
   );
 
   let refundPercentage = 0;
+  let reason = "";
+  let policy = "";
 
-  // Cancellation policy
   if (daysUntilStart >= 7) {
-    refundPercentage = 90; // 90% refund
+    refundPercentage = 90;
+    reason =
+      "Booking cancelled 7 or more days before trip start. Eligible for 90% refund.";
+    policy = "CANCEL_7_DAYS_BEFORE";
   } else if (daysUntilStart >= 3) {
-    refundPercentage = 50; // 50% refund
+    refundPercentage = 50;
+    reason =
+      "Booking cancelled 3–6 days before trip start. Eligible for 50% refund.";
+    policy = "CANCEL_3_TO_6_DAYS";
   } else if (daysUntilStart >= 1) {
-    refundPercentage = 25; // 25% refund
+    refundPercentage = 25;
+    reason =
+      "Booking cancelled 1–2 days before trip start. Eligible for 25% refund.";
+    policy = "CANCEL_1_TO_2_DAYS";
   } else {
-    refundPercentage = 0; // No refund
+    refundPercentage = 0;
+    reason =
+      "Booking cancelled on or after trip start date. No refund applicable.";
+    policy = "NO_REFUND";
   }
 
-  return (booking.totalPrice * refundPercentage) / 100;
+  const refundAmount = (booking.totalPrice * refundPercentage) / 100;
+
+  return {
+    refundPercentage,
+    refundAmount,
+    reason,
+    policy,
+  };
 };
-
-
 
 export {
   calculateDriverPricing,
