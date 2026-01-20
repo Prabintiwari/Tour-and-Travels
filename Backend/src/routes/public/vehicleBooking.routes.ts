@@ -3,6 +3,7 @@ import { createVehicleBooking, getUserVehicleBookings } from "../../controllers/
 import { authenticateToken } from "../../middleware/auth";
 import { registerRoute } from "../../utils/openapi.utils";
 import {
+  BookingIdParamSchema,
   CreateVehicleBookingSchema,
   getVehicleBookingQuerySchema,
   VehicleBookingResponseSchema,
@@ -24,6 +25,8 @@ const router = Router();
 router.post("/", authenticateToken, createVehicleBooking);
 
 router.get("/my-booking",authenticateToken,getUserVehicleBookings)
+
+router.get("/my-booking/:bookingId",authenticateToken,getUserVehicleBookings)
 
 // Swagger registration
 // Create a new vehicle booking
@@ -51,7 +54,7 @@ registerRoute({
   },
 });
 
-// Get user vehicle booking
+// Get user vehicle bookings
 registerRoute({
   method: "get",
   path: "/api/vehicle-booking/my-booking",
@@ -64,6 +67,35 @@ registerRoute({
   responses: {
     200: {
       description: "Get Vehicle Bookings details",
+      content: {
+        "application/json": {
+          schema: VehicleBookingResponseSchema,
+        },
+      },
+    },
+    401: errorResponse(unauthorizedErrorSchema, "Unauthorized"),
+
+    403: errorResponse(forbiddenErrorSchema, "Forbidden"),
+
+    404: errorResponse(notFoundErrorSchema, "Not Found"),
+
+    500: errorResponse(internalServerErrorSchema, "Internal Server Error"),
+  },
+});
+
+// Get user vehicle booking by Id
+registerRoute({
+  method: "get",
+  path: "/api/vehicle-booking/my-booking/{bookingId}",
+  summary: "Get user vehicle booking ",
+  security: [{ bearerAuth: [] }],
+  tags: ["Vehicle Bookings"],
+  request: {
+    params: BookingIdParamSchema,
+  },
+  responses: {
+    200: {
+      description: "Get Vehicle Booking by Id",
       content: {
         "application/json": {
           schema: VehicleBookingResponseSchema,

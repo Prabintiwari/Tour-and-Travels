@@ -5,6 +5,7 @@ import { AuthRequest } from "../middleware/auth";
 import { PricingConfigType, RentalStatus, VehicleStatus } from "@prisma/client";
 import { generateBookingCode } from "../utils/generateBookingCode";
 import {
+  BookingIdParamSchema,
   CreateVehicleBookingSchema,
   GetBookingsQuerySchema,
   getVehicleBookingQuerySchema,
@@ -296,6 +297,52 @@ const getUserVehicleBookings = async (
         },
       },
     });
+  } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
+    next({
+      status: 500,
+      message: error.message || "Internal server error",
+      error: error.message,
+    });
+  }
+};
+
+//  Get single vehicle booking by ID (own booking)
+const getUserTourBookingById = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const userId = req.id;
+    const { bookingId } = BookingIdParamSchema.parse(req.params);
+
+    const booking = await prisma.vehicleBooking.findFirst({
+      where: {
+        id: bookingId,
+        userId,
+      },
+      include: {
+        vehicle: {
+          select: { id: true, brand: true, model: true, images: true },
+        },
+      },
+    });
+
+    if (!booking) {
+      return next({
+        status: 404,
+        success: false,
+        message: "Booking not found",
+      });
+    }
+
+    next({ status: 200, success: true, data: booking });
   } catch (error: any) {
     if (error instanceof ZodError) {
       return next({
