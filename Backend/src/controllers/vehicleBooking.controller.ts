@@ -496,6 +496,87 @@ const cancelUserVehicleBooking = async (
   }
 };
 
+// Get all bookings -(Admin)
+const getAllTourBookings = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const { status, userId, page, limit, sortBy, sortOrder } =
+      GetBookingsQuerySchema.parse(req.query);
+
+    const pageNumber = page ?? 1;
+    const limitNumber = limit ?? 10;
+    const skip = (pageNumber - 1) * limitNumber;
+
+    const where: any = {};
+    if (status) where.status = status;
+    if (userId) where.userId = userId;
+
+    const validSortFields = [
+      "bookingDate",
+      "updatedAt",
+      "cancelledAt",
+      "completedAt",
+    ];
+    const sortField = validSortFields.includes(sortBy as string)
+      ? (sortBy as string)
+      : "bookingDate";
+
+    const sortOrderValue = sortOrder?.toLowerCase() === "desc" ? "desc" : "asc";
+
+    const [bookings, total] = await Promise.all([
+      prisma.vehicleBooking.findMany({
+        where,
+        skip,
+        take: limitNumber,
+        include: {
+          user: {
+            select: {
+              id: true,
+              fullName: true,
+              email: true,
+              phone: true,
+            },
+          },
+          vehicle: {
+            select: { id: true, brand: true, model: true, images: true },
+          },
+        },
+        orderBy: { [sortField]: sortOrderValue } as any,
+      }),
+      prisma.vehicleBooking.count({ where }),
+    ]);
+
+    next({
+      status: 200,
+      success: true,
+      data: {
+        bookings,
+        pagination: {
+          total,
+          page: pageNumber,
+          limit: limitNumber,
+          totalPages: Math.ceil(total / limitNumber),
+        },
+      },
+    });
+  } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
+    next({
+      status: 500,
+      message: error.message || "Internal server error",
+      error: error.message,
+    });
+  }
+};
+
 export {
   createVehicleBooking,
   getUserVehicleBookings,
