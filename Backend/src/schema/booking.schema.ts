@@ -152,10 +152,6 @@ const bookingStatsResponseSchema = z
   .openapi("BookingStatsResponse");
 
 const bookingQuerySchema = z.object({
-  bookingId: z.string().optional().openapi({
-    example: "booking_123abc",
-    description: "Filter by booking ID",
-  }),
   tourId: z.string().optional().openapi({
     example: "tour_123abc",
     description: "Filter by tour ID",

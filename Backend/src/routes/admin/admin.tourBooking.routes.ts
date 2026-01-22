@@ -49,6 +49,7 @@ registerRoute({
   summary: "List of tour booking",
   security: [{ bearerAuth: [] }],
   tags: ["Tour Bookings"],
+  request: { query: bookingQuerySchema },
   responses: {
     200: {
       description: "List of tour booking",

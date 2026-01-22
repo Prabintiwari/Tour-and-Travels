@@ -492,7 +492,6 @@ const getAllTourBookings = async (
 ) => {
   try {
     const {
-      bookingId,
       status,
       userId,
       tourId,
@@ -510,7 +509,6 @@ const getAllTourBookings = async (
     const skip = (pageNumber - 1) * limitNumber;
 
     const where: any = {};
-    if (bookingId) where.bookingId = bookingId;
     if (status) where.status = status;
     if (userId) where.userId = userId;
     if (tourId) where.tourId = tourId;

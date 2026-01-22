@@ -497,7 +497,7 @@ const cancelUserVehicleBooking = async (
 };
 
 // Get all bookings -(Admin)
-const getAllTourBookings = async (
+const getAllVehicleBookings = async (
   req: Request,
   res: Response,
   next: NextFunction,
@@ -582,4 +582,5 @@ export {
   getUserVehicleBookings,
   getUserVehicleBookingById,
   cancelUserVehicleBooking,
+  getAllVehicleBookings,
 };
