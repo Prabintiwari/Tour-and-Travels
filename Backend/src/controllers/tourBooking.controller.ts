@@ -5,7 +5,6 @@ import prisma from "../config/prisma";
 import { AuthRequest } from "../middleware/auth";
 import {
   bookingParamsSchema,
-  BookingQueryParams,
   bookingQuerySchema,
   createBookingSchema,
   getBookingQuerySchema,

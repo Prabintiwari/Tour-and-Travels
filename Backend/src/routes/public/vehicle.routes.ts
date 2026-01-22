@@ -11,7 +11,7 @@ import {
   vehicleListResponseSchema,
   vehicleParamsSchema,
   vehicleResponseSchema,
-} from "../../schema/vehicle.schema";
+} from "../../schema";
 import {
   badRequestErrorSchema,
   conflictErrorSchema,

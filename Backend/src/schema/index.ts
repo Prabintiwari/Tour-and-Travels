@@ -27,3 +27,15 @@ export * from "./tourReview.schema";
 
 // Tour FAQ
 export * from "./tourFAQ.schema";
+
+// Custom Itinerary
+export * from "./customItinerary.schema";
+
+// Custom Itinerary Event
+export * from "./customItineraryEvent.schema";
+
+// Vehicle 
+export * from "./vehicle.schema";
+
+// Vehicle Booking 
+export * from "./vehicleBooking.schema";

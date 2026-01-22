@@ -10,9 +10,11 @@ import {
   unauthorizedErrorSchema,
 } from "../../schema/common.schema";
 import {
+    BookingIdParamSchema,
   GetBookingsQuerySchema,
   vehicleBookingListResponseSchema,
-} from "../../schema/vehicleBooking.schema";
+  VehicleBookingResponseSchema,
+} from "../../schema"
 
 const router = Router();
 
@@ -21,6 +23,8 @@ router.use(authenticateToken, AdminOnly);
 // Admin vehicle booking routes
 
 router.get("/", getAllVehicleBookings);
+
+router.get("/:bookingId", getAllVehicleBookings);
 
 // Swagger registration
 
@@ -46,6 +50,33 @@ registerRoute({
     403: errorResponse(forbiddenErrorSchema, "Forbidden"),
 
     404: errorResponse(notFoundErrorSchema, "Booking Not Found"),
+
+    500: errorResponse(internalServerErrorSchema, "Internal Server Error"),
+  },
+});
+
+// Get  vehicle booking by id
+registerRoute({
+  method: "get",
+  path: "/api/admin/vehicle-booking/{bookingId}",
+  summary: "Get vehicle booking by id",
+  security: [{ bearerAuth: [] }],
+  tags: ["Vehicle Bookings"],
+  request: { params: BookingIdParamSchema },
+  responses: {
+    200: {
+      description: "Get tour booking by id",
+      content: {
+        "application/json": {
+          schema: VehicleBookingResponseSchema,
+        },
+      },
+    },
+    401: errorResponse(unauthorizedErrorSchema, "Unauthorized"),
+
+    403: errorResponse(forbiddenErrorSchema, "Forbidden"),
+
+    404: errorResponse(notFoundErrorSchema, "Not Found"),
 
     500: errorResponse(internalServerErrorSchema, "Internal Server Error"),
   },

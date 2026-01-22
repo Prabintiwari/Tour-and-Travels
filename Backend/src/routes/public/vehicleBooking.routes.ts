@@ -8,7 +8,7 @@ import {
   CreateVehicleBookingSchema,
   getVehicleBookingQuerySchema,
   VehicleBookingResponseSchema,
-} from "../../schema/vehicleBooking.schema";
+} from "../../schema";
 import {
   badRequestErrorSchema,
   conflictErrorSchema,

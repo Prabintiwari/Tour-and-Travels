@@ -31,7 +31,7 @@ import {
   customItineraryEventParamsSchema,
   customItineraryEventQuerySchema,
   customItineraryEventResponseSchema,
-} from "../../schema/customItineraryEvent.schema";
+} from "../../schema";
 
 const router = Router();
 

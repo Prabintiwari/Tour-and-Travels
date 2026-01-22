@@ -526,7 +526,7 @@ const getAllVehicleBookings = async (
 
     const sortOrderValue = sortOrder?.toLowerCase() === "desc" ? "desc" : "asc";
 
-    const [bookings, total] = await Promise.all([
+    const [VehicleBooking, total] = await Promise.all([
       prisma.vehicleBooking.findMany({
         where,
         skip,
@@ -553,7 +553,7 @@ const getAllVehicleBookings = async (
       status: 200,
       success: true,
       data: {
-        bookings,
+        VehicleBooking,
         pagination: {
           total,
           page: pageNumber,
@@ -577,10 +577,64 @@ const getAllVehicleBookings = async (
   }
 };
 
+//  Get single booking by ID
+const getAdminVehicleBookingById = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const { bookingId } = BookingIdParamSchema.parse(req.params);
+
+    const VehicleBooking = await prisma.vehicleBooking.findUnique({
+      where: { id: bookingId },
+      include: {
+        user: {
+          select: {
+            id: true,
+            fullName: true,
+            email: true,
+            phone: true,
+            address: true,
+            city: true,
+            country: true,
+          },
+        },
+        vehicle: {
+          select: { id: true, brand: true, model: true, images: true },
+        },
+        payment: true,
+      },
+    });
+
+    if (!VehicleBooking) {
+      return next({
+        status: 404,
+        success: false,
+        message: "Booking not found",
+      });
+    }
+
+    next({ status: 200, success: true, data: VehicleBooking });
+  } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
+    next({
+      status: 500,
+      message: error.message || "Internal server error",
+      error: error.message,
+    });
+  }
+};
 export {
   createVehicleBooking,
   getUserVehicleBookings,
   getUserVehicleBookingById,
   cancelUserVehicleBooking,
   getAllVehicleBookings,
+  getAdminVehicleBookingById,
 };
