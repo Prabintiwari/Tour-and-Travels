@@ -50,15 +50,10 @@ const CreateVehicleBookingSchema = z
 
     specialRequests: z.string().optional(),
   })
-  .refine(
-    (data) =>
-      !data.needsDriver ||
-      (data.numberOfDrivers !== undefined && data.numberOfDrivers > 0),
-    {
-      message: "Number of drivers must be specified when driver is needed",
-      path: ["numberOfDrivers"],
-    },
-  )
+  .refine((data) => !data.needsDriver || data.numberOfDrivers > 0, {
+    message: "Number of drivers must be specified when driver is needed",
+    path: ["numberOfDrivers"],
+  })
   .refine(
     (data) => {
       const start = new Date(data.startDate);
@@ -86,7 +81,44 @@ const CreateVehicleBookingSchema = z
 
 const UpdateVehicleBookingSchema = CreateVehicleBookingSchema.omit({
   vehicleId: true,
-}).partial();
+})
+  .partial()
+  .refine((data) => !data.needsDriver || (data.numberOfDrivers ?? 0) > 0, {
+    message: "Number of drivers must be specified when driver is needed",
+    path: ["numberOfDrivers"],
+  })
+  .refine(
+    (data) => {
+      if (!data.startDate) return true;
+      const start = new Date(data.startDate);
+      return start >= today;
+    },
+    {
+      message: "Start date cannot be in the past",
+      path: ["startDate"],
+    },
+  )
+  .refine(
+    (data) => {
+      if (!data.endDate) return true;
+      const end = new Date(data.endDate);
+      return end >= today;
+    },
+    {
+      message: "End date cannot be in the past",
+      path: ["endDate"],
+    },
+  )
+  .refine(
+    (data) => {
+      if (!data.endDate || !data.startDate) return true;
+      return new Date(data.endDate) > new Date(data.startDate);
+    },
+    {
+      message: "End date must be after start date",
+      path: ["endDate"],
+    },
+  );
 
 const CancelBookingSchema = z.object({
   cancellationReason: z.string().min(1),

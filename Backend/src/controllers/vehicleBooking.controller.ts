@@ -10,6 +10,7 @@ import {
   CreateVehicleBookingSchema,
   GetBookingsQuerySchema,
   getVehicleBookingQuerySchema,
+  UpdateVehicleBookingSchema,
 } from "../schema/vehicleBooking.schema";
 import {
   calculateDiscounts,
@@ -496,6 +497,306 @@ const cancelUserVehicleBooking = async (
   }
 };
 
+// update vehicle booking
+const updateVehicleBooking = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const userId = req.id;
+
+    if (!userId) {
+      return next({ status: 401, success: false, message: "Unauthorized" });
+    }
+
+    const { bookingId } = BookingIdParamSchema.parse(req.params);
+    const updateData = UpdateVehicleBookingSchema.parse(req.body);
+
+    const existingBooking = await prisma.vehicleBooking.findUnique({
+      where: { id: bookingId, userId },
+      include: { vehicle: true },
+    });
+
+    if (!existingBooking) {
+      return next({ status: 404, sucess: false, message: "Booking not found" });
+    }
+
+    // Cannot update confirmed or completed bookings
+    if (
+      [RentalStatus.CONFIRMED, RentalStatus.COMPLETED].includes(
+        existingBooking.status as "CONFIRMED" | "COMPLETED",
+      )
+    ) {
+      return next({
+        status: 400,
+        success: false,
+        message: "Cannot update confirmed or completed bookings",
+      });
+    }
+    if (existingBooking.status === RentalStatus.CANCELLED) {
+      return next({
+        status: 400,
+        success: false,
+        message:
+          "Booking is already cancelled by user. Cannot update cancelled booking",
+      });
+    }
+
+    const needsPriceRecalculation =
+      updateData.startDate ||
+      updateData.endDate ||
+      updateData.numberOfVehicles ||
+      updateData.needsDriver !== undefined ||
+      updateData.numberOfDrivers ||
+      updateData.tourType ||
+      updateData.couponCode !== undefined;
+
+    // Recalculate if dates or quantities change
+    let recalculatedData: any = {};
+    let quantityChange = 0;
+
+    if (needsPriceRecalculation) {
+      // Get updated values
+      const startDate = updateData.startDate
+        ? new Date(updateData.startDate)
+        : existingBooking.startDate;
+      const endDate = updateData.endDate
+        ? new Date(updateData.endDate)
+        : existingBooking.endDate;
+      const numberOfVehicles =
+        updateData.numberOfVehicles ?? existingBooking.numberOfVehicles;
+      const needsDriver = updateData.needsDriver ?? existingBooking.needsDriver;
+      const numberOfDrivers =
+        updateData.numberOfDrivers ?? existingBooking.numberOfDrivers;
+      const tourType = updateData.tourType ?? existingBooking.tourType;
+      const couponCode =
+        updateData.couponCode !== undefined
+          ? updateData.couponCode
+          : existingBooking.couponCode;
+
+      // Check vehicle availability
+      const overlappingBookings = await prisma.vehicleBooking.count({
+        where: {
+          vehicleId: existingBooking.vehicleId,
+          status: {
+            in: [
+              RentalStatus.PENDING,
+              RentalStatus.CONFIRMED,
+              RentalStatus.ACTIVE,
+            ],
+          },
+          OR: [
+            {
+              startDate: { lte: endDate },
+              endDate: { gte: startDate },
+            },
+          ],
+        },
+      });
+
+      const totalBookedVehicles = overlappingBookings;
+      const availableCount =
+        existingBooking.vehicle.availableQuantity - totalBookedVehicles;
+
+      if (availableCount < numberOfVehicles) {
+        return next({
+          status: 400,
+          success: false,
+          message: `Insufficient vehicles available for selected dates. Only ${availableCount} vehicle available`,
+          data: {
+            available: availableCount,
+            requested: numberOfVehicles,
+          },
+        });
+      }
+
+      // Calculate quantity change for vehicle availability update
+      quantityChange = numberOfVehicles - existingBooking.numberOfVehicles;
+
+      // Calculate duration
+      const durationDays = Math.ceil(
+        (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24),
+      );
+
+      // Get seasonal multiplier
+      const seasonalMultiplier = await getSeasonalMultiplier(
+        startDate,
+        endDate,
+        existingBooking.vehicle.vehicleType,
+        existingBooking.vehicle.region || existingBooking.vehicle.city,
+      );
+
+      const adjustedPricePerDay =
+        existingBooking.vehicle.pricePerDay * seasonalMultiplier;
+      const vehicleBaseAmount =
+        adjustedPricePerDay * durationDays * numberOfVehicles;
+      let grossAmount = vehicleBaseAmount;
+
+      // Recalculate driver pricing
+      let driverTotalAmount = 0;
+      let baseDriverRate: number | null = null;
+      let distanceCharge = 0;
+      let terrainCharge = 0;
+
+      if (needsDriver && numberOfDrivers > 0) {
+        const driverPricing = await calculateDriverPricing(
+          tourType || undefined,
+          durationDays,
+          numberOfDrivers,
+        );
+
+        baseDriverRate = driverPricing.baseRate;
+        distanceCharge = driverPricing.distanceCharge;
+        terrainCharge = driverPricing.terrainCharge;
+        driverTotalAmount = driverPricing.total;
+        grossAmount += driverTotalAmount;
+      }
+      console.log(baseDriverRate);
+
+      // Recalculate discounts
+      const discountResult = await calculateDiscounts(
+        grossAmount,
+        durationDays,
+        couponCode || undefined,
+        userId,
+        existingBooking.vehicle.vehicleType,
+      );
+
+      // Check if there's an error with coupon
+      if (discountResult.error) {
+        return next({
+          status: 400,
+          success: false,
+          message: discountResult.error,
+        });
+      }
+
+      const totalPrice = grossAmount - discountResult.totalDiscount;
+      const remainingAmount =
+        totalPrice -
+        (updateData.advanceAmount ?? existingBooking.advanceAmount);
+
+      recalculatedData = {
+        startDate,
+        endDate,
+        durationDays,
+        numberOfVehicles,
+
+        pricePerDayAtBooking: adjustedPricePerDay,
+        vehicleBaseAmount,
+
+        needsDriver,
+        numberOfDrivers,
+        baseDriverRate,
+        distanceCharge,
+        terrainCharge,
+        driverTotalAmount: needsDriver ? driverTotalAmount : null,
+
+        appliedDiscounts: discountResult.discounts,
+        discountAmount: discountResult.totalDiscount,
+        couponCode: couponCode || null,
+
+        grossAmount,
+        totalPrice,
+        remainingAmount,
+      };
+
+      // Update coupon usage if coupon changed
+      if (updateData.couponCode !== undefined) {
+        // Decrement old coupon usage if exists
+        if (
+          existingBooking.couponCode &&
+          existingBooking.couponCode !== couponCode
+        ) {
+          await prisma.pricingConfig.updateMany({
+            where: {
+              code: existingBooking.couponCode,
+              type: PricingConfigType.DISCOUNT,
+            },
+            data: {
+              usageCount: { decrement: 1 },
+            },
+          });
+        }
+
+        // Increment new coupon usage
+        if (couponCode) {
+          await prisma.pricingConfig.updateMany({
+            where: {
+              code: couponCode,
+              type: PricingConfigType.DISCOUNT,
+            },
+            data: {
+              usageCount: { increment: 1 },
+            },
+          });
+        }
+      }
+    }
+
+    const updatedBooking = await prisma.vehicleBooking.update({
+      where: { id: bookingId },
+      data: {
+        ...updateData,
+        ...recalculatedData,
+      },
+      include: {
+        vehicle: true,
+        user: {
+          select: {
+            id: true,
+            fullName: true,
+            email: true,
+            phone: true,
+          },
+        },
+      },
+    });
+
+    // Update vehicle availability if quantity changed
+    if (quantityChange !== 0) {
+      const vehicle = await prisma.vehicle.findUnique({
+        where: { id: existingBooking.vehicleId },
+      });
+
+      if (vehicle) {
+        const newAvailableQuantity = vehicle.availableQuantity - quantityChange;
+
+        await prisma.vehicle.update({
+          where: { id: existingBooking.vehicleId },
+          data: {
+            availableQuantity: newAvailableQuantity,
+            status:
+              newAvailableQuantity <= 0
+                ? VehicleStatus.BOOKED
+                : VehicleStatus.AVAILABLE,
+          },
+        });
+      }
+    }
+
+    return next({
+      status: 200,
+      success: true,
+      message: "Booking updated successfully",
+      data: updatedBooking,
+    });
+  } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
+    next({
+      status: 500,
+      message: error.message || "Internal server error",
+      error: error.message,
+    });
+  }
+};
+
 // Get all bookings -(Admin)
 const getAllVehicleBookings = async (
   req: Request,
@@ -577,7 +878,7 @@ const getAllVehicleBookings = async (
   }
 };
 
-//  Get single booking by ID
+//  Get single booking by ID -(Admin)
 const getAdminVehicleBookingById = async (
   req: Request,
   res: Response,
@@ -630,11 +931,13 @@ const getAdminVehicleBookingById = async (
     });
   }
 };
+
 export {
   createVehicleBooking,
   getUserVehicleBookings,
   getUserVehicleBookingById,
   cancelUserVehicleBooking,
+  updateVehicleBooking,
   getAllVehicleBookings,
   getAdminVehicleBookingById,
 };

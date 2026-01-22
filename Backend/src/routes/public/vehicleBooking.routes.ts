@@ -1,5 +1,11 @@
 import { Router } from "express";
-import { cancelUserVehicleBooking, createVehicleBooking, getUserVehicleBookingById, getUserVehicleBookings } from "../../controllers/vehicleBooking.controller";
+import {
+  cancelUserVehicleBooking,
+  createVehicleBooking,
+  getUserVehicleBookingById,
+  getUserVehicleBookings,
+  updateVehicleBooking,
+} from "../../controllers/vehicleBooking.controller";
 import { authenticateToken } from "../../middleware/auth";
 import { registerRoute } from "../../utils/openapi.utils";
 import {
@@ -7,6 +13,7 @@ import {
   CancelBookingSchema,
   CreateVehicleBookingSchema,
   getVehicleBookingQuerySchema,
+  UpdateVehicleBookingSchema,
   VehicleBookingResponseSchema,
 } from "../../schema";
 import {
@@ -25,11 +32,21 @@ const router = Router();
 
 router.post("/", authenticateToken, createVehicleBooking);
 
-router.get("/my-booking",authenticateToken,getUserVehicleBookings)
+router.get("/my-booking", authenticateToken, getUserVehicleBookings);
 
-router.get("/my-booking/:bookingId",authenticateToken,getUserVehicleBookingById)
+router.get(
+  "/my-booking/:bookingId",
+  authenticateToken,
+  getUserVehicleBookingById,
+);
 
-router.patch("/my-booking/:bookingId/cancel",authenticateToken,cancelUserVehicleBooking)
+router.patch(
+  "/my-booking/:bookingId/cancel",
+  authenticateToken,
+  cancelUserVehicleBooking,
+);
+
+router.patch("/my-booking/:bookingId", authenticateToken, updateVehicleBooking);
 
 // Swagger registration
 
@@ -125,9 +142,9 @@ registerRoute({
   security: [{ bearerAuth: [] }],
   request: {
     params: BookingIdParamSchema,
-    body:{
-     content: { "application/json": { schema: CancelBookingSchema } },
-    }
+    body: {
+      content: { "application/json": { schema: CancelBookingSchema } },
+    },
   },
   responses: {
     200: {
@@ -143,6 +160,30 @@ registerRoute({
   },
 });
 
-
+// Update a vehicle booking
+registerRoute({
+  method: "patch",
+  path: "/api/vehicle-booking/my-booking/{bookingId}",
+  summary: "Update a booking",
+  tags: ["Vehicle Bookings"],
+  security: [{ bearerAuth: [] }],
+  request: {
+    params: BookingIdParamSchema,
+    body: {
+      content: { "application/json": { schema: UpdateVehicleBookingSchema } },
+    },
+  },
+  responses: {
+    201: {
+      description: "Booking updated successfully",
+      content: { "application/json": { schema: VehicleBookingResponseSchema } },
+    },
+    400: errorResponse(badRequestErrorSchema, "Bad Request"),
+    401: errorResponse(unauthorizedErrorSchema, "Unauthorized"),
+    403: errorResponse(forbiddenErrorSchema, "Forbidden"),
+    409: errorResponse(conflictErrorSchema, "Conflict"),
+    500: errorResponse(internalServerErrorSchema, "Internal Server Error"),
+  },
+});
 
 export default router;

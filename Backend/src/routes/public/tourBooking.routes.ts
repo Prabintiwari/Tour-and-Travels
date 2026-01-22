@@ -30,37 +30,25 @@ import {
 const router = Router();
 
 // Tour booking routes
-router.post(
-  "/",
-  authenticateToken,
-  createTourBooking
-);
+router.post("/", authenticateToken, createTourBooking);
 
 router.patch(
   "/my-booking/:bookingId/reschedule",
   authenticateToken,
-  rescheduleTourBooking
+  rescheduleTourBooking,
 );
 
-router.patch(
-  "/my-booking/:bookingId",
-  authenticateToken,
-  updateTourBooking
-);
+router.patch("/my-booking/:bookingId", authenticateToken, updateTourBooking);
 
 router.get("/my-booking", authenticateToken, getUserTourBookings);
 
 router.patch(
   "/my-booking/:bookingId/cancel",
   authenticateToken,
-  cancelUserTourBooking
+  cancelUserTourBooking,
 );
 
-router.get(
-  "/my-booking/:bookingId",
-  authenticateToken,
-  getUserTourBookingById
-);
+router.get("/my-booking/:bookingId", authenticateToken, getUserTourBookingById);
 
 // Swagger registration
 
