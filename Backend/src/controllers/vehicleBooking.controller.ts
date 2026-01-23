@@ -11,6 +11,7 @@ import {
   GetBookingsQuerySchema,
   getVehicleBookingQuerySchema,
   UpdateVehicleBookingSchema,
+  updateVehicleBookingStatusSchema,
 } from "../schema/vehicleBooking.schema";
 import {
   calculateDiscounts,
@@ -932,6 +933,75 @@ const getAdminVehicleBookingById = async (
   }
 };
 
+// Update booking status (admin)
+const updateVehicleBookingBookingStatus = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const { bookingId } = BookingIdParamSchema.parse(req.params);
+    const { status } = updateVehicleBookingStatusSchema.parse(req.body);
+
+    const vehicleBooking = await prisma.vehicleBooking.findUnique({
+      where: { id: bookingId },
+    });
+
+    if (!vehicleBooking) {
+      return next({
+        status: 404,
+        success: false,
+        message: "Booking not found",
+      });
+    }
+
+    const updateData: any = { status };
+
+    if (status === RentalStatus.CANCELLED) {
+      updateData.cancelledAt = new Date();
+    } else if (status === RentalStatus.COMPLETED) {
+      updateData.completedAt = new Date();
+    }
+
+    const updatedBooking = await prisma.vehicleBooking.update({
+      where: { id: bookingId },
+      data: updateData,
+      include: {
+        user: {
+          select: {
+            id: true,
+            fullName: true,
+            email: true,
+          },
+        },
+        vehicle: {
+          select: { id: true, brand: true, model: true, images: true },
+        },
+        payment: true,
+      },
+    });
+
+    next({
+      status: 200,
+      success: true,
+      message: "Booking status updated successfully",
+      data: updatedBooking,
+    });
+  } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
+    next({
+      status: 500,
+      message: error.message || "Internal server error",
+      error: error.message,
+    });
+  }
+};
+
 export {
   createVehicleBooking,
   getUserVehicleBookings,
@@ -940,4 +1010,5 @@ export {
   updateVehicleBooking,
   getAllVehicleBookings,
   getAdminVehicleBookingById,
+  updateVehicleBookingBookingStatus,
 };

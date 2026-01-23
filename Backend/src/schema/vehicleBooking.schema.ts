@@ -226,6 +226,15 @@ const vehicleBookingListResponseSchema = paginatedResponse(
   VehicleBookingResponseSchema,
 );
 
+const updateVehicleBookingStatusSchema = z
+  .object({
+    status: z.nativeEnum(RentalStatus).openapi({
+      example: RentalStatus.CANCELLED,
+      description: "New booking status",
+    }),
+  })
+  .openapi("UpdateBookingStatusRequest");
+
 export {
   AppliedDiscountSchema,
   CreateVehicleBookingSchema,
@@ -236,4 +245,5 @@ export {
   BookingIdParamSchema,
   VehicleBookingResponseSchema,
   vehicleBookingListResponseSchema,
+  updateVehicleBookingStatusSchema,
 };
