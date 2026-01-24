@@ -933,7 +933,7 @@ const getAdminVehicleBookingById = async (
   }
 };
 
-// Update booking status (admin)
+// Update booking status (Admin)
 const updateVehicleBookingBookingStatus = async (
   req: Request,
   res: Response,
@@ -941,7 +941,8 @@ const updateVehicleBookingBookingStatus = async (
 ) => {
   try {
     const { bookingId } = BookingIdParamSchema.parse(req.params);
-    const { status } = updateVehicleBookingStatusSchema.parse(req.body);
+    const { status, cancellationReason } =
+      updateVehicleBookingStatusSchema.parse(req.body);
 
     const vehicleBooking = await prisma.vehicleBooking.findUnique({
       where: { id: bookingId },
@@ -955,12 +956,171 @@ const updateVehicleBookingBookingStatus = async (
       });
     }
 
-    const updateData: any = { status };
+    const currentStatus = vehicleBooking.status;
 
-    if (status === RentalStatus.CANCELLED) {
-      updateData.cancelledAt = new Date();
-    } else if (status === RentalStatus.COMPLETED) {
-      updateData.completedAt = new Date();
+    // Validate status transitions
+    if (currentStatus === RentalStatus.COMPLETED) {
+      return next({
+        status: 400,
+        success: false,
+        message: "Cannot change status of completed booking",
+      });
+    }
+
+    if (
+      currentStatus === RentalStatus.CANCELLED ||
+      currentStatus === RentalStatus.REJECTED
+    ) {
+      return res
+        .status(400)
+        .json({ error: "Cannot change status of cancelled/rejected booking" });
+    }
+
+    // Status-specific validations
+    if (
+      status === RentalStatus.CONFIRMED &&
+      currentStatus !== RentalStatus.PENDING
+    ) {
+      return next({
+        status: 400,
+        success: false,
+        message: "Only pending bookings can be confirmed",
+      });
+    }
+
+    if (
+      status === RentalStatus.ACTIVE &&
+      currentStatus !== RentalStatus.CONFIRMED
+    ) {
+      return next({
+        status: 400,
+        success: false,
+        message: "Only confirmed bookings can be activated",
+      });
+    }
+
+    if (
+      status === RentalStatus.REJECTED &&
+      currentStatus !== RentalStatus.PENDING
+    ) {
+      return next({
+        status: 400,
+        success: false,
+        message: "Only pending bookings can be rejected",
+      });
+    }
+
+    if (
+      (status === RentalStatus.REJECTED || status === RentalStatus.CANCELLED) &&
+      !cancellationReason
+    ) {
+      return next({
+        status: 400,
+        success: false,
+        message: "Cancellation/rejection reason is required",
+      });
+    }
+
+    const updateData: any = { status };
+    let statusMessage = "Booking status updated successfully";
+
+    // Handle different status changes
+    switch (status) {
+      case RentalStatus.CONFIRMED:
+        statusMessage = "Booking confirmed successfully";
+        break;
+
+      case RentalStatus.ACTIVE:
+        statusMessage = "Booking activated successfully";
+        break;
+
+      case RentalStatus.COMPLETED:
+        updateData.completedAt = new Date();
+        statusMessage = "Booking completed successfully";
+
+        // Restore vehicle availability
+        await prisma.vehicle.update({
+          where: { id: vehicleBooking.vehicleId },
+          data: {
+            availableQuantity: { increment: vehicleBooking.numberOfVehicles },
+          },
+        });
+
+        // Update vehicle status to AVAILABLE if needed
+        const completedVehicle = await prisma.vehicle.findUnique({
+          where: { id: vehicleBooking.vehicleId },
+        });
+
+        if (completedVehicle && completedVehicle.availableQuantity > 0) {
+          await prisma.vehicle.update({
+            where: { id: vehicleBooking.vehicleId },
+            data: { status: VehicleStatus.AVAILABLE },
+          });
+        }
+        break;
+
+      case RentalStatus.REJECTED:
+        updateData.cancelledAt = new Date();
+        updateData.cancellationReason = cancellationReason;
+        updateData.cancelledBy = "ADMIN";
+        updateData.refundAmount = vehicleBooking.totalPrice; // 100% refund for rejection
+        statusMessage = "Booking rejected successfully";
+
+        // Restore vehicle availability
+        await prisma.vehicle.update({
+          where: { id: vehicleBooking.vehicleId },
+          data: {
+            availableQuantity: { increment: vehicleBooking.numberOfVehicles },
+          },
+        });
+
+        // Update vehicle status
+        const rejectedVehicle = await prisma.vehicle.findUnique({
+          where: { id: vehicleBooking.vehicleId },
+        });
+
+        if (
+          rejectedVehicle &&
+          rejectedVehicle.status === VehicleStatus.BOOKED
+        ) {
+          await prisma.vehicle.update({
+            where: { id: vehicleBooking.vehicleId },
+            data: { status: VehicleStatus.AVAILABLE },
+          });
+        }
+        break;
+
+      case RentalStatus.CANCELLED:
+        const refundAmount = calculateRefund(vehicleBooking);
+        updateData.cancelledAt = new Date();
+        updateData.cancellationReason = cancellationReason;
+        updateData.cancelledBy = "ADMIN";
+        updateData.refundAmount = refundAmount;
+        statusMessage = "Booking cancelled successfully";
+
+        // Restore vehicle availability
+        await prisma.vehicle.update({
+          where: { id: vehicleBooking.vehicleId },
+          data: {
+            availableQuantity: { increment: vehicleBooking.numberOfVehicles },
+          },
+        });
+
+        // Update vehicle status
+        const cancelledVehicle = await prisma.vehicle.findUnique({
+          where: { id: vehicleBooking.vehicleId },
+        });
+
+        if (
+          cancelledVehicle &&
+          cancelledVehicle.status === VehicleStatus.BOOKED
+        ) {
+          await prisma.vehicle.update({
+            where: { id: vehicleBooking.vehicleId },
+            data: { status: VehicleStatus.AVAILABLE },
+          });
+        }
+        break;
     }
 
     const updatedBooking = await prisma.vehicleBooking.update({
@@ -972,19 +1132,28 @@ const updateVehicleBookingBookingStatus = async (
             id: true,
             fullName: true,
             email: true,
+            phone: true,
           },
         },
         vehicle: {
-          select: { id: true, brand: true, model: true, images: true },
+          select: {
+            id: true,
+            brand: true,
+            model: true,
+            vehicleType: true,
+            images: true,
+            availableQuantity: true,
+            status: true,
+          },
         },
         payment: true,
       },
     });
 
-    next({
+    return next({
       status: 200,
       success: true,
-      message: "Booking status updated successfully",
+      message: statusMessage,
       data: updatedBooking,
     });
   } catch (error: any) {

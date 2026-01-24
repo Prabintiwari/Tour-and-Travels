@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { AdminOnly, authenticateToken } from "../../middleware/auth";
-import { getAllVehicleBookings } from "../../controllers/vehicleBooking.controller";
+import { getAllVehicleBookings, updateVehicleBookingBookingStatus } from "../../controllers/vehicleBooking.controller";
 import { registerRoute } from "../../utils/openapi.utils";
 import {
   errorResponse,
@@ -12,6 +12,7 @@ import {
 import {
     BookingIdParamSchema,
   GetBookingsQuerySchema,
+  updateVehicleBookingStatusSchema,
   vehicleBookingListResponseSchema,
   VehicleBookingResponseSchema,
 } from "../../schema"
@@ -23,6 +24,8 @@ router.use(authenticateToken, AdminOnly);
 // Admin vehicle booking routes
 
 router.get("/", getAllVehicleBookings);
+
+router.patch("/:bookingId", updateVehicleBookingBookingStatus);
 
 router.get("/:bookingId", getAllVehicleBookings);
 
@@ -66,6 +69,42 @@ registerRoute({
   responses: {
     200: {
       description: "Get tour booking by id",
+      content: {
+        "application/json": {
+          schema: VehicleBookingResponseSchema,
+        },
+      },
+    },
+    401: errorResponse(unauthorizedErrorSchema, "Unauthorized"),
+
+    403: errorResponse(forbiddenErrorSchema, "Forbidden"),
+
+    404: errorResponse(notFoundErrorSchema, "Not Found"),
+
+    500: errorResponse(internalServerErrorSchema, "Internal Server Error"),
+  },
+});
+
+// Update Vehicle booking status by id
+registerRoute({
+  method: "patch",
+  path: "/api/admin/vehicle-booking/{bookingId}",
+  summary: "Update Vehicle booking status by id",
+  security: [{ bearerAuth: [] }],
+  tags: ["Vehicle Bookings"],
+  request: {
+    params: BookingIdParamSchema,
+    body: {
+      content: {
+        "application/json": {
+          schema: updateVehicleBookingStatusSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: "Update Vehicle booking by id",
       content: {
         "application/json": {
           schema: VehicleBookingResponseSchema,

@@ -232,6 +232,7 @@ const updateVehicleBookingStatusSchema = z
       example: RentalStatus.CANCELLED,
       description: "New booking status",
     }),
+    cancellationReason: z.string().optional(),
   })
   .openapi("UpdateBookingStatusRequest");
 
