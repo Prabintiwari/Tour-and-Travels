@@ -25,7 +25,7 @@ router.use(authenticateToken, AdminOnly);
 
 router.get("/", getAllVehicleBookings);
 
-router.patch("/:bookingId", updateVehicleBookingBookingStatus);
+router.patch("/:bookingId/status", updateVehicleBookingBookingStatus);
 
 router.get("/:bookingId", getAllVehicleBookings);
 
@@ -88,7 +88,7 @@ registerRoute({
 // Update Vehicle booking status by id
 registerRoute({
   method: "patch",
-  path: "/api/admin/vehicle-booking/{bookingId}",
+  path: "/api/admin/vehicle-booking/{bookingId}/status",
   summary: "Update Vehicle booking status by id",
   security: [{ bearerAuth: [] }],
   tags: ["Vehicle Bookings"],
