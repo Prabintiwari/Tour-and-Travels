@@ -2,7 +2,12 @@ import { Request, Response, NextFunction } from "express";
 import prisma from "../config/prisma";
 import { ZodError } from "zod";
 import { AuthRequest } from "../middleware/auth";
-import { PricingConfigType, RentalStatus, UserRole, VehicleStatus } from "@prisma/client";
+import {
+  PricingConfigType,
+  RentalStatus,
+  UserRole,
+  VehicleStatus,
+} from "@prisma/client";
 import { generateBookingCode } from "../utils/generateBookingCode";
 import {
   BookingIdParamSchema,
@@ -933,7 +938,7 @@ const getAdminVehicleBookingById = async (
   }
 };
 
-// Update booking status (Admin)
+// Update booking status - (Admin)
 const updateVehicleBookingBookingStatus = async (
   req: Request,
   res: Response,
@@ -1163,6 +1168,68 @@ const updateVehicleBookingBookingStatus = async (
         message: error.issues || "Validation failed",
       });
     }
+    next({
+      status: 500,
+      message: error.message || "Internal server error",
+      error: error.message,
+    });
+  }
+};
+
+// Get booking statistics - (Admin)
+const getVehicleBookingStats = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const [
+      totalBookings,
+      pendingBookings,
+      confirmedBookings,
+      activeBookings,
+      cancelledBookings,
+      completedBookings,
+      totalRevenue,
+    ] = await Promise.all([
+      prisma.vehicleBooking.count(),
+      prisma.vehicleBooking.count({ where: { status: RentalStatus.PENDING } }),
+      prisma.vehicleBooking.count({
+        where: { status: RentalStatus.CONFIRMED },
+      }),
+      prisma.vehicleBooking.count({ where: { status: RentalStatus.ACTIVE } }),
+      prisma.vehicleBooking.count({
+        where: { status: RentalStatus.CANCELLED },
+      }),
+      prisma.vehicleBooking.count({
+        where: { status: RentalStatus.COMPLETED },
+      }),
+      prisma.vehicleBooking.aggregate({
+        where: {
+          status: {
+            in: [RentalStatus.CONFIRMED, RentalStatus.COMPLETED],
+          },
+        },
+        _sum: {
+          totalPrice: true,
+        },
+      }),
+    ]);
+
+    next({
+      status: 200,
+      success: true,
+      data: {
+        totalBookings,
+        pendingBookings,
+        confirmedBookings,
+        activeBookings,
+        cancelledBookings,
+        completedBookings,
+        totalRevenue: totalRevenue._sum.totalPrice || 0,
+      },
+    });
+  } catch (error: any) {
     next({
       status: 500,
       message: error.message || "Internal server error",
