@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import prisma from "../config/prisma";
 import { ZodError } from "zod";
 import { AuthRequest } from "../middleware/auth";
-import { PricingConfigType, RentalStatus, VehicleStatus } from "@prisma/client";
+import { PricingConfigType, RentalStatus, UserRole, VehicleStatus } from "@prisma/client";
 import { generateBookingCode } from "../utils/generateBookingCode";
 import {
   BookingIdParamSchema,
@@ -1062,7 +1062,7 @@ const updateVehicleBookingBookingStatus = async (
       case RentalStatus.REJECTED:
         updateData.cancelledAt = new Date();
         updateData.cancellationReason = cancellationReason;
-        updateData.cancelledBy = "ADMIN";
+        updateData.cancelledBy = UserRole.ADMIN;
         updateData.refundAmount = vehicleBooking.totalPrice; // 100% refund for rejection
         statusMessage = "Booking rejected successfully";
 
@@ -1094,7 +1094,7 @@ const updateVehicleBookingBookingStatus = async (
         const refundAmount = calculateRefund(vehicleBooking);
         updateData.cancelledAt = new Date();
         updateData.cancellationReason = cancellationReason;
-        updateData.cancelledBy = "ADMIN";
+        updateData.cancelledBy = UserRole.ADMIN;
         updateData.refundAmount = refundAmount;
         statusMessage = "Booking cancelled successfully";
 
