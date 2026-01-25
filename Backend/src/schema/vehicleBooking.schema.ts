@@ -236,6 +236,19 @@ const updateVehicleBookingStatusSchema = z
   })
   .openapi("UpdateBookingStatusRequest");
 
+
+  const vehicleBookingStatsResponseSchema = z
+    .object({
+      totalBookings: z.number().openapi({ example: 120 }),
+      pendingBookings: z.number().openapi({ example: 25 }),
+      confirmedBookings: z.number().openapi({ example: 60 }),
+      activeBooking: z.number().openapi({ example: 60 }),
+      cancelledBookings: z.number().openapi({ example: 20 }),
+      completedBookings: z.number().openapi({ example: 15 }),
+      totalRevenue: z.number().openapi({ example: 250000 }),
+    })
+    .openapi("BookingStatsResponse");
+
 export {
   AppliedDiscountSchema,
   CreateVehicleBookingSchema,
@@ -246,5 +259,6 @@ export {
   BookingIdParamSchema,
   VehicleBookingResponseSchema,
   vehicleBookingListResponseSchema,
+  vehicleBookingStatsResponseSchema,
   updateVehicleBookingStatusSchema,
 };

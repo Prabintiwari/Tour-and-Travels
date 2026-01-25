@@ -15,6 +15,7 @@ import {
   updateVehicleBookingStatusSchema,
   vehicleBookingListResponseSchema,
   VehicleBookingResponseSchema,
+  vehicleBookingStatsResponseSchema,
 } from "../../schema"
 
 const router = Router();
@@ -121,6 +122,28 @@ registerRoute({
   },
 });
 
-
+// Get vehicle booking stats
+registerRoute({
+  method: "get",
+  path: "/api/admin/vehicle-booking/booking-stats",
+  summary: "Get vehicle booking statistics",
+  description:
+    "Returns overall booking statistics including counts by status and total revenue",
+  tags: ["Vehicle Bookings"],
+  security: [{ bearerAuth: [] }],
+  responses: {
+    200: {
+      description: "Booking statistics retrieved successfully",
+      content: {
+        "application/json": {
+          schema: vehicleBookingStatsResponseSchema,
+        },
+      },
+    },
+    401: errorResponse(unauthorizedErrorSchema, "Unauthorized"),
+    403: errorResponse(forbiddenErrorSchema, "Forbidden"),
+    500: errorResponse(internalServerErrorSchema, "Internal Server Error"),
+  },
+});
 
 export default router;
