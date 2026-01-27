@@ -884,62 +884,62 @@ const updateVehicleReview = async (
 // };
 
 // Bulk delete reviews (admin)
-const bulkDeleteReviews = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    const { reviewIds } = bulkDeleteReviewSchema.parse(req.body);
+// const bulkDeleteReviews = async (
+//   req: Request,
+//   res: Response,
+//   next: NextFunction,
+// ) => {
+//   try {
+//     const { reviewIds } = bulkDeleteReviewSchema.parse(req.body);
 
-    if (!Array.isArray(reviewIds) || reviewIds.length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: "reviewIds array is required and must not be empty",
-      });
-    }
+//     if (!Array.isArray(reviewIds) || reviewIds.length === 0) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "reviewIds array is required and must not be empty",
+//       });
+//     }
 
-    const result = await prisma.tourReview.deleteMany({
-      where: {
-        id: {
-          in: reviewIds,
-        },
-      },
-    });
+//     const result = await prisma.tourReview.deleteMany({
+//       where: {
+//         id: {
+//           in: reviewIds,
+//         },
+//       },
+//     });
 
-    next({
-      status: 200,
-      success: true,
-      message: `${result.count} review(s) deleted successfully`,
-      data: {
-        deletedCount: result.count,
-      },
-    });
-  } catch (error: any) {
-    if (error instanceof ZodError) {
-      return next({
-        status: 400,
-        message: error.issues || "Validation failed",
-      });
-    }
-    next({
-      status: 500,
-      message: error.message || "Internal server error",
-      error: error.message,
-    });
-  }
-};
+//     next({
+//       status: 200,
+//       success: true,
+//       message: `${result.count} review(s) deleted successfully`,
+//       data: {
+//         deletedCount: result.count,
+//       },
+//     });
+//   } catch (error: any) {
+//     if (error instanceof ZodError) {
+//       return next({
+//         status: 400,
+//         message: error.issues || "Validation failed",
+//       });
+//     }
+//     next({
+//       status: 500,
+//       message: error.message || "Internal server error",
+//       error: error.message,
+//     });
+//   }
+// };
 
 export {
   createVehicleReview,
   getVehicleReviews,
   getVehicleReviewById,
   updateVehicleReview,
-  deleteReview,
-  getUserReviews,
-  canReviewTour,
-  getAllReviews,
-  adminDeleteReview,
-  getReviewStatistics,
-  bulkDeleteReviews,
+//   deleteReview,
+//   getUserReviews,
+//   canReviewTour,
+//   getAllReviews,
+//   adminDeleteReview,
+//   getReviewStatistics,
+//   bulkDeleteReviews,
 };
