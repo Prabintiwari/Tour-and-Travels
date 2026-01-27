@@ -25,8 +25,8 @@ import {
   internalServerErrorSchema,
   unauthorizedErrorSchema,
 } from "../../schema/common.schema";
-import { createVehicleReview, getVehicleReviewById, getVehicleReviews } from "../../controllers/vehicleReview.controller";
-import { createVehicleReviewSchema, vehicleReviewIdQuerySchema, vehicleReviewResponseSchema, vehicleReviewsListResponseSchema } from "../../schema/vehicleReview.schema";
+import { createVehicleReview, getVehicleReviewById, getVehicleReviews, updateVehicleReview } from "../../controllers/vehicleReview.controller";
+import { createVehicleReviewSchema, updateVehicleReviewSchema, vehicleReviewIdParamsSchema, vehicleReviewIdQuerySchema, vehicleReviewResponseSchema, vehicleReviewsListResponseSchema } from "../../schema/vehicleReview.schema";
 
 const router = Router();
 
@@ -59,7 +59,7 @@ router.get("/:reviewId", getVehicleReviewById);
 router.patch(
   "/:reviewId",
   authenticateToken,
-  updateReview
+  updateVehicleReview
 );
 
 router.delete(
@@ -98,19 +98,20 @@ registerRoute({
 // Update a new vehicle review
 registerRoute({
   method: "patch",
-  path: "/api/tour-review/{reviewId}",
+  path: "/api/vehicle-review/{reviewId}",
   summary: "Update tour review",
-  tags: ["Tour Review"],
+  tags: ["Vehicle Review"],
   security: [{ bearerAuth: [] }],
   request: {
+    params:vehicleReviewIdParamsSchema,
     body: {
-      content: { "application/json": { schema: updateTourReviewSchema } },
+      content: { "application/json": { schema: updateVehicleReviewSchema } },
     },
   },
   responses: {
     200: {
       description: "Review updated successfully",
-      content: { "application/json": { schema: tourReviewResponseSchema } },
+      content: { "application/json": { schema: vehicleReviewResponseSchema } },
     },
     400: errorResponse(badRequestErrorSchema, "Bad Request"),
     401: errorResponse(unauthorizedErrorSchema, "Unauthorized"),

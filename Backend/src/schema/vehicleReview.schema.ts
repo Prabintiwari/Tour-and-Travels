@@ -35,7 +35,7 @@ const createVehicleReviewSchema = z
 
 const updateVehicleReviewSchema = z
   .object({
-    rating: z.number().int().min(1).max(5).optional().openapi({
+    rating: z.number().min(1).max(5).optional().openapi({
       description: "Updated rating from 1 to 5",
       example: 5,
     }),

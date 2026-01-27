@@ -10,6 +10,7 @@ import {
   reviewStatisticsQuerySchema,
   vehicleParamsSchema,
   vehicleReviewIdParamsSchema,
+  updateVehicleReviewSchema,
 } from "../schema";
 import { AuthRequest } from "../middleware/auth";
 import { BookingStatus, RentalStatus } from "@prisma/client";
@@ -322,7 +323,7 @@ const getVehicleReviewById = async (
 };
 
 // Update own review
-const updateReview = async (
+const updateVehicleReview = async (
   req: AuthRequest,
   res: Response,
   next: NextFunction,
@@ -330,7 +331,7 @@ const updateReview = async (
   try {
     const userId = req.id;
     const { reviewId } = reviewIdParamsSchema.parse(req.params);
-    const validatedData = updateTourReviewSchema.parse(req.body);
+    const validatedData = updateVehicleReviewSchema.parse(req.body);
 
     if (!userId) {
       return next({
@@ -350,7 +351,7 @@ const updateReview = async (
     }
 
     // Check if review exists and belongs to user
-    const existingReview = await prisma.tourReview.findUnique({
+    const existingReview = await prisma.vehicleReview.findUnique({
       where: { id: reviewId },
     });
 
@@ -366,7 +367,7 @@ const updateReview = async (
     }
 
     // Update review
-    const review = await prisma.tourReview.update({
+    const review = await prisma.vehicleReview.update({
       where: { id: reviewId },
       data: validatedData,
       include: {
@@ -377,10 +378,11 @@ const updateReview = async (
             profileImage: true,
           },
         },
-        tour: {
+        vehicle: {
           select: {
             id: true,
-            title: true,
+            model: true,
+            brand: true,
           },
         },
       },
@@ -409,477 +411,477 @@ const updateReview = async (
   }
 };
 
-//Delete own review
-const deleteReview = async (
-  req: AuthRequest,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    const userId = req.id;
-    const { reviewId } = reviewIdParamsSchema.parse(req.params);
+// // Delete own review
+// const deleteReview = async (
+//   req: AuthRequest,
+//   res: Response,
+//   next: NextFunction,
+// ) => {
+//   try {
+//     const userId = req.id;
+//     const { reviewId } = reviewIdParamsSchema.parse(req.params);
 
-    if (!userId) {
-      return next({
-        status: 401,
-        success: false,
-        message: "Authentication required",
-      });
-    }
+//     if (!userId) {
+//       return next({
+//         status: 401,
+//         success: false,
+//         message: "Authentication required",
+//       });
+//     }
 
-    // Check if review exists and belongs to user
-    const existingReview = await prisma.tourReview.findUnique({
-      where: { id: reviewId },
-    });
+//     // Check if review exists and belongs to user
+//     const existingReview = await prisma.tourReview.findUnique({
+//       where: { id: reviewId },
+//     });
 
-    if (!existingReview) {
-      return next({ status: 404, success: false, message: "Review not found" });
-    }
+//     if (!existingReview) {
+//       return next({ status: 404, success: false, message: "Review not found" });
+//     }
 
-    if (existingReview.userId !== userId) {
-      return res.status(403).json({
-        success: false,
-        message: "You can only delete your own reviews",
-      });
-    }
+//     if (existingReview.userId !== userId) {
+//       return res.status(403).json({
+//         success: false,
+//         message: "You can only delete your own reviews",
+//       });
+//     }
 
-    await prisma.tourReview.delete({
-      where: { id: reviewId },
-    });
+//     await prisma.tourReview.delete({
+//       where: { id: reviewId },
+//     });
 
-    next({
-      status: 200,
-      success: true,
-      message: "Review deleted successfully",
-    });
-  } catch (error: any) {
-    if (error instanceof ZodError) {
-      return next({
-        status: 400,
-        message: error.issues || "Validation failed",
-      });
-    }
-    next({
-      status: 500,
-      message: error.message || "Internal server error",
-      error: error.message,
-    });
-  }
-};
+//     next({
+//       status: 200,
+//       success: true,
+//       message: "Review deleted successfully",
+//     });
+//   } catch (error: any) {
+//     if (error instanceof ZodError) {
+//       return next({
+//         status: 400,
+//         message: error.issues || "Validation failed",
+//       });
+//     }
+//     next({
+//       status: 500,
+//       message: error.message || "Internal server error",
+//       error: error.message,
+//     });
+//   }
+// };
 
-// Get current user's reviews
-const getUserReviews = async (
-  req: AuthRequest,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    const userId = req.id;
-    const { page, limit, rating, sortBy, sortOrder } =
-      vehicleReviewIdQuerySchema.parse(req.query);
-    const pageNumber = page ?? 1;
-    const limitNumber = limit ?? 10;
-    const skip = (pageNumber - 1) * limitNumber;
+// // Get current user's reviews
+// const getUserReviews = async (
+//   req: AuthRequest,
+//   res: Response,
+//   next: NextFunction,
+// ) => {
+//   try {
+//     const userId = req.id;
+//     const { page, limit, rating, sortBy, sortOrder } =
+//       vehicleReviewIdQuerySchema.parse(req.query);
+//     const pageNumber = page ?? 1;
+//     const limitNumber = limit ?? 10;
+//     const skip = (pageNumber - 1) * limitNumber;
 
-    if (!userId) {
-      return next({
-        status: 401,
-        success: false,
-        message: "Authentication required",
-      });
-    }
+//     if (!userId) {
+//       return next({
+//         status: 401,
+//         success: false,
+//         message: "Authentication required",
+//       });
+//     }
 
-    const where: any = { userId };
-    if (rating) {
-      where.rating = rating;
-    }
-    const validSortFields = ["updatedAt", "createdAt"];
+//     const where: any = { userId };
+//     if (rating) {
+//       where.rating = rating;
+//     }
+//     const validSortFields = ["updatedAt", "createdAt"];
 
-    const sortField = validSortFields.includes(sortBy as string)
-      ? (sortBy as string)
-      : "createdAt";
+//     const sortField = validSortFields.includes(sortBy as string)
+//       ? (sortBy as string)
+//       : "createdAt";
 
-    const sortOrderValue = sortOrder?.toLowerCase() === "desc" ? "desc" : "asc";
+//     const sortOrderValue = sortOrder?.toLowerCase() === "desc" ? "desc" : "asc";
 
-    const total = await prisma.tourReview.count({ where });
+//     const total = await prisma.tourReview.count({ where });
 
-    const reviews = await prisma.tourReview.findMany({
-      where,
-      include: {
-        tour: {
-          select: {
-            id: true,
-            title: true,
-            coverImage: true,
-          },
-        },
-        destination: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-      },
-      orderBy: {
-        [sortField]: sortOrderValue,
-      },
-      skip,
-      take: limitNumber,
-    });
+//     const reviews = await prisma.tourReview.findMany({
+//       where,
+//       include: {
+//         tour: {
+//           select: {
+//             id: true,
+//             title: true,
+//             coverImage: true,
+//           },
+//         },
+//         destination: {
+//           select: {
+//             id: true,
+//             name: true,
+//           },
+//         },
+//       },
+//       orderBy: {
+//         [sortField]: sortOrderValue,
+//       },
+//       skip,
+//       take: limitNumber,
+//     });
 
-    next({
-      status: 200,
-      success: true,
-      data: {
-        reviews,
-        pagination: {
-          total,
-          page: pageNumber,
-          limit: limitNumber,
-          totalPages: Math.ceil(total / limitNumber),
-        },
-      },
-    });
-  } catch (error: any) {
-    if (error instanceof ZodError) {
-      return next({
-        status: 400,
-        message: error.issues || "Validation failed",
-      });
-    }
-    next({
-      status: 500,
-      message: error.message || "Internal server error",
-      error: error.message,
-    });
-  }
-};
+//     next({
+//       status: 200,
+//       success: true,
+//       data: {
+//         reviews,
+//         pagination: {
+//           total,
+//           page: pageNumber,
+//           limit: limitNumber,
+//           totalPages: Math.ceil(total / limitNumber),
+//         },
+//       },
+//     });
+//   } catch (error: any) {
+//     if (error instanceof ZodError) {
+//       return next({
+//         status: 400,
+//         message: error.issues || "Validation failed",
+//       });
+//     }
+//     next({
+//       status: 500,
+//       message: error.message || "Internal server error",
+//       error: error.message,
+//     });
+//   }
+// };
 
-// Check if user can review a tour
-const canReviewTour = async (
-  req: AuthRequest,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    const userId = req.id;
-    const { tourId } = tourParamsSchema.parse(req.params);
+// // Check if user can review a tour
+// const canReviewTour = async (
+//   req: AuthRequest,
+//   res: Response,
+//   next: NextFunction,
+// ) => {
+//   try {
+//     const userId = req.id;
+//     const { tourId } = tourParamsSchema.parse(req.params);
 
-    if (!userId) {
-      return next({
-        status: 401,
-        success: false,
-        message: "Authentication required",
-      });
-    }
+//     if (!userId) {
+//       return next({
+//         status: 401,
+//         success: false,
+//         message: "Authentication required",
+//       });
+//     }
 
-    // Check if user has completed booking
-    const completedBooking = await prisma.tourBooking.findFirst({
-      where: {
-        userId,
-        tourId,
-        status: BookingStatus.COMPLETED,
-      },
-    });
+//     // Check if user has completed booking
+//     const completedBooking = await prisma.tourBooking.findFirst({
+//       where: {
+//         userId,
+//         tourId,
+//         status: BookingStatus.COMPLETED,
+//       },
+//     });
 
-    if (!completedBooking) {
-      return next({
-        status: 200,
-        success: true,
-        data: {
-          canReview: false,
-          reason: "You have not completed this tour yet",
-        },
-      });
-    }
+//     if (!completedBooking) {
+//       return next({
+//         status: 200,
+//         success: true,
+//         data: {
+//           canReview: false,
+//           reason: "You have not completed this tour yet",
+//         },
+//       });
+//     }
 
-    // Check if review already exists
-    const existingReview = await prisma.tourReview.findUnique({
-      where: {
-        tourId_userId: {
-          tourId,
-          userId,
-        },
-      },
-    });
+//     // Check if review already exists
+//     const existingReview = await prisma.tourReview.findUnique({
+//       where: {
+//         tourId_userId: {
+//           tourId,
+//           userId,
+//         },
+//       },
+//     });
 
-    if (existingReview) {
-      return next({
-        status: 201,
-        success: true,
-        data: {
-          canReview: false,
-          reason:
-            "You have already reviewed this tour. You can only update existing review.",
-          existingReview: {
-            id: existingReview.id,
-            rating: existingReview.rating,
-            comment: existingReview.comment,
-          },
-        },
-      });
-    }
+//     if (existingReview) {
+//       return next({
+//         status: 201,
+//         success: true,
+//         data: {
+//           canReview: false,
+//           reason:
+//             "You have already reviewed this tour. You can only update existing review.",
+//           existingReview: {
+//             id: existingReview.id,
+//             rating: existingReview.rating,
+//             comment: existingReview.comment,
+//           },
+//         },
+//       });
+//     }
 
-    next({
-      status: 200,
-      success: true,
-      data: {
-        canReview: true,
-        reason: "You can review this tour",
-      },
-    });
-  } catch (error: any) {
-    if (error instanceof ZodError) {
-      return next({
-        status: 400,
-        message: error.issues || "Validation failed",
-      });
-    }
-    next({
-      status: 500,
-      message: error.message || "Internal server error",
-      error: error.message,
-    });
-  }
-};
+//     next({
+//       status: 200,
+//       success: true,
+//       data: {
+//         canReview: true,
+//         reason: "You can review this tour",
+//       },
+//     });
+//   } catch (error: any) {
+//     if (error instanceof ZodError) {
+//       return next({
+//         status: 400,
+//         message: error.issues || "Validation failed",
+//       });
+//     }
+//     next({
+//       status: 500,
+//       message: error.message || "Internal server error",
+//       error: error.message,
+//     });
+//   }
+// };
 
-// Get all reviews
-const getAllReviews = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    const {
-      page,
-      limit,
-      rating,
-      tourId,
-      destinationId,
-      userId,
-      sortBy,
-      sortOrder,
-    } = reviewQuerySchema.parse(req.query);
+// // Get all reviews
+// const getAllReviews = async (
+//   req: Request,
+//   res: Response,
+//   next: NextFunction,
+// ) => {
+//   try {
+//     const {
+//       page,
+//       limit,
+//       rating,
+//       tourId,
+//       destinationId,
+//       userId,
+//       sortBy,
+//       sortOrder,
+//     } = reviewQuerySchema.parse(req.query);
 
-    const pageNumber = page ?? 1;
-    const limitNumber = limit ?? 10;
-    const skip = (pageNumber - 1) * limitNumber;
+//     const pageNumber = page ?? 1;
+//     const limitNumber = limit ?? 10;
+//     const skip = (pageNumber - 1) * limitNumber;
 
-    const where: any = {};
-    if (rating) {
-      where.rating = rating;
-    }
-    if (tourId) {
-      where.tourId = tourId as string;
-    }
-    if (destinationId) {
-      where.destinationId = destinationId as string;
-    }
-    if (userId) {
-      where.userId = userId as string;
-    }
+//     const where: any = {};
+//     if (rating) {
+//       where.rating = rating;
+//     }
+//     if (tourId) {
+//       where.tourId = tourId as string;
+//     }
+//     if (destinationId) {
+//       where.destinationId = destinationId as string;
+//     }
+//     if (userId) {
+//       where.userId = userId as string;
+//     }
 
-    const validSortFields = ["updatedAt", "createdAt"];
-    const sortField = validSortFields.includes(sortBy as string)
-      ? (sortBy as string)
-      : "createdAt";
+//     const validSortFields = ["updatedAt", "createdAt"];
+//     const sortField = validSortFields.includes(sortBy as string)
+//       ? (sortBy as string)
+//       : "createdAt";
 
-    const sortOrderValue = sortOrder?.toLowerCase() === "desc" ? "desc" : "asc";
+//     const sortOrderValue = sortOrder?.toLowerCase() === "desc" ? "desc" : "asc";
 
-    const total = await prisma.tourReview.count({ where });
+//     const total = await prisma.tourReview.count({ where });
 
-    const reviews = await prisma.tourReview.findMany({
-      where,
-      include: {
-        user: {
-          select: {
-            id: true,
-            fullName: true,
-            email: true,
-            profileImage: true,
-          },
-        },
-        tour: {
-          select: {
-            id: true,
-            title: true,
-          },
-        },
-        destination: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-      },
-      orderBy: {
-        [sortField]: sortOrderValue,
-      },
-      skip,
-      take: limitNumber,
-    });
+//     const reviews = await prisma.tourReview.findMany({
+//       where,
+//       include: {
+//         user: {
+//           select: {
+//             id: true,
+//             fullName: true,
+//             email: true,
+//             profileImage: true,
+//           },
+//         },
+//         tour: {
+//           select: {
+//             id: true,
+//             title: true,
+//           },
+//         },
+//         destination: {
+//           select: {
+//             id: true,
+//             name: true,
+//           },
+//         },
+//       },
+//       orderBy: {
+//         [sortField]: sortOrderValue,
+//       },
+//       skip,
+//       take: limitNumber,
+//     });
 
-    next({
-      status: 200,
-      success: true,
-      data: {
-        reviews,
-        pagination: {
-          total,
-          page: pageNumber,
-          limit: limitNumber,
-          totalPages: Math.ceil(total / limitNumber),
-        },
-      },
-    });
-  } catch (error: any) {
-    if (error instanceof ZodError) {
-      return next({
-        status: 400,
-        message: error.issues || "Validation failed",
-      });
-    }
-    next({
-      status: 500,
-      message: error.message || "Internal server error",
-      error: error.message,
-    });
-  }
-};
+//     next({
+//       status: 200,
+//       success: true,
+//       data: {
+//         reviews,
+//         pagination: {
+//           total,
+//           page: pageNumber,
+//           limit: limitNumber,
+//           totalPages: Math.ceil(total / limitNumber),
+//         },
+//       },
+//     });
+//   } catch (error: any) {
+//     if (error instanceof ZodError) {
+//       return next({
+//         status: 400,
+//         message: error.issues || "Validation failed",
+//       });
+//     }
+//     next({
+//       status: 500,
+//       message: error.message || "Internal server error",
+//       error: error.message,
+//     });
+//   }
+// };
 
-// Delete any review (admin)
-const adminDeleteReview = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    const { reviewId } = reviewIdParamsSchema.parse(req.params);
+// // Delete any review (admin)
+// const adminDeleteReview = async (
+//   req: Request,
+//   res: Response,
+//   next: NextFunction,
+// ) => {
+//   try {
+//     const { reviewId } = reviewIdParamsSchema.parse(req.params);
 
-    const review = await prisma.tourReview.findUnique({
-      where: { id: reviewId },
-    });
+//     const review = await prisma.tourReview.findUnique({
+//       where: { id: reviewId },
+//     });
 
-    if (!review) {
-      return next({ status: 404, success: false, message: "Review not found" });
-    }
+//     if (!review) {
+//       return next({ status: 404, success: false, message: "Review not found" });
+//     }
 
-    await prisma.tourReview.delete({
-      where: { id: reviewId },
-    });
+//     await prisma.tourReview.delete({
+//       where: { id: reviewId },
+//     });
 
-    next({
-      status: 200,
-      success: true,
-      message: "Review deleted successfully",
-    });
-  } catch (error: any) {
-    if (error instanceof ZodError) {
-      return next({
-        status: 400,
-        message: error.issues || "Validation failed",
-      });
-    }
-    next({
-      status: 500,
-      message: error.message || "Internal server error",
-      error: error.message,
-    });
-  }
-};
+//     next({
+//       status: 200,
+//       success: true,
+//       message: "Review deleted successfully",
+//     });
+//   } catch (error: any) {
+//     if (error instanceof ZodError) {
+//       return next({
+//         status: 400,
+//         message: error.issues || "Validation failed",
+//       });
+//     }
+//     next({
+//       status: 500,
+//       message: error.message || "Internal server error",
+//       error: error.message,
+//     });
+//   }
+// };
 
-// Get review statistics (admin)
-const getReviewStatistics = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    const { tourId, destinationId } = reviewStatisticsQuerySchema.parse(
-      req.query,
-    );
+// // Get review statistics (admin)
+// const getReviewStatistics = async (
+//   req: Request,
+//   res: Response,
+//   next: NextFunction,
+// ) => {
+//   try {
+//     const { tourId, destinationId } = reviewStatisticsQuerySchema.parse(
+//       req.query,
+//     );
 
-    const where: any = {};
-    if (tourId) {
-      where.tourId = tourId as string;
-    }
-    if (destinationId) {
-      where.destinationId = destinationId as string;
-    }
+//     const where: any = {};
+//     if (tourId) {
+//       where.tourId = tourId as string;
+//     }
+//     if (destinationId) {
+//       where.destinationId = destinationId as string;
+//     }
 
-    const reviews = await prisma.tourReview.findMany({
-      where,
-      select: {
-        rating: true,
-        createdAt: true,
-      },
-    });
+//     const reviews = await prisma.tourReview.findMany({
+//       where,
+//       select: {
+//         rating: true,
+//         createdAt: true,
+//       },
+//     });
 
-    const totalReviews = reviews.length;
+//     const totalReviews = reviews.length;
 
-    const averageRating =
-      totalReviews > 0
-        ? reviews.reduce((sum, r) => sum + r.rating, 0) / totalReviews
-        : 0;
+//     const averageRating =
+//       totalReviews > 0
+//         ? reviews.reduce((sum, r) => sum + r.rating, 0) / totalReviews
+//         : 0;
 
-    // Initialize distribution
-    const ratingDistribution: Record<string, number> = {
-      "1": 0,
-      "2": 0,
-      "3": 0,
-      "4": 0,
-      "5": 0,
-    };
+//     // Initialize distribution
+//     const ratingDistribution: Record<string, number> = {
+//       "1": 0,
+//       "2": 0,
+//       "3": 0,
+//       "4": 0,
+//       "5": 0,
+//     };
 
-    // Bucket ratings
-    reviews.forEach((r) => {
-      const bucket = Math.floor(r.rating);
+//     // Bucket ratings
+//     reviews.forEach((r) => {
+//       const bucket = Math.floor(r.rating);
 
-      if (bucket >= 1 && bucket <= 5) {
-        ratingDistribution[bucket.toString()]++;
-      }
-    });
+//       if (bucket >= 1 && bucket <= 5) {
+//         ratingDistribution[bucket.toString()]++;
+//       }
+//     });
 
-    // Reviews by month (last 6 months)
-    const now = new Date();
-    const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 6, 1);
+//     // Reviews by month (last 6 months)
+//     const now = new Date();
+//     const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 6, 1);
 
-    const reviewsByMonth = reviews
-      .filter((r) => r.createdAt >= sixMonthsAgo)
-      .reduce((acc: any, review) => {
-        const month = review.createdAt.toISOString().slice(0, 7);
-        acc[month] = (acc[month] || 0) + 1;
-        return acc;
-      }, {});
+//     const reviewsByMonth = reviews
+//       .filter((r) => r.createdAt >= sixMonthsAgo)
+//       .reduce((acc: any, review) => {
+//         const month = review.createdAt.toISOString().slice(0, 7);
+//         acc[month] = (acc[month] || 0) + 1;
+//         return acc;
+//       }, {});
 
-    next({
-      status: 200,
-      success: true,
-      data: {
-        totalReviews,
-        averageRating: Math.round(averageRating * 10) / 10,
-        ratingDistribution,
-        reviewsByMonth,
-        filters: {
-          tourId: tourId || null,
-          destinationId: destinationId || null,
-        },
-      },
-    });
-  } catch (error: any) {
-    if (error instanceof ZodError) {
-      return next({
-        status: 400,
-        message: error.issues || "Validation failed",
-      });
-    }
-    next({
-      status: 500,
-      message: error.message || "Internal server error",
-      error: error.message,
-    });
-  }
-};
+//     next({
+//       status: 200,
+//       success: true,
+//       data: {
+//         totalReviews,
+//         averageRating: Math.round(averageRating * 10) / 10,
+//         ratingDistribution,
+//         reviewsByMonth,
+//         filters: {
+//           tourId: tourId || null,
+//           destinationId: destinationId || null,
+//         },
+//       },
+//     });
+//   } catch (error: any) {
+//     if (error instanceof ZodError) {
+//       return next({
+//         status: 400,
+//         message: error.issues || "Validation failed",
+//       });
+//     }
+//     next({
+//       status: 500,
+//       message: error.message || "Internal server error",
+//       error: error.message,
+//     });
+//   }
+// };
 
 // Bulk delete reviews (admin)
 const bulkDeleteReviews = async (
@@ -932,7 +934,7 @@ export {
   createVehicleReview,
   getVehicleReviews,
   getVehicleReviewById,
-  updateReview,
+  updateVehicleReview,
   deleteReview,
   getUserReviews,
   canReviewTour,

@@ -110,6 +110,7 @@ registerRoute({
   tags: ["Tour Review"],
   security: [{ bearerAuth: [] }],
   request: {
+    params:reviewIdParamsSchema,
     body: {
       content: { "application/json": { schema: updateTourReviewSchema } },
     },
