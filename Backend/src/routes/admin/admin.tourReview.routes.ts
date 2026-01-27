@@ -4,7 +4,6 @@ import {
   adminDeleteReview,
   bulkDeleteReviews,
   getAllReviews,
-  getReviewById,
   getReviewStatistics,
 } from "../../controllers/tourReview.controller";
 import { registerRoute } from "../../utils/openapi.utils";
@@ -23,7 +22,6 @@ import {
   reviewStatisticsResponseSchema,
   tourReviewsListResponseSchema,
 } from "../../schema";
-import { validateQuery, validateRequest } from "../../middleware/validate";
 
 const router = Router();
 

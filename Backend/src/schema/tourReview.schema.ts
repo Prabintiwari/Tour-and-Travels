@@ -151,11 +151,6 @@ const bulkDeleteReviewSchema = z
   })
   .openapi("BulkDeleteReview");
 
-type CreateTourReviewInput = z.infer<typeof createTourReviewSchema>;
-type UpdateTourReviewInput = z.infer<typeof updateTourReviewSchema>;
-type ReviewQueryParams = z.infer<typeof reviewQuerySchema>;
-type ReviewIdQueryParams = z.infer<typeof reviewIdQuerySchema>;
-type reviewStatisticsQueryParams = z.infer<typeof reviewStatisticsQuerySchema>;
 
 export {
   createTourReviewSchema,
@@ -163,14 +158,9 @@ export {
   tourReviewResponseSchema,
   tourReviewsListResponseSchema,
   reviewQuerySchema,
-  CreateTourReviewInput,
-  UpdateTourReviewInput,
-  ReviewQueryParams,
   reviewIdQuerySchema,
-  ReviewIdQueryParams,
   reviewIdParamsSchema,
   bulkDeleteReviewSchema,
   reviewStatisticsQuerySchema,
-  reviewStatisticsQueryParams,
   reviewStatisticsResponseSchema,
 };

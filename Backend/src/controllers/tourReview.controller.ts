@@ -1,9 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import prisma from "../config/prisma";
 import {
-  ReviewQueryParams,
-  ReviewIdQueryParams,
-  reviewStatisticsQueryParams,
   createTourReviewSchema,
   tourParamsSchema,
   bulkDeleteReviewSchema,
