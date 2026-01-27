@@ -1,21 +1,18 @@
 import { Router } from "express";
 import { authenticateToken } from "../../middleware/auth";
 import {
-  createTourReviewSchema,
-  destinationIdParamSchema,
   reviewIdParamsSchema,
   reviewIdQuerySchema,
   tourParamsSchema,
   tourReviewResponseSchema,
   updateTourReviewSchema,
   userIdParamSchema,
+  vehicleParamsSchema,
 } from "../../schema";
 import {
   canReviewTour,
   deleteReview,
-  getDestinationReviews,
   getReviewById,
-  getTourReviews,
   getUserReviews,
   updateReview,
 } from "../../controllers/tourReview.controller";
@@ -28,12 +25,12 @@ import {
   internalServerErrorSchema,
   unauthorizedErrorSchema,
 } from "../../schema/common.schema";
-import { createVehicleReview } from "../../controllers/vehicleReview.controller";
-import { createVehicleReviewSchema, vehicleReviewResponseSchema } from "../../schema/vehicleReview.schema";
+import { createVehicleReview, getVehicleReviewById, getVehicleReviews } from "../../controllers/vehicleReview.controller";
+import { createVehicleReviewSchema, vehicleReviewIdQuerySchema, vehicleReviewResponseSchema, vehicleReviewsListResponseSchema } from "../../schema/vehicleReview.schema";
 
 const router = Router();
 
-// Tour review routes
+// Vehicle review routes
 router.post(
   "/",
   authenticateToken,
@@ -41,19 +38,14 @@ router.post(
 );
 
 router.get(
-  "/tour/:tourId/can-review",
+  "/vehicle/:vehicleId/can-review",
   authenticateToken,
   canReviewTour
 );
 
 router.get(
-  "/tour/:tourId",
-  getTourReviews
-);
-
-router.get(
-  "/destination/:destinationId",
-  getDestinationReviews
+  "/vehicle/:vehicleId",
+  getVehicleReviews
 );
 
 router.get(
@@ -62,7 +54,7 @@ router.get(
   getUserReviews
 );
 
-router.get("/:reviewId", getReviewById);
+router.get("/:reviewId", getVehicleReviewById);
 
 router.patch(
   "/:reviewId",
@@ -103,7 +95,7 @@ registerRoute({
   },
 });
 
-// Update a new tour review
+// Update a new vehicle review
 registerRoute({
   method: "patch",
   path: "/api/tour-review/{reviewId}",
@@ -128,7 +120,7 @@ registerRoute({
   },
 });
 
-// Check if user can review a tour
+// Check if user can review a vehicle
 registerRoute({
   method: "get",
   path: "/api/tour-review/tour/{tourId}/can-review",
@@ -151,7 +143,7 @@ registerRoute({
   },
 });
 
-// Get tour reviews by user ID
+// Get vehicle reviews by user ID
 registerRoute({
   method: "get",
   path: "/api/tour-review/user/{userId}",
@@ -175,20 +167,20 @@ registerRoute({
   },
 });
 
-// Get tour reviews by tour ID
+// Get vehicle reviews by vehicle ID
 registerRoute({
   method: "get",
-  path: "/api/tour-review/tour/{tourId}",
-  summary: "Get review by tour Id",
-  tags: ["Tour Review"],
+  path: "/api/vehicle-review/vehicle/{vehicleId}",
+  summary: "Get review by vehicle Id",
+  tags: ["Vehicle Review"],
   request: {
-    params: tourParamsSchema,
-    query: reviewIdQuerySchema,
+    params: vehicleParamsSchema,
+    query: vehicleReviewIdQuerySchema,
   },
   responses: {
     200: {
-      description: "Get Tour Review successfully",
-      content: { "application/json": { schema: tourReviewResponseSchema } },
+      description: "Get Vehicle Review successfully",
+      content: { "application/json": { schema: vehicleReviewsListResponseSchema } },
     },
     400: errorResponse(badRequestErrorSchema, "Bad Request"),
     401: errorResponse(unauthorizedErrorSchema, "Unauthorized"),
@@ -198,42 +190,19 @@ registerRoute({
   },
 });
 
-// Get tour reviews by destination ID
+// Get vehicle reviews by  ID
 registerRoute({
   method: "get",
-  path: "/api/tour-review/destination/{destinationId}",
-  summary: "Get review by destination Id",
-  tags: ["Tour Review"],
-  request: {
-    params: destinationIdParamSchema,
-    query: reviewIdQuerySchema,
-  },
-  responses: {
-    200: {
-      description: "Get Destination Review successfully",
-      content: { "application/json": { schema: tourReviewResponseSchema } },
-    },
-    400: errorResponse(badRequestErrorSchema, "Bad Request"),
-    401: errorResponse(unauthorizedErrorSchema, "Unauthorized"),
-    403: errorResponse(forbiddenErrorSchema, "Forbidden"),
-    409: errorResponse(conflictErrorSchema, "Conflict"),
-    500: errorResponse(internalServerErrorSchema, "Internal Server Error"),
-  },
-});
-
-// Get tour reviews by  ID
-registerRoute({
-  method: "get",
-  path: "/api/tour-review/{reviewId}",
+  path: "/api/vehicle-review/{reviewId}",
   summary: "Get review by Id",
-  tags: ["Tour Review"],
+  tags: ["Vehicle Review"],
   request: {
     params: reviewIdParamsSchema,
   },
   responses: {
     200: {
       description: "Get Review successfully",
-      content: { "application/json": { schema: tourReviewResponseSchema } },
+      content: { "application/json": { schema: vehicleReviewResponseSchema } },
     },
     400: errorResponse(badRequestErrorSchema, "Bad Request"),
     401: errorResponse(unauthorizedErrorSchema, "Unauthorized"),
@@ -243,7 +212,7 @@ registerRoute({
   },
 });
 
-// Delete tour reviews by  ID
+// Delete vehicle reviews by  ID
 registerRoute({
   method: "delete",
   path: "/api/tour-review/{reviewId}",

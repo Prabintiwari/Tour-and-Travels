@@ -9,11 +9,15 @@ import {
   reviewQuerySchema,
   reviewStatisticsQuerySchema,
   vehicleParamsSchema,
+  vehicleReviewIdParamsSchema,
 } from "../schema";
 import { AuthRequest } from "../middleware/auth";
 import { BookingStatus, RentalStatus } from "@prisma/client";
 import { ZodError } from "zod";
-import { createVehicleReviewSchema, vehicleReviewIdQuerySchema } from "../schema";
+import {
+  createVehicleReviewSchema,
+  vehicleReviewIdQuerySchema,
+} from "../schema";
 
 // Create a tour review
 const createVehicleReview = async (
@@ -143,7 +147,8 @@ const getVehicleReviews = async (
 ) => {
   try {
     const { vehicleId } = vehicleParamsSchema.parse(req.params);
-    const { page, limit, rating, sortBy, sortOrder } =vehicleReviewIdQuerySchema.parse(req.query);
+    const { page, limit, rating, sortBy, sortOrder } =
+      vehicleReviewIdQuerySchema.parse(req.query);
 
     const pageNumber = page ?? 1;
     const limitNumber = limit ?? 10;
@@ -155,7 +160,11 @@ const getVehicleReviews = async (
     });
 
     if (!vehicle) {
-      return next({ status: 404, success: false, message: "Vehicle not found" });
+      return next({
+        status: 404,
+        success: false,
+        message: "Vehicle not found",
+      });
     }
 
     // Build filter
@@ -195,7 +204,7 @@ const getVehicleReviews = async (
 
     // Calculate statistics
     const allReviews = await prisma.vehicleReview.findMany({
-      where: { vehicleId     },
+      where: { vehicleId },
       select: { rating: true },
     });
 
@@ -258,15 +267,15 @@ const getVehicleReviews = async (
 };
 
 // Get a single review by ID
-const getReviewById = async (
+const getVehicleReviewById = async (
   req: Request,
   res: Response,
   next: NextFunction,
 ) => {
   try {
-    const { reviewId } = reviewIdParamsSchema.parse(req.params);
+    const { reviewId } = vehicleReviewIdParamsSchema.parse(req.params);
 
-    const review = await prisma.tourReview.findUnique({
+    const review = await prisma.vehicleReview.findUnique({
       where: { id: reviewId },
       include: {
         user: {
@@ -277,18 +286,12 @@ const getReviewById = async (
             email: true,
           },
         },
-        tour: {
+        vehicle: {
           select: {
             id: true,
-            title: true,
-            coverImage: true,
-          },
-        },
-        destination: {
-          select: {
-            id: true,
-            name: true,
-            imageUrl: true,
+            model: true,
+            brand: true,
+            images: true,
           },
         },
       },
@@ -928,7 +931,7 @@ const bulkDeleteReviews = async (
 export {
   createVehicleReview,
   getVehicleReviews,
-  getReviewById,
+  getVehicleReviewById,
   updateReview,
   deleteReview,
   getUserReviews,
