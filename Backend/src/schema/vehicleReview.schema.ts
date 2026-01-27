@@ -46,6 +46,24 @@ const updateVehicleReviewSchema = z
   })
   .openapi("UpdateVehicleReview");
 
+const vehicleReviewIdQuerySchema = z.object({
+  page: z.coerce.number().int().positive().optional(),
+  limit: z.coerce.number().int().positive().optional(),
+  rating: z
+    .string()
+    .transform(Number)
+    .pipe(z.number().int().min(1).max(5))
+    .optional(),
+  sortBy: z.string().optional().openapi({
+    example: "startDate",
+    description: "Sort by field",
+  }),
+  sortOrder: z.string().optional().default("asc").openapi({
+    example: "asc",
+    description: "Sort order",
+  }),
+});
+
 const getVehicleReviewsQuerySchema = z
   .object({
     vehicleId: z
@@ -104,7 +122,7 @@ const vehicleReviewsListResponseSchema = paginatedResponse(
   vehicleReviewResponseSchema,
 ).openapi("VehicleReviewsListResponse");
 
-const reviewIdParamsSchema = z.object({
+const vehicleReviewIdParamsSchema = z.object({
   reviewId: z.string().min(1).openapi({ example: "review_123abc" }),
 });
 
@@ -120,7 +138,7 @@ const deleteVehicleReviewParamsSchema = z
   })
   .openapi("DeleteVehicleReviewParams");
 
-const bulkDeleteReviewSchema = z
+const bulkDeleteVehicleReviewSchema = z
   .object({
     reviewIds: z
       .array(z.string().min(1))
@@ -135,9 +153,10 @@ export {
   createVehicleReviewSchema,
   updateVehicleReviewSchema,
   getVehicleReviewsQuerySchema,
-  reviewIdParamsSchema,
+  vehicleReviewIdParamsSchema,
+  vehicleReviewIdQuerySchema,
   deleteVehicleReviewParamsSchema,
   vehicleReviewResponseSchema,
   vehicleReviewsListResponseSchema,
-  bulkDeleteReviewSchema,
+  bulkDeleteVehicleReviewSchema,
 };

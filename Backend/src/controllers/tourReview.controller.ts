@@ -209,7 +209,7 @@ const getTourReviews = async (
       select: { rating: true },
     });
 
-    const totalReviews = reviews.length;
+    const totalReviews = allReviews.length;
 
     const averageRating =
       totalReviews > 0

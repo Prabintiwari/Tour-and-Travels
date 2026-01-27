@@ -1,20 +1,19 @@
 import { Request, Response, NextFunction } from "express";
 import prisma from "../config/prisma";
 import {
-  createTourReviewSchema,
   tourParamsSchema,
   bulkDeleteReviewSchema,
   reviewIdParamsSchema,
-  reviewIdQuerySchema,
   destinationIdParamSchema,
   updateTourReviewSchema,
   reviewQuerySchema,
   reviewStatisticsQuerySchema,
+  vehicleParamsSchema,
 } from "../schema";
 import { AuthRequest } from "../middleware/auth";
 import { BookingStatus, RentalStatus } from "@prisma/client";
 import { ZodError } from "zod";
-import { createVehicleReviewSchema } from "../schema/vehicleReview.schema";
+import { createVehicleReviewSchema, vehicleReviewIdQuerySchema } from "../schema";
 
 // Create a tour review
 const createVehicleReview = async (
@@ -136,32 +135,31 @@ const createVehicleReview = async (
   }
 };
 
-// Get all reviews for a tour
-const getTourReviews = async (
+// Get all reviews for a vehicle
+const getVehicleReviews = async (
   req: Request,
   res: Response,
   next: NextFunction,
 ) => {
   try {
-    const { tourId } = tourParamsSchema.parse(req.params);
-    const { page, limit, rating, sortBy, sortOrder } =
-      reviewIdQuerySchema.parse(req.query);
+    const { vehicleId } = vehicleParamsSchema.parse(req.params);
+    const { page, limit, rating, sortBy, sortOrder } =vehicleReviewIdQuerySchema.parse(req.query);
 
     const pageNumber = page ?? 1;
     const limitNumber = limit ?? 10;
     const skip = (pageNumber - 1) * limitNumber;
 
-    // Validate tour exists
-    const tour = await prisma.tour.findUnique({
-      where: { id: tourId },
+    // Validate vehicle exists
+    const vehicle = await prisma.vehicle.findUnique({
+      where: { id: vehicleId },
     });
 
-    if (!tour) {
-      return next({ status: 404, success: false, message: "Tour not found" });
+    if (!vehicle) {
+      return next({ status: 404, success: false, message: "Vehicle not found" });
     }
 
     // Build filter
-    const where: any = { tourId };
+    const where: any = { vehicleId };
     if (rating) {
       where.rating = rating;
     }
@@ -175,10 +173,10 @@ const getTourReviews = async (
     const sortOrderValue = sortOrder?.toLowerCase() === "desc" ? "desc" : "asc";
 
     // Get total count
-    const total = await prisma.tourReview.count({ where });
+    const total = await prisma.vehicleReview.count({ where });
 
     // Get reviews with user details
-    const reviews = await prisma.tourReview.findMany({
+    const reviews = await prisma.vehicleReview.findMany({
       where,
       include: {
         user: {
@@ -196,12 +194,12 @@ const getTourReviews = async (
     });
 
     // Calculate statistics
-    const allReviews = await prisma.tourReview.findMany({
-      where: { tourId },
+    const allReviews = await prisma.vehicleReview.findMany({
+      where: { vehicleId     },
       select: { rating: true },
     });
 
-    const totalReviews = reviews.length;
+    const totalReviews = allReviews.length;
 
     const averageRating =
       totalReviews > 0
@@ -304,116 +302,6 @@ const getReviewById = async (
       status: 200,
       success: true,
       data: review,
-    });
-  } catch (error: any) {
-    if (error instanceof ZodError) {
-      return next({
-        status: 400,
-        message: error.issues || "Validation failed",
-      });
-    }
-    next({
-      status: 500,
-      message: error.message || "Internal server error",
-      error: error.message,
-    });
-  }
-};
-
-//Get reviews by destination
-const getDestinationReviews = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    const { destinationId } = destinationIdParamSchema.parse(req.params);
-    const { page, limit, rating, sortBy, sortOrder } =
-      reviewIdQuerySchema.parse(req.query);
-
-    const pageNumber = page ?? 1;
-    const limitNumber = limit ?? 10;
-    const skip = (pageNumber - 1) * limitNumber;
-
-    // Validate destination exists
-    const destination = await prisma.destination.findUnique({
-      where: { id: destinationId },
-    });
-
-    if (!destination) {
-      return next({
-        status: 404,
-        success: false,
-        message: "Destination not found",
-      });
-    }
-
-    const where: any = { destinationId };
-    if (rating) {
-      where.rating = rating;
-    }
-    const validSortFields = ["updatedAt", "createdAt"];
-
-    const sortField = validSortFields.includes(sortBy as string)
-      ? (sortBy as string)
-      : "createdAt";
-
-    const sortOrderValue = sortOrder?.toLowerCase() === "desc" ? "desc" : "asc";
-
-    const total = await prisma.tourReview.count({ where });
-
-    const reviews = await prisma.tourReview.findMany({
-      where,
-      include: {
-        user: {
-          select: {
-            id: true,
-            fullName: true,
-            profileImage: true,
-          },
-        },
-        tour: {
-          select: {
-            id: true,
-            title: true,
-          },
-        },
-      },
-      orderBy: {
-        [sortField]: sortOrderValue,
-      },
-      skip,
-      take: limitNumber,
-    });
-
-    // Calculate stats
-    const allReviews = await prisma.tourReview.findMany({
-      where: { destinationId },
-      select: { rating: true },
-    });
-
-    const totalReviews = allReviews.length;
-    const averageRating =
-      totalReviews > 0
-        ? allReviews.reduce((sum, r) => sum + r.rating, 0) / totalReviews
-        : 0;
-
-    next({
-      status: 200,
-      success: true,
-      data: {
-        reviews,
-        pagination: {
-          total,
-          page: pageNumber,
-          limit: limitNumber,
-          totalPages: Math.ceil(total / limitNumber),
-        },
-        stats: {
-          averageRating: Math.round(averageRating * 10) / 10,
-          totalReviews,
-        },
-      },
     });
   } catch (error: any) {
     if (error instanceof ZodError) {
@@ -585,7 +473,7 @@ const getUserReviews = async (
   try {
     const userId = req.id;
     const { page, limit, rating, sortBy, sortOrder } =
-      reviewIdQuerySchema.parse(req.query);
+      vehicleReviewIdQuerySchema.parse(req.query);
     const pageNumber = page ?? 1;
     const limitNumber = limit ?? 10;
     const skip = (pageNumber - 1) * limitNumber;
@@ -1039,9 +927,8 @@ const bulkDeleteReviews = async (
 
 export {
   createVehicleReview,
-  getTourReviews,
+  getVehicleReviews,
   getReviewById,
-  getDestinationReviews,
   updateReview,
   deleteReview,
   getUserReviews,

@@ -39,3 +39,6 @@ export * from "./vehicle.schema";
 
 // Vehicle Booking 
 export * from "./vehicleBooking.schema";
+
+// Vehicle Review 
+export * from "./vehicleReview.schema";
