@@ -554,93 +554,93 @@ const getUserVehicleReviews = async (
   }
 };
 
-// // Check if user can review a tour
-// const canReviewTour = async (
-//   req: AuthRequest,
-//   res: Response,
-//   next: NextFunction,
-// ) => {
-//   try {
-//     const userId = req.id;
-//     const { tourId } = tourParamsSchema.parse(req.params);
+// Check if user can review a tour
+const canReviewVehicle = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const userId = req.id;
+    const { vehicleId } = vehicleParamsSchema.parse(req.params);
 
-//     if (!userId) {
-//       return next({
-//         status: 401,
-//         success: false,
-//         message: "Authentication required",
-//       });
-//     }
+    if (!userId) {
+      return next({
+        status: 401,
+        success: false,
+        message: "Authentication required",
+      });
+    }
 
-//     // Check if user has completed booking
-//     const completedBooking = await prisma.tourBooking.findFirst({
-//       where: {
-//         userId,
-//         tourId,
-//         status: BookingStatus.COMPLETED,
-//       },
-//     });
+    // Check if user has completed booking
+    const completedBooking = await prisma.vehicleBooking.findFirst({
+      where: {
+        userId,
+        vehicleId,
+        status: RentalStatus.COMPLETED,
+      },
+    });
 
-//     if (!completedBooking) {
-//       return next({
-//         status: 200,
-//         success: true,
-//         data: {
-//           canReview: false,
-//           reason: "You have not completed this tour yet",
-//         },
-//       });
-//     }
+    if (!completedBooking) {
+      return next({
+        status: 200,
+        success: true,
+        data: {
+          canReview: false,
+          reason: "You can only review a vehicle after completing a rental",
+        },
+      });
+    }
 
-//     // Check if review already exists
-//     const existingReview = await prisma.tourReview.findUnique({
-//       where: {
-//         tourId_userId: {
-//           tourId,
-//           userId,
-//         },
-//       },
-//     });
+    // Check if review already exists
+    const existingReview = await prisma.vehicleReview.findUnique({
+      where: {
+        vehicleId_userId: {
+          vehicleId,
+          userId,
+        },
+      },
+    });
 
-//     if (existingReview) {
-//       return next({
-//         status: 201,
-//         success: true,
-//         data: {
-//           canReview: false,
-//           reason:
-//             "You have already reviewed this tour. You can only update existing review.",
-//           existingReview: {
-//             id: existingReview.id,
-//             rating: existingReview.rating,
-//             comment: existingReview.comment,
-//           },
-//         },
-//       });
-//     }
+    if (existingReview) {
+      return next({
+        status: 201,
+        success: true,
+        data: {
+          canReview: false,
+          reason:
+            "You have already reviewed this vehicle. You can only update existing review.",
+          existingReview: {
+            id: existingReview.id,
+            rating: existingReview.rating,
+            comment: existingReview.comment,
+          },
+        },
+      });
+    }
 
-//     next({
-//       status: 200,
-//       success: true,
-//       data: {
-//         canReview: true,
-//         reason: "You can review this tour",
-//       },
-//     });
-//   } catch (error: any) {
-//     if (error instanceof ZodError) {
-//       return next({
-//         status: 400,
-//         message: error.issues || "Validation failed",
-//       });
-//     }
-//     next({
-//       status: 500,
-//       message: error.message || "Internal server error",
-//       error: error.message,
-//     });
-//   }
-// };
+    next({
+      status: 200,
+      success: true,
+      data: {
+        canReview: true,
+        reason: "You can review this vehicle",
+      },
+    });
+  } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
+    next({
+      status: 500,
+      message: error.message || "Internal server error",
+      error: error.message,
+    });
+  }
+};
 
 // // Get all reviews
 // const getAllReviews = async (
@@ -934,7 +934,7 @@ export {
   updateVehicleReview,
   deleteVehicleReview,
   getUserVehicleReviews,
-  //   canReviewTour,
+  canReviewVehicle,
   //   getAllReviews,
   //   adminDeleteReview,
   //   getReviewStatistics,

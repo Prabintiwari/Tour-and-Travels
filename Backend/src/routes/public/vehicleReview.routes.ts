@@ -26,6 +26,7 @@ import {
   unauthorizedErrorSchema,
 } from "../../schema/common.schema";
 import {
+  canReviewVehicle,
   createVehicleReview,
   deleteVehicleReview,
   getUserVehicleReviews,
@@ -48,7 +49,7 @@ const router = Router();
 // Vehicle review routes
 router.post("/", authenticateToken, createVehicleReview);
 
-router.get("/vehicle/:vehicleId/can-review", authenticateToken, canReviewTour);
+router.get("/vehicle/:vehicleId/can-review", authenticateToken, canReviewVehicle);
 
 router.get("/vehicle/:vehicleId", getVehicleReviews);
 
@@ -116,17 +117,17 @@ registerRoute({
 // Check if user can review a vehicle
 registerRoute({
   method: "get",
-  path: "/api/tour-review/tour/{tourId}/can-review",
-  summary: "Check if user can review a tour",
-  tags: ["Tour Review"],
+  path: "/api/vehicle-review/vehicle/{vehicleId}/can-review",
+  summary: "Check if user can review a vehicle",
+  tags: ["Vehicle Review"],
   security: [{ bearerAuth: [] }],
   request: {
-    params: tourParamsSchema,
+    params: vehicleParamsSchema,
   },
   responses: {
     200: {
-      description: "Check if user can review a tour",
-      content: { "application/json": { schema: tourReviewResponseSchema } },
+      description: "Check if user can review a vehicle",
+      content: { "application/json": { schema: vehicleReviewResponseSchema } },
     },
     400: errorResponse(badRequestErrorSchema, "Bad Request"),
     401: errorResponse(unauthorizedErrorSchema, "Unauthorized"),
