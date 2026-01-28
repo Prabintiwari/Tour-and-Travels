@@ -64,6 +64,32 @@ const vehicleReviewIdQuerySchema = z.object({
   }),
 });
 
+const userVehicleReviewsQuerySchema = z.object({
+  vehicleId: z
+    .string()
+    .regex(/^[0-9a-fA-F]{24}$/, "Invalid vehicle ID")
+    .optional()
+    .openapi({
+      description: "Filter by vehicle ID",
+      example: "507f1f77bcf86cd799439011",
+    }),
+  page: z.coerce.number().int().positive().optional(),
+  limit: z.coerce.number().int().positive().optional(),
+  rating: z
+    .string()
+    .transform(Number)
+    .pipe(z.number().int().min(1).max(5))
+    .optional(),
+  sortBy: z.string().optional().openapi({
+    example: "startDate",
+    description: "Sort by field",
+  }),
+  sortOrder: z.string().optional().default("asc").openapi({
+    example: "asc",
+    description: "Sort order",
+  }),
+});
+
 const getVehicleReviewsQuerySchema = z
   .object({
     vehicleId: z
@@ -154,6 +180,7 @@ export {
   updateVehicleReviewSchema,
   getVehicleReviewsQuerySchema,
   vehicleReviewIdParamsSchema,
+  userVehicleReviewsQuerySchema,
   vehicleReviewIdQuerySchema,
   deleteVehicleReviewParamsSchema,
   vehicleReviewResponseSchema,

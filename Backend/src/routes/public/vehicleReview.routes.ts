@@ -25,48 +25,40 @@ import {
   internalServerErrorSchema,
   unauthorizedErrorSchema,
 } from "../../schema/common.schema";
-import { createVehicleReview, deleteVehicleReview, getVehicleReviewById, getVehicleReviews, updateVehicleReview } from "../../controllers/vehicleReview.controller";
-import { createVehicleReviewSchema, updateVehicleReviewSchema, vehicleReviewIdParamsSchema, vehicleReviewIdQuerySchema, vehicleReviewResponseSchema, vehicleReviewsListResponseSchema } from "../../schema/vehicleReview.schema";
+import {
+  createVehicleReview,
+  deleteVehicleReview,
+  getUserVehicleReviews,
+  getVehicleReviewById,
+  getVehicleReviews,
+  updateVehicleReview,
+} from "../../controllers/vehicleReview.controller";
+import {
+  createVehicleReviewSchema,
+  updateVehicleReviewSchema,
+  userVehicleReviewsQuerySchema,
+  vehicleReviewIdParamsSchema,
+  vehicleReviewIdQuerySchema,
+  vehicleReviewResponseSchema,
+  vehicleReviewsListResponseSchema,
+} from "../../schema/vehicleReview.schema";
 
 const router = Router();
 
 // Vehicle review routes
-router.post(
-  "/",
-  authenticateToken,
-  createVehicleReview
-);
+router.post("/", authenticateToken, createVehicleReview);
 
-router.get(
-  "/vehicle/:vehicleId/can-review",
-  authenticateToken,
-  canReviewTour
-);
+router.get("/vehicle/:vehicleId/can-review", authenticateToken, canReviewTour);
 
-router.get(
-  "/vehicle/:vehicleId",
-  getVehicleReviews
-);
+router.get("/vehicle/:vehicleId", getVehicleReviews);
 
-router.get(
-  "/user/:userId",
-  authenticateToken,
-  getUserReviews
-);
+router.get("/user/:userId", authenticateToken, getUserVehicleReviews);
 
 router.get("/:reviewId", getVehicleReviewById);
 
-router.patch(
-  "/:reviewId",
-  authenticateToken,
-  updateVehicleReview
-);
+router.patch("/:reviewId", authenticateToken, updateVehicleReview);
 
-router.delete(
-  "/:reviewId",
-  authenticateToken,
-  deleteVehicleReview
-);
+router.delete("/:reviewId", authenticateToken, deleteVehicleReview);
 
 // Swagger registration
 
@@ -103,7 +95,7 @@ registerRoute({
   tags: ["Vehicle Review"],
   security: [{ bearerAuth: [] }],
   request: {
-    params:vehicleReviewIdParamsSchema,
+    params: vehicleReviewIdParamsSchema,
     body: {
       content: { "application/json": { schema: updateVehicleReviewSchema } },
     },
@@ -147,18 +139,20 @@ registerRoute({
 // Get vehicle reviews by user ID
 registerRoute({
   method: "get",
-  path: "/api/tour-review/user/{userId}",
+  path: "/api/vehicle-review/user/{userId}",
   summary: "Get review by user Id",
-  tags: ["Tour Review"],
+  tags: ["Vehicle Review"],
   security: [{ bearerAuth: [] }],
   request: {
     params: userIdParamSchema,
-    query: reviewIdQuerySchema,
+    query: userVehicleReviewsQuerySchema,
   },
   responses: {
     200: {
-      description: "Get Tour Review successfully",
-      content: { "application/json": { schema: tourReviewResponseSchema } },
+      description: "Get Vehicle Review successfully",
+      content: {
+        "application/json": { schema: vehicleReviewsListResponseSchema },
+      },
     },
     400: errorResponse(badRequestErrorSchema, "Bad Request"),
     401: errorResponse(unauthorizedErrorSchema, "Unauthorized"),
@@ -181,7 +175,9 @@ registerRoute({
   responses: {
     200: {
       description: "Get Vehicle Review successfully",
-      content: { "application/json": { schema: vehicleReviewsListResponseSchema } },
+      content: {
+        "application/json": { schema: vehicleReviewsListResponseSchema },
+      },
     },
     400: errorResponse(badRequestErrorSchema, "Bad Request"),
     401: errorResponse(unauthorizedErrorSchema, "Unauthorized"),
