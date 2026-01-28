@@ -25,7 +25,7 @@ import {
   internalServerErrorSchema,
   unauthorizedErrorSchema,
 } from "../../schema/common.schema";
-import { createVehicleReview, getVehicleReviewById, getVehicleReviews, updateVehicleReview } from "../../controllers/vehicleReview.controller";
+import { createVehicleReview, deleteVehicleReview, getVehicleReviewById, getVehicleReviews, updateVehicleReview } from "../../controllers/vehicleReview.controller";
 import { createVehicleReviewSchema, updateVehicleReviewSchema, vehicleReviewIdParamsSchema, vehicleReviewIdQuerySchema, vehicleReviewResponseSchema, vehicleReviewsListResponseSchema } from "../../schema/vehicleReview.schema";
 
 const router = Router();
@@ -65,7 +65,7 @@ router.patch(
 router.delete(
   "/:reviewId",
   authenticateToken,
-  deleteReview
+  deleteVehicleReview
 );
 
 // Swagger registration
@@ -216,12 +216,12 @@ registerRoute({
 // Delete vehicle reviews by  ID
 registerRoute({
   method: "delete",
-  path: "/api/tour-review/{reviewId}",
+  path: "/api/vehicle-review/{reviewId}",
   summary: "Delete review by Id",
-  tags: ["Tour Review"],
+  tags: ["Vehicle Review"],
   security: [{ bearerAuth: [] }],
   request: {
-    params: reviewIdParamsSchema,
+    params: vehicleReviewIdParamsSchema,
   },
   responses: {
     200: {

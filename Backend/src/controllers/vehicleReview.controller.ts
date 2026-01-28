@@ -411,63 +411,63 @@ const updateVehicleReview = async (
   }
 };
 
-// // Delete own review
-// const deleteReview = async (
-//   req: AuthRequest,
-//   res: Response,
-//   next: NextFunction,
-// ) => {
-//   try {
-//     const userId = req.id;
-//     const { reviewId } = reviewIdParamsSchema.parse(req.params);
+// Delete own review
+const deleteVehicleReview = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const userId = req.id;
+    const { reviewId } = vehicleReviewIdParamsSchema.parse(req.params);
 
-//     if (!userId) {
-//       return next({
-//         status: 401,
-//         success: false,
-//         message: "Authentication required",
-//       });
-//     }
+    if (!userId) {
+      return next({
+        status: 401,
+        success: false,
+        message: "Authentication required",
+      });
+    }
 
-//     // Check if review exists and belongs to user
-//     const existingReview = await prisma.tourReview.findUnique({
-//       where: { id: reviewId },
-//     });
+    // Check if review exists and belongs to user
+    const existingReview = await prisma.vehicleReview.findUnique({
+      where: { id: reviewId },
+    });
 
-//     if (!existingReview) {
-//       return next({ status: 404, success: false, message: "Review not found" });
-//     }
+    if (!existingReview) {
+      return next({ status: 404, success: false, message: "Review not found" });
+    }
 
-//     if (existingReview.userId !== userId) {
-//       return res.status(403).json({
-//         success: false,
-//         message: "You can only delete your own reviews",
-//       });
-//     }
+    if (existingReview.userId !== userId) {
+      return res.status(403).json({
+        success: false,
+        message: "You can only delete your own reviews",
+      });
+    }
 
-//     await prisma.tourReview.delete({
-//       where: { id: reviewId },
-//     });
+    await prisma.vehicleReview.delete({
+      where: { id: reviewId },
+    });
 
-//     next({
-//       status: 200,
-//       success: true,
-//       message: "Review deleted successfully",
-//     });
-//   } catch (error: any) {
-//     if (error instanceof ZodError) {
-//       return next({
-//         status: 400,
-//         message: error.issues || "Validation failed",
-//       });
-//     }
-//     next({
-//       status: 500,
-//       message: error.message || "Internal server error",
-//       error: error.message,
-//     });
-//   }
-// };
+    next({
+      status: 200,
+      success: true,
+      message: "Review deleted successfully",
+    });
+  } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
+    next({
+      status: 500,
+      message: error.message || "Internal server error",
+      error: error.message,
+    });
+  }
+};
 
 // // Get current user's reviews
 // const getUserReviews = async (
@@ -935,7 +935,7 @@ export {
   getVehicleReviews,
   getVehicleReviewById,
   updateVehicleReview,
-//   deleteReview,
+  deleteVehicleReview,
 //   getUserReviews,
 //   canReviewTour,
 //   getAllReviews,
