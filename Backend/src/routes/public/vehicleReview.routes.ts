@@ -1,21 +1,5 @@
 import { Router } from "express";
 import { authenticateToken } from "../../middleware/auth";
-import {
-  reviewIdParamsSchema,
-  reviewIdQuerySchema,
-  tourParamsSchema,
-  tourReviewResponseSchema,
-  updateTourReviewSchema,
-  userIdParamSchema,
-  vehicleParamsSchema,
-} from "../../schema";
-import {
-  canReviewTour,
-  deleteReview,
-  getReviewById,
-  getUserReviews,
-  updateReview,
-} from "../../controllers/tourReview.controller";
 import { registerRoute } from "../../utils/openapi.utils";
 import {
   badRequestErrorSchema,
@@ -36,14 +20,17 @@ import {
   updateVehicleReview,
 } from "../../controllers/vehicleReview.controller";
 import {
+  userIdParamSchema,
+  vehicleParamsSchema,
   createVehicleReviewSchema,
+  getVehicleReviewsQuerySchema,
   updateVehicleReviewSchema,
   userVehicleReviewsQuerySchema,
   vehicleReviewIdParamsSchema,
   vehicleReviewIdQuerySchema,
   vehicleReviewResponseSchema,
   vehicleReviewsListResponseSchema,
-} from "../../schema/vehicleReview.schema";
+} from "../../schema";
 
 const router = Router();
 
@@ -128,6 +115,7 @@ registerRoute({
   summary: "List of all vehicle reviews",
   tags: ["Vehicle Review"],
   security: [{ bearerAuth: [] }],
+  request: { query: getVehicleReviewsQuerySchema },
   responses: {
     200: {
       description: "Get all vehicle Review successfully",
@@ -226,7 +214,7 @@ registerRoute({
   summary: "Get review by Id",
   tags: ["Vehicle Review"],
   request: {
-    params: reviewIdParamsSchema,
+    params: vehicleReviewIdParamsSchema,
   },
   responses: {
     200: {

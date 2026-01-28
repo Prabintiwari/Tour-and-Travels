@@ -11,6 +11,7 @@ import adminFAQRoutes from "./admin.tourFAQ.routes";
 import adminCustomItineraryRoutes from "./admin.customItinerary.routes";
 import adminVehicleRoutes from "./admin.vehicle.routes";
 import adminVehicleBookingRoutes from "./admin.vehicleBooking.routes";
+import adminVehicleReviewRoutes from "./admin.vehicleReview.routes";
 
 const router = Router();
 
@@ -26,5 +27,6 @@ router.use("/faqs", adminFAQRoutes);
 router.use("/custom-itinerary", adminCustomItineraryRoutes);
 router.use("/vehicle", adminVehicleRoutes);
 router.use("/vehicle-booking", adminVehicleBookingRoutes);
+router.use("/vehicle-review", adminVehicleReviewRoutes);
 
 export default router;

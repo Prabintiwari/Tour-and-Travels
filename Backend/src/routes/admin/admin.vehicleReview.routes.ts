@@ -1,9 +1,7 @@
 import { Router } from "express";
 import { AdminOnly, authenticateToken } from "../../middleware/auth";
 import {
-  adminDeleteReview,
   bulkDeleteReviews,
-  getAllReviews,
   getReviewStatistics,
 } from "../../controllers/tourReview.controller";
 import { registerRoute } from "../../utils/openapi.utils";
@@ -16,12 +14,12 @@ import {
   unauthorizedErrorSchema,
 } from "../../schema/common.schema";
 import {
-  bulkDeleteReviewSchema,
-  reviewIdParamsSchema,
+  bulkDeleteVehicleReviewSchema,
   reviewStatisticsQuerySchema,
   reviewStatisticsResponseSchema,
-  tourReviewsListResponseSchema,
+  vehicleReviewIdParamsSchema,
 } from "../../schema";
+import { adminDeleteVehicleReview } from "../../controllers/vehicleReview.controller";
 
 const router = Router();
 
@@ -30,17 +28,19 @@ router.use(authenticateToken, AdminOnly);
 // Admin tour review routes
 
 router.get("/statistics", getReviewStatistics);
+
 router.post("/bulk-delete", bulkDeleteReviews);
-router.delete("/:reviewId", adminDeleteReview);
+
+router.delete("/:reviewId", adminDeleteVehicleReview);
 
 // Swagger registration
 
 // Get review statistics
 registerRoute({
   method: "get",
-  path: "/api/admin/tour-review/statistics",
+  path: "/api/admin/vehicle-review/statistics",
   summary: "List of review statistics",
-  tags: ["Tour Review"],
+  tags: ["Vehicle Review"],
   security: [{ bearerAuth: [] }],
   request: { query: reviewStatisticsQuerySchema },
   responses: {
@@ -63,12 +63,12 @@ registerRoute({
 // Delete reviews by ID
 registerRoute({
   method: "delete",
-  path: "/api/admin/tour-review/{reviewId}",
-  summary: "Delete review by id",
-  tags: ["Tour Review"],
+  path: "/api/admin/vehicle-review/{reviewId}",
+  summary: "Delete vehicle review by id",
+  tags: ["Vehicle Review"],
   security: [{ bearerAuth: [] }],
   request: {
-    params: reviewIdParamsSchema,
+    params: vehicleReviewIdParamsSchema,
   },
   responses: {
     200: {
@@ -85,13 +85,13 @@ registerRoute({
 // Bulk Delete reviews
 registerRoute({
   method: "post",
-  path: "/api/admin/tour-review/bulk-delete",
+  path: "/api/admin/vehicle-review/bulk-delete",
   summary: "Bulk Delete review ",
-  tags: ["Tour Review"],
+  tags: ["Vehicle Review"],
   security: [{ bearerAuth: [] }],
   request: {
     body: {
-      content: { "application/json": { schema: bulkDeleteReviewSchema } },
+      content: { "application/json": { schema: bulkDeleteVehicleReviewSchema } },
     },
   },
   responses: {

@@ -732,48 +732,48 @@ const getAllVehicleReviews = async (
   }
 };
 
-// // Delete any review (admin)
-// const adminDeleteReview = async (
-//   req: Request,
-//   res: Response,
-//   next: NextFunction,
-// ) => {
-//   try {
-//     const { reviewId } = reviewIdParamsSchema.parse(req.params);
+// Delete any review - (Admin)
+ const adminDeleteVehicleReview = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const { reviewId } = vehicleReviewIdParamsSchema.parse(req.params);
 
-//     const review = await prisma.tourReview.findUnique({
-//       where: { id: reviewId },
-//     });
+    const review = await prisma.vehicleReview.findUnique({
+      where: { id: reviewId },
+    });
 
-//     if (!review) {
-//       return next({ status: 404, success: false, message: "Review not found" });
-//     }
+    if (!review) {
+      return next({ status: 404, success: false, message: "Review not found" });
+    }
 
-//     await prisma.tourReview.delete({
-//       where: { id: reviewId },
-//     });
+    await prisma.vehicleReview.delete({
+      where: { id: reviewId },
+    });
 
-//     next({
-//       status: 200,
-//       success: true,
-//       message: "Review deleted successfully",
-//     });
-//   } catch (error: any) {
-//     if (error instanceof ZodError) {
-//       return next({
-//         status: 400,
-//         message: error.issues || "Validation failed",
-//       });
-//     }
-//     next({
-//       status: 500,
-//       message: error.message || "Internal server error",
-//       error: error.message,
-//     });
-//   }
-// };
+    next({
+      status: 200,
+      success: true,
+      message: "Review deleted successfully",
+    });
+  } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
+    next({
+      status: 500,
+      message: error.message || "Internal server error",
+      error: error.message,
+    });
+  }
+};
 
-// // Get review statistics (admin)
+// // Get review statistics - (Admin)
 // const getReviewStatistics = async (
 //   req: Request,
 //   res: Response,
@@ -866,7 +866,7 @@ const getAllVehicleReviews = async (
 //   }
 // };
 
-// Bulk delete reviews (admin)
+// Bulk delete reviews - (Admin)
 // const bulkDeleteReviews = async (
 //   req: Request,
 //   res: Response,
@@ -922,7 +922,7 @@ export {
   getUserVehicleReviews,
   canReviewVehicle,
     getAllVehicleReviews,
-  //   adminDeleteReview,
+    adminDeleteVehicleReview,
   //   getReviewStatistics,
   //   bulkDeleteReviews,
 };

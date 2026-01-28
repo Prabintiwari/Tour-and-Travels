@@ -5,6 +5,7 @@ import {
   destinationIdParamSchema,
   reviewIdParamsSchema,
   reviewIdQuerySchema,
+  reviewQuerySchema,
   tourParamsSchema,
   tourReviewResponseSchema,
   tourReviewsListResponseSchema,
@@ -87,6 +88,7 @@ registerRoute({
   summary: "List of all reviews",
   tags: ["Tour Review"],
   security: [{ bearerAuth: [] }],
+  request: { query: reviewQuerySchema },
   responses: {
     200: {
       description: "Get all Review successfully",
