@@ -29,7 +29,7 @@ router.use(authenticateToken, AdminOnly);
 
 // Admin tour review routes
 
-router.get("/", getAllReviews);
+
 
 router.get("/statistics", getReviewStatistics);
 router.post("/bulk-delete", bulkDeleteReviews);
@@ -37,29 +37,7 @@ router.delete("/:reviewId", adminDeleteReview);
 
 // Swagger registration
 
-// Get all reviews
-registerRoute({
-  method: "get",
-  path: "/api/admin/tour-review",
-  summary: "List of all reviews",
-  tags: ["Tour Review"],
-  security: [{ bearerAuth: [] }],
-  responses: {
-    200: {
-      description: "Get all Review successfully",
-      content: {
-        "application/json": {
-          schema: tourReviewsListResponseSchema,
-        },
-      },
-    },
-    400: errorResponse(badRequestErrorSchema, "Bad Request"),
-    401: errorResponse(unauthorizedErrorSchema, "Unauthorized"),
-    403: errorResponse(forbiddenErrorSchema, "Forbidden"),
-    409: errorResponse(conflictErrorSchema, "Conflict"),
-    500: errorResponse(internalServerErrorSchema, "Internal Server Error"),
-  },
-});
+
 
 // Get review statistics
 registerRoute({

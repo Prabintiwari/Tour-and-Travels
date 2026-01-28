@@ -12,6 +12,7 @@ import {
   vehicleReviewIdParamsSchema,
   updateVehicleReviewSchema,
   userVehicleReviewsQuerySchema,
+  getVehicleReviewsQuerySchema,
 } from "../schema";
 import { AuthRequest } from "../middleware/auth";
 import { BookingStatus, RentalStatus } from "@prisma/client";
@@ -642,109 +643,94 @@ const canReviewVehicle = async (
   }
 };
 
-// // Get all reviews
-// const getAllReviews = async (
-//   req: Request,
-//   res: Response,
-//   next: NextFunction,
-// ) => {
-//   try {
-//     const {
-//       page,
-//       limit,
-//       rating,
-//       tourId,
-//       destinationId,
-//       userId,
-//       sortBy,
-//       sortOrder,
-//     } = reviewQuerySchema.parse(req.query);
+// Get all reviews
+const getAllVehicleReviews = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const { page, limit, rating, vehicleId, userId, sortBy, sortOrder } =
+      getVehicleReviewsQuerySchema.parse(req.query);
 
-//     const pageNumber = page ?? 1;
-//     const limitNumber = limit ?? 10;
-//     const skip = (pageNumber - 1) * limitNumber;
+    const pageNumber = page ?? 1;
+    const limitNumber = limit ?? 10;
+    const skip = (pageNumber - 1) * limitNumber;
 
-//     const where: any = {};
-//     if (rating) {
-//       where.rating = rating;
-//     }
-//     if (tourId) {
-//       where.tourId = tourId as string;
-//     }
-//     if (destinationId) {
-//       where.destinationId = destinationId as string;
-//     }
-//     if (userId) {
-//       where.userId = userId as string;
-//     }
+    const where: any = {};
+    if (rating) {
+      where.rating = rating;
+    }
+    if (vehicleId) {
+      where.vehicleId = vehicleId as string;
+    }
+    if (userId) {
+      where.userId = userId as string;
+    }
 
-//     const validSortFields = ["updatedAt", "createdAt"];
-//     const sortField = validSortFields.includes(sortBy as string)
-//       ? (sortBy as string)
-//       : "createdAt";
+    const validSortFields = ["updatedAt", "createdAt"];
+    const sortField = validSortFields.includes(sortBy as string)
+      ? (sortBy as string)
+      : "createdAt";
 
-//     const sortOrderValue = sortOrder?.toLowerCase() === "desc" ? "desc" : "asc";
+    const sortOrderValue = sortOrder?.toLowerCase() === "desc" ? "desc" : "asc";
 
-//     const total = await prisma.tourReview.count({ where });
+    const [reviews, total] = await Promise.all([
+      prisma.vehicleReview.findMany({
+        where,
+        include: {
+          user: {
+            select: {
+              id: true,
+              fullName: true,
+              email: true,
+              profileImage: true,
+            },
+          },
+          vehicle: {
+            select: {
+              id: true,
+              brand: true,
+              model: true,
+            },
+          },
+        },
+        orderBy: {
+          [sortField]: sortOrderValue,
+        },
+        skip,
+        take: limitNumber,
+      }),
+      prisma.vehicleReview.count({ where }),
+    ]);
 
-//     const reviews = await prisma.tourReview.findMany({
-//       where,
-//       include: {
-//         user: {
-//           select: {
-//             id: true,
-//             fullName: true,
-//             email: true,
-//             profileImage: true,
-//           },
-//         },
-//         tour: {
-//           select: {
-//             id: true,
-//             title: true,
-//           },
-//         },
-//         destination: {
-//           select: {
-//             id: true,
-//             name: true,
-//           },
-//         },
-//       },
-//       orderBy: {
-//         [sortField]: sortOrderValue,
-//       },
-//       skip,
-//       take: limitNumber,
-//     });
-
-//     next({
-//       status: 200,
-//       success: true,
-//       data: {
-//         reviews,
-//         pagination: {
-//           total,
-//           page: pageNumber,
-//           limit: limitNumber,
-//           totalPages: Math.ceil(total / limitNumber),
-//         },
-//       },
-//     });
-//   } catch (error: any) {
-//     if (error instanceof ZodError) {
-//       return next({
-//         status: 400,
-//         message: error.issues || "Validation failed",
-//       });
-//     }
-//     next({
-//       status: 500,
-//       message: error.message || "Internal server error",
-//       error: error.message,
-//     });
-//   }
-// };
+    next({
+      status: 200,
+      success: true,
+      data: {
+        reviews,
+        pagination: {
+          total,
+          page: pageNumber,
+          limit: limitNumber,
+          totalPages: Math.ceil(total / limitNumber),
+        },
+      },
+    });
+  } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
+    next({
+      status: 500,
+      message: error.message || "Internal server error",
+      error: error.message,
+    });
+  }
+};
 
 // // Delete any review (admin)
 // const adminDeleteReview = async (
@@ -935,7 +921,7 @@ export {
   deleteVehicleReview,
   getUserVehicleReviews,
   canReviewVehicle,
-  //   getAllReviews,
+    getAllVehicleReviews,
   //   adminDeleteReview,
   //   getReviewStatistics,
   //   bulkDeleteReviews,

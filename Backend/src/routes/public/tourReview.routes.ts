@@ -7,6 +7,7 @@ import {
   reviewIdQuerySchema,
   tourParamsSchema,
   tourReviewResponseSchema,
+  tourReviewsListResponseSchema,
   updateTourReviewSchema,
   userIdParamSchema,
 } from "../../schema";
@@ -14,6 +15,7 @@ import {
   canReviewTour,
   createReview,
   deleteReview,
+  getAllReviews,
   getDestinationReviews,
   getReviewById,
   getTourReviews,
@@ -33,47 +35,23 @@ import {
 const router = Router();
 
 // Tour review routes
-router.post(
-  "/",
-  authenticateToken,
-  createReview
-);
+router.post("/", authenticateToken, createReview);
 
-router.get(
-  "/tour/:tourId/can-review",
-  authenticateToken,
-  canReviewTour
-);
+router.get("/", getAllReviews);
 
-router.get(
-  "/tour/:tourId",
-  getTourReviews
-);
+router.get("/tour/:tourId/can-review", authenticateToken, canReviewTour);
 
-router.get(
-  "/destination/:destinationId",
-  getDestinationReviews
-);
+router.get("/tour/:tourId", getTourReviews);
 
-router.get(
-  "/user/:userId",
-  authenticateToken,
-  getUserReviews
-);
+router.get("/destination/:destinationId", getDestinationReviews);
+
+router.get("/user/:userId", authenticateToken, getUserReviews);
 
 router.get("/:reviewId", getReviewById);
 
-router.patch(
-  "/:reviewId",
-  authenticateToken,
-  updateReview
-);
+router.patch("/:reviewId", authenticateToken, updateReview);
 
-router.delete(
-  "/:reviewId",
-  authenticateToken,
-  deleteReview
-);
+router.delete("/:reviewId", authenticateToken, deleteReview);
 
 // Swagger registration
 
@@ -102,6 +80,30 @@ registerRoute({
   },
 });
 
+// Get all reviews
+registerRoute({
+  method: "get",
+  path: "/api/tour-review",
+  summary: "List of all reviews",
+  tags: ["Tour Review"],
+  security: [{ bearerAuth: [] }],
+  responses: {
+    200: {
+      description: "Get all Review successfully",
+      content: {
+        "application/json": {
+          schema: tourReviewsListResponseSchema,
+        },
+      },
+    },
+    400: errorResponse(badRequestErrorSchema, "Bad Request"),
+    401: errorResponse(unauthorizedErrorSchema, "Unauthorized"),
+    403: errorResponse(forbiddenErrorSchema, "Forbidden"),
+    409: errorResponse(conflictErrorSchema, "Conflict"),
+    500: errorResponse(internalServerErrorSchema, "Internal Server Error"),
+  },
+});
+
 // Update a new tour review
 registerRoute({
   method: "patch",
@@ -110,7 +112,7 @@ registerRoute({
   tags: ["Tour Review"],
   security: [{ bearerAuth: [] }],
   request: {
-    params:reviewIdParamsSchema,
+    params: reviewIdParamsSchema,
     body: {
       content: { "application/json": { schema: updateTourReviewSchema } },
     },

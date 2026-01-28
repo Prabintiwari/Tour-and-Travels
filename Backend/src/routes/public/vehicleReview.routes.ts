@@ -29,6 +29,7 @@ import {
   canReviewVehicle,
   createVehicleReview,
   deleteVehicleReview,
+  getAllVehicleReviews,
   getUserVehicleReviews,
   getVehicleReviewById,
   getVehicleReviews,
@@ -49,7 +50,13 @@ const router = Router();
 // Vehicle review routes
 router.post("/", authenticateToken, createVehicleReview);
 
-router.get("/vehicle/:vehicleId/can-review", authenticateToken, canReviewVehicle);
+router.get("/", getAllVehicleReviews);
+
+router.get(
+  "/vehicle/:vehicleId/can-review",
+  authenticateToken,
+  canReviewVehicle,
+);
 
 router.get("/vehicle/:vehicleId", getVehicleReviews);
 
@@ -105,6 +112,30 @@ registerRoute({
     200: {
       description: "Review updated successfully",
       content: { "application/json": { schema: vehicleReviewResponseSchema } },
+    },
+    400: errorResponse(badRequestErrorSchema, "Bad Request"),
+    401: errorResponse(unauthorizedErrorSchema, "Unauthorized"),
+    403: errorResponse(forbiddenErrorSchema, "Forbidden"),
+    409: errorResponse(conflictErrorSchema, "Conflict"),
+    500: errorResponse(internalServerErrorSchema, "Internal Server Error"),
+  },
+});
+
+// Get all vehicle reviews
+registerRoute({
+  method: "get",
+  path: "/api/vehicle-review",
+  summary: "List of all vehicle reviews",
+  tags: ["Vehicle Review"],
+  security: [{ bearerAuth: [] }],
+  responses: {
+    200: {
+      description: "Get all vehicle Review successfully",
+      content: {
+        "application/json": {
+          schema: vehicleReviewsListResponseSchema,
+        },
+      },
     },
     400: errorResponse(badRequestErrorSchema, "Bad Request"),
     401: errorResponse(unauthorizedErrorSchema, "Unauthorized"),
