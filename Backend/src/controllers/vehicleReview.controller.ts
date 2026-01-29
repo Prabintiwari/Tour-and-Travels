@@ -775,73 +775,71 @@ const getVehicleReviewStatistics = async (
   next: NextFunction,
 ) => {
   try {
-    console.log("hello");
     const { vehicleId } = vehicleReviewStatisticsQuerySchema.parse(req.query);
 
     const where: any = {};
     if (vehicleId) {
       where.vehicleId = vehicleId;
-
-      const reviews = await prisma.vehicleReview.findMany({
-        where,
-        select: {
-          rating: true,
-          createdAt: true,
-        },
-      });
-      console.log(reviews);
-
-      const totalReviews = reviews.length;
-
-      const averageRating =
-        totalReviews > 0
-          ? reviews.reduce((sum, r) => sum + r.rating, 0) / totalReviews
-          : 0;
-
-      // Initialize distribution
-      const ratingDistribution: Record<string, number> = {
-        "1": 0,
-        "2": 0,
-        "3": 0,
-        "4": 0,
-        "5": 0,
-      };
-
-      // Bucket ratings
-      reviews.forEach((r) => {
-        const bucket = Math.floor(r.rating);
-
-        if (bucket >= 1 && bucket <= 5) {
-          ratingDistribution[bucket.toString()]++;
-        }
-      });
-
-      // Reviews by month (last 6 months)
-      const now = new Date();
-      const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 6, 1);
-
-      const reviewsByMonth = reviews
-        .filter((r) => r.createdAt >= sixMonthsAgo)
-        .reduce((acc: any, review) => {
-          const month = review.createdAt.toISOString().slice(0, 7);
-          acc[month] = (acc[month] || 0) + 1;
-          return acc;
-        }, {});
-
-      next({
-        status: 200,
-        success: true,
-        data: {
-          totalReviews,
-          averageRating: Math.round(averageRating * 10) / 10,
-          ratingDistribution,
-          reviewsByMonth,
-          filters: {
-            vehicleId: vehicleId || null,
-          },
-        },
-      });
     }
+
+    const vehicleReviews = await prisma.vehicleReview.findMany({
+      where,
+      select: {
+        rating: true,
+        createdAt: true,
+      },
+    });
+
+    const totalReviews = vehicleReviews.length;
+
+    const averageRating =
+      totalReviews > 0
+        ? vehicleReviews.reduce((sum, r) => sum + r.rating, 0) / totalReviews
+        : 0;
+
+    // Initialize distribution
+    const ratingDistribution: Record<string, number> = {
+      "1": 0,
+      "2": 0,
+      "3": 0,
+      "4": 0,
+      "5": 0,
+    };
+
+    // Bucket ratings
+    vehicleReviews.forEach((r) => {
+      const bucket = Math.floor(r.rating);
+
+      if (bucket >= 1 && bucket <= 5) {
+        ratingDistribution[bucket.toString()]++;
+      }
+    });
+
+    // Reviews by month (last 6 months)
+    const now = new Date();
+    const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 6, 1);
+
+    const reviewsByMonth = vehicleReviews
+      .filter((r) => r.createdAt >= sixMonthsAgo)
+      .reduce((acc: any, review) => {
+        const month = review.createdAt.toISOString().slice(0, 7);
+        acc[month] = (acc[month] || 0) + 1;
+        return acc;
+      }, {});
+
+    next({
+      status: 200,
+      success: true,
+      data: {
+        totalReviews,
+        averageRating: Math.round(averageRating * 10) / 10,
+        ratingDistribution,
+        reviewsByMonth,
+        filters: {
+          vehicleId: vehicleId || null,
+        },
+      },
+    });
   } catch (error: any) {
     if (error instanceof ZodError) {
       return next({
