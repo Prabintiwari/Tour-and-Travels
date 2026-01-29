@@ -1,9 +1,5 @@
 import { Router } from "express";
 import { AdminOnly, authenticateToken } from "../../middleware/auth";
-import {
-  bulkDeleteReviews,
-  getReviewStatistics,
-} from "../../controllers/tourReview.controller";
 import { registerRoute } from "../../utils/openapi.utils";
 import {
   badRequestErrorSchema,
@@ -15,13 +11,11 @@ import {
 } from "../../schema/common.schema";
 import {
   bulkDeleteVehicleReviewSchema,
-  reviewStatisticsQuerySchema,
   reviewStatisticsResponseSchema,
   vehicleReviewIdParamsSchema,
   vehicleReviewStatisticsQuerySchema,
-  vehicleReviewStatisticsResponseSchema,
 } from "../../schema";
-import { adminDeleteVehicleReview, getvehicleReviewStatistics } from "../../controllers/vehicleReview.controller";
+import { adminDeleteVehicleReview, bulkDeleteVehicleReviews, getVehicleReviewStatistics } from "../../controllers/vehicleReview.controller";
 
 const router = Router();
 
@@ -29,9 +23,9 @@ router.use(authenticateToken, AdminOnly);
 
 // Admin tour review routes
 
-router.get("/statistics", getvehicleReviewStatistics);
+router.get("/statistics", getVehicleReviewStatistics);
 
-router.post("/bulk-delete", bulkDeleteReviews);
+router.post("/bulk-delete", bulkDeleteVehicleReviews);
 
 router.delete("/:reviewId", adminDeleteVehicleReview);
 

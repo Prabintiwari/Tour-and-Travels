@@ -769,12 +769,13 @@ const adminDeleteVehicleReview = async (
 };
 
 // Get review statistics - (Admin)
-const getvehicleReviewStatistics = async (
+const getVehicleReviewStatistics = async (
   req: Request,
   res: Response,
   next: NextFunction,
 ) => {
   try {
+    console.log("hello");
     const { vehicleId } = vehicleReviewStatisticsQuerySchema.parse(req.query);
 
     const where: any = {};
@@ -788,6 +789,7 @@ const getvehicleReviewStatistics = async (
           createdAt: true,
         },
       });
+      console.log(reviews);
 
       const totalReviews = reviews.length;
 
@@ -912,6 +914,6 @@ export {
   canReviewVehicle,
   getAllVehicleReviews,
   adminDeleteVehicleReview,
-  getvehicleReviewStatistics,
+  getVehicleReviewStatistics,
   bulkDeleteVehicleReviews,
 };
