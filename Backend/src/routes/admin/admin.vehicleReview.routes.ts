@@ -18,8 +18,10 @@ import {
   reviewStatisticsQuerySchema,
   reviewStatisticsResponseSchema,
   vehicleReviewIdParamsSchema,
+  vehicleReviewStatisticsQuerySchema,
+  vehicleReviewStatisticsResponseSchema,
 } from "../../schema";
-import { adminDeleteVehicleReview } from "../../controllers/vehicleReview.controller";
+import { adminDeleteVehicleReview, getvehicleReviewStatistics } from "../../controllers/vehicleReview.controller";
 
 const router = Router();
 
@@ -27,7 +29,7 @@ router.use(authenticateToken, AdminOnly);
 
 // Admin tour review routes
 
-router.get("/statistics", getReviewStatistics);
+router.get("/statistics", getvehicleReviewStatistics);
 
 router.post("/bulk-delete", bulkDeleteReviews);
 
@@ -42,7 +44,7 @@ registerRoute({
   summary: "List of review statistics",
   tags: ["Vehicle Review"],
   security: [{ bearerAuth: [] }],
-  request: { query: reviewStatisticsQuerySchema },
+  request: { query: vehicleReviewStatisticsQuerySchema },
   responses: {
     200: {
       description: "Get all Review statistics successfully",

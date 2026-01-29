@@ -1,21 +1,16 @@
 import { Request, Response, NextFunction } from "express";
 import prisma from "../config/prisma";
 import {
-  tourParamsSchema,
-  bulkDeleteReviewSchema,
-  reviewIdParamsSchema,
-  destinationIdParamSchema,
-  updateTourReviewSchema,
-  reviewQuerySchema,
-  reviewStatisticsQuerySchema,
   vehicleParamsSchema,
   vehicleReviewIdParamsSchema,
   updateVehicleReviewSchema,
   userVehicleReviewsQuerySchema,
   getVehicleReviewsQuerySchema,
+  vehicleReviewStatisticsQuerySchema,
+  bulkDeleteVehicleReviewSchema,
 } from "../schema";
 import { AuthRequest } from "../middleware/auth";
-import { BookingStatus, RentalStatus } from "@prisma/client";
+import { RentalStatus } from "@prisma/client";
 import { ZodError } from "zod";
 import {
   createVehicleReviewSchema,
@@ -332,7 +327,7 @@ const updateVehicleReview = async (
 ) => {
   try {
     const userId = req.id;
-    const { reviewId } = reviewIdParamsSchema.parse(req.params);
+    const { reviewId } = vehicleReviewIdParamsSchema.parse(req.params);
     const validatedData = updateVehicleReviewSchema.parse(req.body);
 
     if (!userId) {
@@ -733,7 +728,7 @@ const getAllVehicleReviews = async (
 };
 
 // Delete any review - (Admin)
- const adminDeleteVehicleReview = async (
+const adminDeleteVehicleReview = async (
   req: Request,
   res: Response,
   next: NextFunction,
@@ -773,145 +768,139 @@ const getAllVehicleReviews = async (
   }
 };
 
-// // Get review statistics - (Admin)
-// const getReviewStatistics = async (
-//   req: Request,
-//   res: Response,
-//   next: NextFunction,
-// ) => {
-//   try {
-//     const { tourId, destinationId } = reviewStatisticsQuerySchema.parse(
-//       req.query,
-//     );
+// Get review statistics - (Admin)
+const getvehicleReviewStatistics = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const { vehicleId } = vehicleReviewStatisticsQuerySchema.parse(req.query);
 
-//     const where: any = {};
-//     if (tourId) {
-//       where.tourId = tourId as string;
-//     }
-//     if (destinationId) {
-//       where.destinationId = destinationId as string;
-//     }
+    const where: any = {};
+    if (vehicleId) {
+      where.vehicleId = vehicleId;
 
-//     const reviews = await prisma.tourReview.findMany({
-//       where,
-//       select: {
-//         rating: true,
-//         createdAt: true,
-//       },
-//     });
+      const reviews = await prisma.vehicleReview.findMany({
+        where,
+        select: {
+          rating: true,
+          createdAt: true,
+        },
+      });
 
-//     const totalReviews = reviews.length;
+      const totalReviews = reviews.length;
 
-//     const averageRating =
-//       totalReviews > 0
-//         ? reviews.reduce((sum, r) => sum + r.rating, 0) / totalReviews
-//         : 0;
+      const averageRating =
+        totalReviews > 0
+          ? reviews.reduce((sum, r) => sum + r.rating, 0) / totalReviews
+          : 0;
 
-//     // Initialize distribution
-//     const ratingDistribution: Record<string, number> = {
-//       "1": 0,
-//       "2": 0,
-//       "3": 0,
-//       "4": 0,
-//       "5": 0,
-//     };
+      // Initialize distribution
+      const ratingDistribution: Record<string, number> = {
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+      };
 
-//     // Bucket ratings
-//     reviews.forEach((r) => {
-//       const bucket = Math.floor(r.rating);
+      // Bucket ratings
+      reviews.forEach((r) => {
+        const bucket = Math.floor(r.rating);
 
-//       if (bucket >= 1 && bucket <= 5) {
-//         ratingDistribution[bucket.toString()]++;
-//       }
-//     });
+        if (bucket >= 1 && bucket <= 5) {
+          ratingDistribution[bucket.toString()]++;
+        }
+      });
 
-//     // Reviews by month (last 6 months)
-//     const now = new Date();
-//     const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 6, 1);
+      // Reviews by month (last 6 months)
+      const now = new Date();
+      const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 6, 1);
 
-//     const reviewsByMonth = reviews
-//       .filter((r) => r.createdAt >= sixMonthsAgo)
-//       .reduce((acc: any, review) => {
-//         const month = review.createdAt.toISOString().slice(0, 7);
-//         acc[month] = (acc[month] || 0) + 1;
-//         return acc;
-//       }, {});
+      const reviewsByMonth = reviews
+        .filter((r) => r.createdAt >= sixMonthsAgo)
+        .reduce((acc: any, review) => {
+          const month = review.createdAt.toISOString().slice(0, 7);
+          acc[month] = (acc[month] || 0) + 1;
+          return acc;
+        }, {});
 
-//     next({
-//       status: 200,
-//       success: true,
-//       data: {
-//         totalReviews,
-//         averageRating: Math.round(averageRating * 10) / 10,
-//         ratingDistribution,
-//         reviewsByMonth,
-//         filters: {
-//           tourId: tourId || null,
-//           destinationId: destinationId || null,
-//         },
-//       },
-//     });
-//   } catch (error: any) {
-//     if (error instanceof ZodError) {
-//       return next({
-//         status: 400,
-//         message: error.issues || "Validation failed",
-//       });
-//     }
-//     next({
-//       status: 500,
-//       message: error.message || "Internal server error",
-//       error: error.message,
-//     });
-//   }
-// };
+      next({
+        status: 200,
+        success: true,
+        data: {
+          totalReviews,
+          averageRating: Math.round(averageRating * 10) / 10,
+          ratingDistribution,
+          reviewsByMonth,
+          filters: {
+            vehicleId: vehicleId || null,
+          },
+        },
+      });
+    }
+  } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
+    next({
+      status: 500,
+      message: error.message || "Internal server error",
+      error: error.message,
+    });
+  }
+};
 
 // Bulk delete reviews - (Admin)
-// const bulkDeleteReviews = async (
-//   req: Request,
-//   res: Response,
-//   next: NextFunction,
-// ) => {
-//   try {
-//     const { reviewIds } = bulkDeleteReviewSchema.parse(req.body);
+const bulkDeleteVehicleReviews = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const { reviewIds } = bulkDeleteVehicleReviewSchema.parse(req.body);
 
-//     if (!Array.isArray(reviewIds) || reviewIds.length === 0) {
-//       return res.status(400).json({
-//         success: false,
-//         message: "reviewIds array is required and must not be empty",
-//       });
-//     }
+    if (!Array.isArray(reviewIds) || reviewIds.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "reviewIds array is required and must not be empty",
+      });
+    }
 
-//     const result = await prisma.tourReview.deleteMany({
-//       where: {
-//         id: {
-//           in: reviewIds,
-//         },
-//       },
-//     });
+    const result = await prisma.vehicleReview.deleteMany({
+      where: {
+        id: {
+          in: reviewIds,
+        },
+      },
+    });
 
-//     next({
-//       status: 200,
-//       success: true,
-//       message: `${result.count} review(s) deleted successfully`,
-//       data: {
-//         deletedCount: result.count,
-//       },
-//     });
-//   } catch (error: any) {
-//     if (error instanceof ZodError) {
-//       return next({
-//         status: 400,
-//         message: error.issues || "Validation failed",
-//       });
-//     }
-//     next({
-//       status: 500,
-//       message: error.message || "Internal server error",
-//       error: error.message,
-//     });
-//   }
-// };
+    next({
+      status: 200,
+      success: true,
+      message: `${result.count} review(s) deleted successfully`,
+      data: {
+        deletedCount: result.count,
+      },
+    });
+  } catch (error: any) {
+    if (error instanceof ZodError) {
+      return next({
+        status: 400,
+        message: error.issues || "Validation failed",
+      });
+    }
+    next({
+      status: 500,
+      message: error.message || "Internal server error",
+      error: error.message,
+    });
+  }
+};
 
 export {
   createVehicleReview,
@@ -921,8 +910,8 @@ export {
   deleteVehicleReview,
   getUserVehicleReviews,
   canReviewVehicle,
-    getAllVehicleReviews,
-    adminDeleteVehicleReview,
-  //   getReviewStatistics,
-  //   bulkDeleteReviews,
+  getAllVehicleReviews,
+  adminDeleteVehicleReview,
+  getvehicleReviewStatistics,
+  bulkDeleteVehicleReviews,
 };

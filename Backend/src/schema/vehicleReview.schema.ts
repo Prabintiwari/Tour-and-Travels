@@ -152,6 +152,34 @@ const vehicleReviewIdParamsSchema = z.object({
   reviewId: z.string().min(1).openapi({ example: "review_123abc" }),
 });
 
+const vehicleReviewStatisticsQuerySchema = z.object({
+  vehicleId: z.string().optional().openapi({
+    example: "vehicle_123abc",
+    description: "Filter by vehicle ID",
+  }),
+});
+
+const vehicleReviewStatisticsResponseSchema = z
+  .object({
+    success: z.literal(true),
+    data: z.object({
+      totalReviews: z.number().int().nonnegative(),
+      averageRating: z.number().min(0).max(5),
+      ratingDistribution: z.object({
+        "1": z.number().int(),
+        "2": z.number().int(),
+        "3": z.number().int(),
+        "4": z.number().int(),
+        "5": z.number().int(),
+      }),
+      reviewsByMonth: z.record(z.string(), z.number().int()),
+      filters: z.object({
+        vehicleId: z.string().nullable(),
+      }),
+    }),
+  })
+  .openapi("VehicleReviewStatisticsResponse");
+
 const deleteVehicleReviewParamsSchema = z
   .object({
     reviewId: z
@@ -185,5 +213,7 @@ export {
   deleteVehicleReviewParamsSchema,
   vehicleReviewResponseSchema,
   vehicleReviewsListResponseSchema,
+  vehicleReviewStatisticsQuerySchema,
+  vehicleReviewStatisticsResponseSchema,
   bulkDeleteVehicleReviewSchema,
 };
