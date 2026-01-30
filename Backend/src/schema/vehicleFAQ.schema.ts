@@ -203,7 +203,7 @@ const vehicleFAQsStatisticsQuerySchema = z.object({
   })
 });
 
-const copyFAQsParamsSchema = z.object({
+const copyVehicleFAQsParamsSchema = z.object({
   sourceVehicleId: z
     .string()
     .regex(/^[0-9a-fA-F]{24}$/, "Invalid source vehicle ID")
@@ -214,14 +214,14 @@ const copyFAQsParamsSchema = z.object({
     .openapi({ description: "Target Vehicle ObjectId" }),
 });
 
-const copyFAQsSchema = z
+const copyVehicleFAQsSchema = z
   .object({
     includeInactive: z.boolean().optional().default(false).openapi({
       description: "Whether to include inactive FAQs",
       example: false,
     }),
   })
-  .openapi("CopyFAQsBody");
+  .openapi("CopyVehicleFAQsBody");
 
 export {
   createVehicleFAQSchema,
@@ -236,6 +236,6 @@ export {
   vehicleFAQSQuerySchema,
   searchVehicleFAQSQuerySchema,
   vehicleFAQsStatisticsQuerySchema,
-  copyFAQsParamsSchema,
-  copyFAQsSchema,
+  copyVehicleFAQsParamsSchema,
+  copyVehicleFAQsSchema,
 };

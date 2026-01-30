@@ -440,7 +440,6 @@ model TourFAQ {
   @@unique([tourId, questionLower])
 }
 
-
 // ==================== CUSTOM ITINERARY ====================
 model CustomItinerary {
   id                    String   @id @default(auto()) @map("_id") @db.ObjectId
@@ -710,12 +709,15 @@ model VehicleFAQ {
   vehicleId             String   @db.ObjectId
   vehicle               Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
   vehicleType           VehicleType?
+
   question              String
+  questionLower         String
+
   answer                String
   isActive              Boolean  @default(true)
+  
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
 
-  @@index([vehicleId])
-  @@index([isActive])
+  @@unique([vehicleId, questionLower])
 }
