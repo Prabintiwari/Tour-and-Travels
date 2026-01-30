@@ -18,7 +18,7 @@ export const generateOpenApiDocument = () => {
       { url: "https://api.example.com", description: "Production" },
     ],
     tags: [
-      { name: "Vehicle FAQs", description: "Vehicle FAQs management" },
+      { name: "Vehicle FAQS", description: "Vehicle FAQS management" },
       { name: "Auth", description: "Auth management" },
       { name: "Users", description: "User management" },
       { name: "Tours", description: "Tour management" },

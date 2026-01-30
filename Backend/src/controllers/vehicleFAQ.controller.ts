@@ -6,7 +6,6 @@ import {
   bulkUpdateTourFAQsSchema,
   copyFAQsParamsSchema,
   copyFAQsSchema,
-  createTourFAQSchema,
   createVehicleFAQSchema,
   FAQsStatisticsQuerySchema,
   searchFAQSQuerySchema,
@@ -14,6 +13,8 @@ import {
   tourFAQSQuerySchema,
   tourParamsSchema,
   updateTourFAQSchema,
+  vehicleFAQIdParamsSchema,
+  vehicleParamsSchema,
 } from "../schema";
 import prisma from "../config/prisma";
 import { ZodError } from "zod";
@@ -71,6 +72,7 @@ const createVehicleFAQ = async (
     const faq = await prisma.vehicleFAQ.create({
       data: {
         vehicleId: validatedData.vehicleId,
+        vehicleType:validatedData.vehicleType,
         question: validatedData.question,
         questionLower: validatedData.question.toLowerCase(),
         answer: validatedData.answer,
@@ -110,23 +112,23 @@ const createVehicleFAQ = async (
   }
 };
 
-//Get all active FAQs for a tour
-const getTourFAQs = async (req: Request, res: Response, next: NextFunction) => {
+// Get all active FAQs for a vehicle
+const getVehicleFAQs = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { tourId } = tourParamsSchema.parse(req.params);
+    const { vehicleId } = vehicleParamsSchema.parse(req.params);
 
-    // Validate tour exists
-    const tour = await prisma.tour.findUnique({
-      where: { id: tourId },
+    // Validate vehicle exists
+    const vehicle = await prisma.vehicle.findUnique({
+      where: { id: vehicleId },
     });
 
-    if (!tour) {
-      return next({ status: 404, success: false, message: "Tour not found" });
+    if (!vehicle) {
+      return next({ status: 404, success: false, message: "Vehicle not found" });
     }
 
-    const faqs = await prisma.tourFAQ.findMany({
+    const faqs = await prisma.vehicleFAQ.findMany({
       where: {
-        tourId,
+        vehicleId,
         isActive: true,
       },
       orderBy: {
@@ -157,19 +159,19 @@ const getTourFAQs = async (req: Request, res: Response, next: NextFunction) => {
   }
 };
 
-//Get a single FAQ by ID
-const getFAQById = async (req: Request, res: Response, next: NextFunction) => {
+// Get a single FAQ by ID
+const getVehicleFAQById = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { faqId } = tourFAQIdParamsSchema.parse(req.params);
+    const { faqId } = vehicleFAQIdParamsSchema.parse(req.params);
 
-    const faq = await prisma.tourFAQ.findUnique({
+    const faq = await prisma.vehicleFAQ.findUnique({
       where: { id: faqId },
       include: {
-        tour: {
+        vehicle: {
           select: {
             id: true,
-            title: true,
-            coverImage: true,
+            model: true,
+            brand: true,
           },
         },
       },
@@ -1117,8 +1119,8 @@ const getFAQStatistics = async (
 };
 export {
   createVehicleFAQ,
-  getTourFAQs,
-  getFAQById,
+  getVehicleFAQs,
+  getVehicleFAQById,
   searchFAQs,
   getAllTourFAQs,
   getAllFAQs,

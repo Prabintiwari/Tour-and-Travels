@@ -2,11 +2,13 @@ import { Router } from "express";
 import {
   allFAQSQuerySchema,
   bulkCreateTourFAQsSchema,
+  bulkCreateVehicleFAQsSchema,
   bulkDeleteFAQsSchema,
   bulkUpdateTourFAQsSchema,
   copyFAQsParamsSchema,
   copyFAQsSchema,
   createTourFAQSchema,
+  createVehicleFAQSchema,
   FAQsStatisticsQuerySchema,
   tourFAQIdParamsSchema,
   tourFAQResponseSchema,
@@ -14,6 +16,8 @@ import {
   tourFAQSQuerySchema,
   tourParamsSchema,
   updateTourFAQSchema,
+  vehicleFAQResponseSchema,
+  vehicleParamsSchema,
 } from "../../schema";
 import {
   bulkCreateFAQs,
@@ -72,25 +76,25 @@ router.delete("/:faqId", deleteFAQ);
 
 // Swagger registration
 
-// Create a new tour faqs
+// Create a new vehicle faqs
 registerRoute({
   method: "post",
-  path: "/api/admin/faqs",
-  summary: "Create a new tour faqs",
-  tags: ["FAQS"],
+  path: "/api/admin/vehicle-faqs",
+  summary: "Create a new vehicle faqs",
+  tags: ["Vehicle FAQS"],
   security: [{ bearerAuth: [] }],
   request: {
     body: {
       content: {
-        "application/json": { schema: createTourFAQSchema },
+        "application/json": { schema: createVehicleFAQSchema },
       },
     },
   },
   responses: {
     200: {
-      description: "Tour Faqs created",
+      description: "Vehicle Faqs created",
       content: {
-        "application/json": { schema: tourFAQResponseSchema },
+        "application/json": { schema: vehicleFAQResponseSchema },
       },
     },
     400: errorResponse(badRequestErrorSchema, "Bad Request"),
@@ -101,26 +105,26 @@ registerRoute({
   },
 });
 
-// Bulk create FAQs for a tour
+// Bulk create FAQs for a vehicle
 registerRoute({
   method: "post",
-  path: "/api/admin/faqs/tour/{tourId}/bulk-create",
-  summary: "Bulk create FAQs for a tour ",
-  tags: ["FAQS"],
+  path: "/api/admin/faqs/vehicle/{vehicleId}/bulk-create",
+  summary: "Bulk create FAQs for a vehicle ",
+  tags: ["Vehicle FAQS"],
   security: [{ bearerAuth: [] }],
   request: {
-    params: tourParamsSchema,
+    params: vehicleParamsSchema,
     body: {
       content: {
-        "application/json": { schema: bulkCreateTourFAQsSchema },
+        "application/json": { schema: bulkCreateVehicleFAQsSchema },
       },
     },
   },
   responses: {
     200: {
-      description: "Bulk FAQs for a tour created",
+      description: "Bulk FAQs for a vehicle created",
       content: {
-        "application/json": { schema: tourFAQResponseSchema },
+        "application/json": { schema: vehicleFAQResponseSchema },
       },
     },
     400: errorResponse(badRequestErrorSchema, "Bad Request"),
@@ -136,7 +140,7 @@ registerRoute({
   method: "patch",
   path: "/api/admin/faqs/{faqId}",
   summary: "Update a  tour faqs",
-  tags: ["FAQS"],
+  tags: ["Vehicle FAQS"],
   security: [{ bearerAuth: [] }],
   request: {
     params: tourFAQIdParamsSchema,
@@ -166,7 +170,7 @@ registerRoute({
   method: "patch",
   path: "/api/admin/faqs/bulk-update",
   summary: "Bulk update FAQs ",
-  tags: ["FAQS"],
+  tags: ["Vehicle FAQS"],
   security: [{ bearerAuth: [] }],
   request: {
     body: {
@@ -195,7 +199,7 @@ registerRoute({
   method: "post",
   path: "/api/admin/faqs/tours/{sourceTourId}/copy/{targetTourId}",
   summary: "Copy FAQs from one tour to another",
-  tags: ["FAQS"],
+  tags: ["Vehicle FAQS"],
   security: [{ bearerAuth: [] }],
   request: {
     params: copyFAQsParamsSchema,
@@ -225,7 +229,7 @@ registerRoute({
   method: "patch",
   path: "/api/admin/faqs/{faqId}/toggle",
   summary: "Toggle FAQ active status",
-  tags: ["FAQS"],
+  tags: ["Vehicle FAQS"],
   security: [{ bearerAuth: [] }],
   request: {
     params: tourFAQIdParamsSchema,
@@ -250,7 +254,7 @@ registerRoute({
   method: "get",
   path: "/api/admin/faqs",
   summary: "Get all FAQs across all tours",
-  tags: ["FAQS"],
+  tags: ["Vehicle FAQS"],
   security: [{ bearerAuth: [] }],
   request: { query: allFAQSQuerySchema },
   responses: {
@@ -273,7 +277,7 @@ registerRoute({
   method: "get",
   path: "/api/admin/faqs/statistics",
   summary: "Get FAQs statistics",
-  tags: ["FAQS"],
+  tags: ["Vehicle FAQS"],
   security: [{ bearerAuth: [] }],
   request: { query: FAQsStatisticsQuerySchema },
   responses: {
@@ -296,7 +300,7 @@ registerRoute({
   method: "get",
   path: "/api/admin/faqs/tours/{tourId}",
   summary: "Get all Faqs for a tour (including inactive)",
-  tags: ["FAQS"],
+  tags: ["Vehicle FAQS"],
   security: [{ bearerAuth: [] }],
   request: { params: tourParamsSchema, query: tourFAQSQuerySchema },
   responses: {
@@ -319,7 +323,7 @@ registerRoute({
   method: "get",
   path: "/api/admin/faqs/{faqId}",
   summary: "Get FAQ by ID (including inactive)",
-  tags: ["FAQS"],
+  tags: ["Vehicle FAQS"],
   security: [{ bearerAuth: [] }],
   request: { params: tourFAQIdParamsSchema },
   responses: {
@@ -342,7 +346,7 @@ registerRoute({
   method: "delete",
   path: "/api/admin/faqs/{faqId}",
   summary: "Delete a faqs",
-  tags: ["FAQS"],
+  tags: ["Vehicle FAQS"],
   security: [{ bearerAuth: [] }],
   request: {
     params: tourFAQIdParamsSchema,
@@ -364,7 +368,7 @@ registerRoute({
   method: "delete",
   path: "/api/admin/faqs/bulk-delete",
   summary: "Bulk delete FAQs",
-  tags: ["FAQS"],
+  tags: ["Vehicle FAQS"],
   security: [{ bearerAuth: [] }],
   request: {
     body: {
