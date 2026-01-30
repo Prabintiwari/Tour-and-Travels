@@ -164,13 +164,14 @@ const allVehicleFAQSQuerySchema = z.object({
     description: "Sort order",
   }),
 });
+
 const searchVehicleFAQSQuerySchema = z.object({
   vehicleId: z.string().optional().openapi({
     example: "vehicle_123abc",
     description: "Filter by vehicle ID",
   }),
   searchQuery: z.string().openapi({
-    example: "What is the cancellation policy?",
+    example: "What documents are required for renting?",
     description: "FAQ question",
   }),
   page: z.coerce.number().optional().default(1).openapi({
@@ -183,7 +184,7 @@ const searchVehicleFAQSQuerySchema = z.object({
   }),
   isActive: z.coerce.boolean().optional(),
   sortBy: z.string().optional().default("createdAt").openapi({
-    example: "startDate",
+    example: "createdAt",
     description: "Sort by field",
   }),
   sortOrder: z.string().optional().default("asc").openapi({

@@ -9,11 +9,13 @@ import {
   createVehicleFAQSchema,
   FAQsStatisticsQuerySchema,
   searchFAQSQuerySchema,
+  searchVehicleFAQSQuerySchema,
   tourFAQIdParamsSchema,
   tourFAQSQuerySchema,
   tourParamsSchema,
   updateTourFAQSchema,
   vehicleFAQIdParamsSchema,
+  vehicleFAQSQuerySchema,
   vehicleParamsSchema,
 } from "../schema";
 import prisma from "../config/prisma";
@@ -72,7 +74,7 @@ const createVehicleFAQ = async (
     const faq = await prisma.vehicleFAQ.create({
       data: {
         vehicleId: validatedData.vehicleId,
-        vehicleType:validatedData.vehicleType,
+        vehicleType: validatedData.vehicleType,
         question: validatedData.question,
         questionLower: validatedData.question.toLowerCase(),
         answer: validatedData.answer,
@@ -113,7 +115,11 @@ const createVehicleFAQ = async (
 };
 
 // Get all active FAQs for a vehicle
-const getVehicleFAQs = async (req: Request, res: Response, next: NextFunction) => {
+const getVehicleFAQs = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const { vehicleId } = vehicleParamsSchema.parse(req.params);
 
@@ -123,7 +129,11 @@ const getVehicleFAQs = async (req: Request, res: Response, next: NextFunction) =
     });
 
     if (!vehicle) {
-      return next({ status: 404, success: false, message: "Vehicle not found" });
+      return next({
+        status: 404,
+        success: false,
+        message: "Vehicle not found",
+      });
     }
 
     const faqs = await prisma.vehicleFAQ.findMany({
@@ -160,7 +170,11 @@ const getVehicleFAQs = async (req: Request, res: Response, next: NextFunction) =
 };
 
 // Get a single FAQ by ID
-const getVehicleFAQById = async (req: Request, res: Response, next: NextFunction) => {
+const getVehicleFAQById = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const { faqId } = vehicleFAQIdParamsSchema.parse(req.params);
 
@@ -205,11 +219,15 @@ const getVehicleFAQById = async (req: Request, res: Response, next: NextFunction
   }
 };
 
-//Search FAQs across all tours
-const searchFAQs = async (req: Request, res: Response, next: NextFunction) => {
+// Search FAQs across all tours
+const searchVehicleFAQs = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
-    const { page, limit, sortBy, sortOrder, searchQuery, tourId } =
-      searchFAQSQuerySchema.parse(req.query);
+    const { page, limit, sortBy, sortOrder, searchQuery, vehicleId } =
+      searchVehicleFAQSQuerySchema.parse(req.query);
 
     const where: any = {
       isActive: true,
@@ -229,28 +247,30 @@ const searchFAQs = async (req: Request, res: Response, next: NextFunction) => {
       ],
     };
 
-    if (tourId) {
-      where.tourId = tourId as string;
+    if (vehicleId) {
+      where.vehicleId = vehicleId as string;
     }
 
-    const total = await prisma.tourFAQ.count({ where });
-
-    const faqs = await prisma.tourFAQ.findMany({
-      where,
-      include: {
-        tour: {
-          select: {
-            id: true,
-            title: true,
+    const [faqs, total] = await Promise.all([
+      prisma.vehicleFAQ.findMany({
+        where,
+        include: {
+          vehicle: {
+            select: {
+              id: true,
+              model: true,
+              brand: true,
+            },
           },
         },
-      },
-      orderBy: {
-        [sortBy]: sortOrder,
-      },
-      skip: (page - 1) * limit,
-      take: limit,
-    });
+        orderBy: {
+          [sortBy]: sortOrder,
+        },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      prisma.vehicleFAQ.count({ where }),
+    ]);
 
     next({
       status: 200,
@@ -281,42 +301,42 @@ const searchFAQs = async (req: Request, res: Response, next: NextFunction) => {
   }
 };
 
-// Get all FAQs for a tour (including inactive)
-const getAllTourFAQs = async (
+// Get all FAQs for a tour (including inactive) - Admin
+const getAllVehicleFAQs = async (
   req: Request,
   res: Response,
   next: NextFunction,
 ) => {
   try {
-    const { tourId } = req.params;
+    const { vehicleId } = vehicleParamsSchema.parse(req.params);
     const {
       page,
       limit,
       isActive,
       sortBy = "createdAt",
       sortOrder = "desc",
-    } = tourFAQSQuerySchema.parse(req.query);
+    } = vehicleFAQSQuerySchema.parse(req.query);
 
     const pageNumber = page ?? 1;
     const limitNumber = limit ?? 10;
     const skip = (pageNumber - 1) * limitNumber;
 
-    // Validate tour exists
-    const tour = await prisma.tour.findUnique({
-      where: { id: tourId },
+    // Validate vehicle exists
+    const vehicle = await prisma.vehicle.findUnique({
+      where: { id: vehicleId },
     });
 
-    if (!tour) {
-      return next({ status: 404, success: false, message: "Tour not found" });
+    if (!vehicle) {
+      return next({ status: 404, success: false, message: "Vehicle not found" });
     }
 
-    const where: any = { tourId };
+    const where: any = { vehicleId };
     if (isActive !== undefined) {
       where.isActive = isActive === true;
     }
 
     const [faqs, total] = await Promise.all([
-      prisma.tourFAQ.findMany({
+      prisma.vehicleFAQ.findMany({
         where,
         skip,
         take: limitNumber,
@@ -324,7 +344,7 @@ const getAllTourFAQs = async (
           [sortBy as string]: sortOrder as string,
         },
       }),
-      prisma.tourFAQ.count({ where }),
+      prisma.vehicleFAQ.count({ where }),
     ]);
 
     // Get statistics
@@ -1121,8 +1141,8 @@ export {
   createVehicleFAQ,
   getVehicleFAQs,
   getVehicleFAQById,
-  searchFAQs,
-  getAllTourFAQs,
+  searchVehicleFAQs,
+  getAllVehicleFAQs,
   getAllFAQs,
   getAdminFAQById,
   updateFAQ,

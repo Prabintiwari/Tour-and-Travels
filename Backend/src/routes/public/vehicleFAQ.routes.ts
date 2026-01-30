@@ -1,5 +1,4 @@
 import { Router } from "express";
-import {  getFAQById,  searchFAQs } from "../../controllers/tourFAQ.controller";
 import { registerRoute } from "../../utils/openapi.utils";
 import { searchVehicleFAQSQuerySchema, tourFAQIdParamsSchema, tourFAQsListResponseSchema, tourParamsSchema, vehicleFAQsListResponseSchema, vehicleParamsSchema } from "../../schema";
 import {
@@ -10,11 +9,11 @@ import {
   internalServerErrorSchema,
   unauthorizedErrorSchema,
 } from "../../schema/common.schema";
-import { getVehicleFAQById, getVehicleFAQs } from "../../controllers/vehicleFAQ.controller";
+import { getVehicleFAQById, getVehicleFAQs, searchVehicleFAQs } from "../../controllers/vehicleFAQ.controller";
 
 const router = Router();
 
-router.get("/search", searchFAQs);
+router.get("/search", searchVehicleFAQs);
 
 router.get("/vehicles/:vehicleId", getVehicleFAQs);
 

@@ -276,7 +276,7 @@ const getAllTourFAQs = async (
   next: NextFunction
 ) => {
   try {
-    const { tourId } = req.params;
+    const { tourId } = tourParamsSchema.parse(req.params);
     const {
       page,
       limit,

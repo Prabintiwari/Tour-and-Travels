@@ -17,6 +17,8 @@ import {
   tourParamsSchema,
   updateTourFAQSchema,
   vehicleFAQResponseSchema,
+  vehicleFAQsListResponseSchema,
+  vehicleFAQSQuerySchema,
   vehicleParamsSchema,
 } from "../../schema";
 import {
@@ -43,7 +45,7 @@ import {
   internalServerErrorSchema,
   unauthorizedErrorSchema,
 } from "../../schema/common.schema";
-import { createVehicleFAQ } from "../../controllers/vehicleFAQ.controller";
+import { createVehicleFAQ, getAllVehicleFAQs } from "../../controllers/vehicleFAQ.controller";
 
 const router = Router();
 router.use(authenticateToken, AdminOnly);
@@ -60,7 +62,7 @@ router.patch("/:faqId/toggle", toggleFAQStatus);
 
 router.patch("/:faqId", updateFAQ);
 
-router.get("/tours/:tourId", getAllTourFAQs);
+router.get("/vehicles/:vehicleId", getAllVehicleFAQs);
 
 router.post("/tours/:sourceTourId/copy/:targetTourId", copyFAQs);
 
@@ -252,14 +254,14 @@ registerRoute({
 // Get all faqs
 registerRoute({
   method: "get",
-  path: "/api/admin/faqs",
-  summary: "Get all FAQs across all tours",
+  path: "/api/admin/vehicle-faqs",
+  summary: "Get all FAQs across all vehicles",
   tags: ["Vehicle FAQS"],
   security: [{ bearerAuth: [] }],
   request: { query: allFAQSQuerySchema },
   responses: {
     200: {
-      description: "Get all FAQs across all tours",
+      description: "Get all FAQs across all vehicles",
       content: {
         "application/json": { schema: tourFAQsListResponseSchema },
       },
@@ -295,19 +297,19 @@ registerRoute({
   },
 });
 
-// Get all faqs for a tour
+// Get all faqs for a vehicle (including inactive)
 registerRoute({
   method: "get",
-  path: "/api/admin/faqs/tours/{tourId}",
-  summary: "Get all Faqs for a tour (including inactive)",
+  path: "/api/admin/vehicle-faqs/vehicles/{vehicleId}",
+  summary: "Get all Faqs for a vehicle (including inactive)",
   tags: ["Vehicle FAQS"],
   security: [{ bearerAuth: [] }],
-  request: { params: tourParamsSchema, query: tourFAQSQuerySchema },
+  request: { params: vehicleParamsSchema, query: vehicleFAQSQuerySchema },
   responses: {
     200: {
-      description: "Get all Faqs for a tour",
+      description: "Get all Faqs for a vehicle",
       content: {
-        "application/json": { schema: tourFAQsListResponseSchema },
+        "application/json": { schema: vehicleFAQsListResponseSchema },
       },
     },
     400: errorResponse(badRequestErrorSchema, "Bad Request"),
