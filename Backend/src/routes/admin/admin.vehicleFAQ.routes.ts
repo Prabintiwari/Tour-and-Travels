@@ -1,21 +1,19 @@
 import { Router } from "express";
 import {
   allFAQSQuerySchema,
-  bulkCreateTourFAQsSchema,
+  allVehicleFAQSQuerySchema,
   bulkCreateVehicleFAQsSchema,
   bulkDeleteFAQsSchema,
   bulkUpdateTourFAQsSchema,
   copyFAQsParamsSchema,
   copyFAQsSchema,
-  createTourFAQSchema,
   createVehicleFAQSchema,
   FAQsStatisticsQuerySchema,
   tourFAQIdParamsSchema,
   tourFAQResponseSchema,
   tourFAQsListResponseSchema,
-  tourFAQSQuerySchema,
-  tourParamsSchema,
   updateTourFAQSchema,
+  vehicleFAQIdParamsSchema,
   vehicleFAQResponseSchema,
   vehicleFAQsListResponseSchema,
   vehicleFAQSQuerySchema,
@@ -26,11 +24,7 @@ import {
   bulkDeleteFAQs,
   bulkUpdateFAQs,
   copyFAQs,
-  createFAQ,
   deleteFAQ,
-  getAdminFAQById,
-  getAllFAQs,
-  getAllTourFAQs,
   getFAQStatistics,
   toggleFAQStatus,
   updateFAQ,
@@ -45,7 +39,7 @@ import {
   internalServerErrorSchema,
   unauthorizedErrorSchema,
 } from "../../schema/common.schema";
-import { createVehicleFAQ, getAllVehicleFAQs } from "../../controllers/vehicleFAQ.controller";
+import { createVehicleFAQ, getAdminVehicleFAQById, getAllFAQs, getAllVehicleFAQs } from "../../controllers/vehicleFAQ.controller";
 
 const router = Router();
 router.use(authenticateToken, AdminOnly);
@@ -72,7 +66,7 @@ router.get("/", getAllFAQs);
 
 router.delete("/bulk-delete", bulkDeleteFAQs);
 
-router.get("/:faqId", getAdminFAQById);
+router.get("/:faqId", getAdminVehicleFAQById);
 
 router.delete("/:faqId", deleteFAQ);
 
@@ -258,12 +252,12 @@ registerRoute({
   summary: "Get all FAQs across all vehicles",
   tags: ["Vehicle FAQS"],
   security: [{ bearerAuth: [] }],
-  request: { query: allFAQSQuerySchema },
+  request: { query: allVehicleFAQSQuerySchema },
   responses: {
     200: {
       description: "Get all FAQs across all vehicles",
       content: {
-        "application/json": { schema: tourFAQsListResponseSchema },
+        "application/json": { schema: vehicleFAQsListResponseSchema },
       },
     },
     400: errorResponse(badRequestErrorSchema, "Bad Request"),
@@ -320,19 +314,19 @@ registerRoute({
   },
 });
 
-//Get FAQ by ID (including inactive)
+// Get FAQ by ID (including inactive)
 registerRoute({
   method: "get",
-  path: "/api/admin/faqs/{faqId}",
+  path: "/api/admin/vehicle-faqs/{faqId}",
   summary: "Get FAQ by ID (including inactive)",
   tags: ["Vehicle FAQS"],
   security: [{ bearerAuth: [] }],
-  request: { params: tourFAQIdParamsSchema },
+  request: { params: vehicleFAQIdParamsSchema },
   responses: {
     200: {
       description: "Get FAQ by ID",
       content: {
-        "application/json": { schema: tourFAQsListResponseSchema },
+        "application/json": { schema: vehicleFAQResponseSchema },
       },
     },
     400: errorResponse(badRequestErrorSchema, "Bad Request"),

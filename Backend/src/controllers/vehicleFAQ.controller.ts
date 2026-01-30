@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import {
   allFAQSQuerySchema,
+  allVehicleFAQSQuerySchema,
   bulkCreateTourFAQsSchema,
   bulkDeleteFAQsSchema,
   bulkUpdateTourFAQsSchema,
@@ -219,7 +220,7 @@ const getVehicleFAQById = async (
   }
 };
 
-// Search FAQs across all tours
+// Search FAQs across all vehicles
 const searchVehicleFAQs = async (
   req: Request,
   res: Response,
@@ -301,7 +302,7 @@ const searchVehicleFAQs = async (
   }
 };
 
-// Get all FAQs for a tour (including inactive) - Admin
+// Get all FAQs for a vehicle (including inactive) - Admin
 const getAllVehicleFAQs = async (
   req: Request,
   res: Response,
@@ -327,7 +328,11 @@ const getAllVehicleFAQs = async (
     });
 
     if (!vehicle) {
-      return next({ status: 404, success: false, message: "Vehicle not found" });
+      return next({
+        status: 404,
+        success: false,
+        message: "Vehicle not found",
+      });
     }
 
     const where: any = { vehicleId };
@@ -383,17 +388,17 @@ const getAllVehicleFAQs = async (
   }
 };
 
-// Get all FAQs across all tours
+// Get all FAQs across all vehicles
 const getAllFAQs = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const {
       page,
       limit,
       isActive,
-      tourId,
+      vehicleId,
       sortBy = "createdAt",
       sortOrder = "desc",
-    } = allFAQSQuerySchema.parse(req.query);
+    } = allVehicleFAQSQuerySchema.parse(req.query);
 
     const skip = (page - 1) * limit;
 
@@ -401,25 +406,19 @@ const getAllFAQs = async (req: Request, res: Response, next: NextFunction) => {
     if (isActive !== undefined) {
       where.isActive = isActive === true;
     }
-    if (tourId) {
-      where.tourId = tourId as string;
+    if (vehicleId) {
+      where.vehicleId = vehicleId;
     }
 
     const [faqs, total] = await Promise.all([
-      prisma.tourFAQ.findMany({
+      prisma.vehicleFAQ.findMany({
         where,
         include: {
-          tour: {
+          vehicle: {
             select: {
               id: true,
-              title: true,
-              coverImage: true,
-              destination: {
-                select: {
-                  id: true,
-                  name: true,
-                },
-              },
+              model: true,
+              brand: true,
             },
           },
         },
@@ -430,14 +429,8 @@ const getAllFAQs = async (req: Request, res: Response, next: NextFunction) => {
         take: limit,
       }),
 
-      prisma.tourFAQ.count({ where }),
+      prisma.vehicleFAQ.count({ where }),
     ]);
-
-    // Get statistics
-    const allFAQs = await prisma.tourFAQ.findMany({
-      where,
-      select: { isActive: true },
-    });
 
     const stats = {
       total: faqs.length,
@@ -475,27 +468,22 @@ const getAllFAQs = async (req: Request, res: Response, next: NextFunction) => {
 };
 
 // Get FAQ by ID (including inactive)
-const getAdminFAQById = async (
+const getAdminVehicleFAQById = async (
   req: Request,
   res: Response,
   next: NextFunction,
 ) => {
   try {
-    const { faqId } = tourFAQIdParamsSchema.parse(req.params);
+    const { faqId } = vehicleFAQIdParamsSchema.parse(req.params);
 
-    const faq = await prisma.tourFAQ.findUnique({
+    const faq = await prisma.vehicleFAQ.findUnique({
       where: { id: faqId },
       include: {
-        tour: {
+        vehicle: {
           select: {
             id: true,
-            title: true,
-            destination: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
+            model: true,
+            brand: true,
           },
         },
       },
@@ -1144,7 +1132,7 @@ export {
   searchVehicleFAQs,
   getAllVehicleFAQs,
   getAllFAQs,
-  getAdminFAQById,
+  getAdminVehicleFAQById,
   updateFAQ,
   toggleFAQStatus,
   deleteFAQ,
