@@ -12,6 +12,7 @@ import adminCustomItineraryRoutes from "./admin.customItinerary.routes";
 import adminVehicleRoutes from "./admin.vehicle.routes";
 import adminVehicleBookingRoutes from "./admin.vehicleBooking.routes";
 import adminVehicleReviewRoutes from "./admin.vehicleReview.routes";
+import adminVehicleFAQSRoutes from "./admin.vehicleFAQ.routes";
 
 const router = Router();
 
@@ -23,10 +24,11 @@ router.use("/itinerary", adminItineraryRoutes);
 router.use("/tour-schedule", adminTourScheduleRoutes);
 router.use("/tour-booking", adminTourBookingRoutes);
 router.use("/tour-review", adminTourReviewRoutes);
-router.use("/faqs", adminFAQRoutes);
+router.use("/tour-faqs", adminFAQRoutes);
 router.use("/custom-itinerary", adminCustomItineraryRoutes);
 router.use("/vehicle", adminVehicleRoutes);
 router.use("/vehicle-booking", adminVehicleBookingRoutes);
 router.use("/vehicle-review", adminVehicleReviewRoutes);
+router.use("/vehicle-faqs", adminVehicleFAQSRoutes);
 
 export default router;

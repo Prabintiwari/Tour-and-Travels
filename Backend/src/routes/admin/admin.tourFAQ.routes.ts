@@ -74,9 +74,9 @@ router.delete("/:faqId", deleteFAQ);
 // Create a new tour faqs
 registerRoute({
   method: "post",
-  path: "/api/admin/faqs",
+  path: "/api/admin/tour-faqs",
   summary: "Create a new tour faqs",
-  tags: ["FAQS"],
+  tags: ["Tour FAQS"],
   security: [{ bearerAuth: [] }],
   request: {
     body: {
@@ -103,9 +103,9 @@ registerRoute({
 // Bulk create FAQs for a tour
 registerRoute({
   method: "post",
-  path: "/api/admin/faqs/tour/{tourId}/bulk-create",
+  path: "/api/admin/tour-faqs/tour/{tourId}/bulk-create",
   summary: "Bulk create FAQs for a tour ",
-  tags: ["FAQS"],
+  tags: ["Tour FAQS"],
   security: [{ bearerAuth: [] }],
   request: {
     params: tourParamsSchema,
@@ -133,9 +133,9 @@ registerRoute({
 // Update a new tour faqs
 registerRoute({
   method: "patch",
-  path: "/api/admin/faqs/{faqId}",
+  path: "/api/admin/tour-faqs/{faqId}",
   summary: "Update a  tour faqs",
-  tags: ["FAQS"],
+  tags: ["Tour FAQS"],
   security: [{ bearerAuth: [] }],
   request: {
     params: tourFAQIdParamsSchema,
@@ -163,9 +163,9 @@ registerRoute({
 // Bulk update FAQs
 registerRoute({
   method: "patch",
-  path: "/api/admin/faqs/bulk-update",
+  path: "/api/admin/tour-faqs/bulk-update",
   summary: "Bulk update FAQs ",
-  tags: ["FAQS"],
+  tags: ["Tour FAQS"],
   security: [{ bearerAuth: [] }],
   request: {
     body: {
@@ -192,9 +192,9 @@ registerRoute({
 // Copy FAQs from one tour to another
 registerRoute({
   method: "post",
-  path: "/api/admin/faqs/tours/{sourceTourId}/copy/{targetTourId}",
+  path: "/api/admin/tour-faqs/tours/{sourceTourId}/copy/{targetTourId}",
   summary: "Copy FAQs from one tour to another",
-  tags: ["FAQS"],
+  tags: ["Tour FAQS"],
   security: [{ bearerAuth: [] }],
   request: {
     params: copyFAQsParamsSchema,
@@ -222,9 +222,9 @@ registerRoute({
 // Toggle FAQ active status
 registerRoute({
   method: "patch",
-  path: "/api/admin/faqs/{faqId}/toggle",
+  path: "/api/admin/tour-faqs/{faqId}/toggle",
   summary: "Toggle FAQ active status",
-  tags: ["FAQS"],
+  tags: ["Tour FAQS"],
   security: [{ bearerAuth: [] }],
   request: {
     params: tourFAQIdParamsSchema,
@@ -247,9 +247,9 @@ registerRoute({
 // Get all faqs
 registerRoute({
   method: "get",
-  path: "/api/admin/faqs",
+  path: "/api/admin/tour-faqs",
   summary: "Get all FAQs across all tours",
-  tags: ["FAQS"],
+  tags: ["Tour FAQS"],
   security: [{ bearerAuth: [] }],
   request: { query: allFAQSQuerySchema },
   responses: {
@@ -270,9 +270,9 @@ registerRoute({
 // Get faqs statistics
 registerRoute({
   method: "get",
-  path: "/api/admin/faqs/statistics",
+  path: "/api/admin/tour-faqs/statistics",
   summary: "Get FAQs statistics",
-  tags: ["FAQS"],
+  tags: ["Tour FAQS"],
   security: [{ bearerAuth: [] }],
   request: { query: FAQsStatisticsQuerySchema },
   responses: {
@@ -293,9 +293,9 @@ registerRoute({
 // Get all faqs for a tour
 registerRoute({
   method: "get",
-  path: "/api/admin/faqs/tours/{tourId}",
+  path: "/api/admin/tour-faqs/tours/{tourId}",
   summary: "Get all Faqs for a tour (including inactive)",
-  tags: ["FAQS"],
+  tags: ["Tour FAQS"],
   security: [{ bearerAuth: [] }],
   request: { params: tourParamsSchema, query: tourFAQSQuerySchema },
   responses: {
@@ -316,9 +316,9 @@ registerRoute({
 //Get FAQ by ID (including inactive)
 registerRoute({
   method: "get",
-  path: "/api/admin/faqs/{faqId}",
+  path: "/api/admin/tour-faqs/{faqId}",
   summary: "Get FAQ by ID (including inactive)",
-  tags: ["FAQS"],
+  tags: ["Tour FAQS"],
   security: [{ bearerAuth: [] }],
   request: { params: tourFAQIdParamsSchema },
   responses: {
@@ -339,9 +339,9 @@ registerRoute({
 // Delete an FAQ
 registerRoute({
   method: "delete",
-  path: "/api/admin/faqs/{faqId}",
+  path: "/api/admin/tour-faqs/{faqId}",
   summary: "Delete a faqs",
-  tags: ["FAQS"],
+  tags: ["Tour FAQS"],
   security: [{ bearerAuth: [] }],
   request: {
     params: tourFAQIdParamsSchema,
@@ -361,9 +361,9 @@ registerRoute({
 // Bulk delete FAQs
 registerRoute({
   method: "delete",
-  path: "/api/admin/faqs/bulk-delete",
+  path: "/api/admin/tour-faqs/bulk-delete",
   summary: "Bulk delete FAQs",
-  tags: ["FAQS"],
+  tags: ["Tour FAQS"],
   security: [{ bearerAuth: [] }],
   request: {
     body: {

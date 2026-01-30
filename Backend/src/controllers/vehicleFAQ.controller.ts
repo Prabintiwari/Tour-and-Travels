@@ -19,7 +19,11 @@ import prisma from "../config/prisma";
 import { ZodError } from "zod";
 
 // Create a new FAQ - Admin
-const createFAQ = async (req: Request, res: Response, next: NextFunction) => {
+const createVehicleFAQ = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const validatedData = createVehicleFAQSchema.parse(req.body);
 
@@ -1112,7 +1116,7 @@ const getFAQStatistics = async (
   }
 };
 export {
-  createFAQ,
+  createVehicleFAQ,
   getTourFAQs,
   getFAQById,
   searchFAQs,

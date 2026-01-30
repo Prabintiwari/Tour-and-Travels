@@ -18,7 +18,7 @@ export const generateOpenApiDocument = () => {
       { url: "https://api.example.com", description: "Production" },
     ],
     tags: [
-      { name: "Vehicle Review", description: "Vehicle Review management" },
+      { name: "Vehicle FAQs", description: "Vehicle FAQs management" },
       { name: "Auth", description: "Auth management" },
       { name: "Users", description: "User management" },
       { name: "Tours", description: "Tour management" },
@@ -27,10 +27,11 @@ export const generateOpenApiDocument = () => {
       { name: "Tour Schedule", description: "Tour Schedule management" },
       { name: "Tour Bookings", description: "Tour Booking management" },
       { name: "Tour Review", description: "Tour Review management" },
-      { name: "FAQS", description: "FAQS management" },
+      { name: "Tour FAQS", description: "Tour FAQS management" },
       { name: "Custom-Itinerary", description: "Custom-Itinerary management" },
       { name: "Vehicle", description: "Vehicle management" },
       { name: "Vehicle Bookings", description: "Vehicle Bookking management" },
+      { name: "Vehicle Review", description: "Vehicle Review management" },
     ],
   });
 

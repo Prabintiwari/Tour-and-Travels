@@ -23,6 +23,7 @@ import customItineraryRoutes from "./routes/public/customItinerary.routes";
 import vehicleRoutes from "./routes/public/vehicle.routes";
 import vehicleBookingRoutes from "./routes/public/vehicleBooking.routes";
 import vehicleReviewRoutes from "./routes/public/vehicleReview.routes";
+import vehicleFAQSRoutes from "./routes/public/vehicleFAQ.routes";
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -53,11 +54,12 @@ app.use("/api/itinerary", itineraryRoute);
 app.use("/api/tour-schedule", tourScheduleRoute);
 app.use("/api/tour-booking", tourBookingRoute);
 app.use("/api/tour-review", tourReviewRoute);
-app.use("/api/faqs", tourFAQSRoute);
+app.use("/api/tour-faqs", tourFAQSRoute);
 app.use("/api/custom-itinerary", customItineraryRoutes);
 app.use("/api/vehicle", vehicleRoutes);
 app.use("/api/vehicle-booking", vehicleBookingRoutes);
 app.use("/api/vehicle-review", vehicleReviewRoutes);
+app.use("/api/vehicle-faqs", vehicleFAQSRoutes);
 app.use(responseHandler);
 
 app.get("/", (req: Request, res: Response) => {
