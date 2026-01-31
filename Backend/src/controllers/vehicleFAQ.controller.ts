@@ -636,7 +636,7 @@ const toggleVehicleFAQStatus = async (
     next({
       status: 200,
       success: true,
-      message: `FAQ ${faq.isActive ? "activated" : "deactivated"} successfully`,
+      message: `Vehicle FAQ ${faq.isActive ? "activated" : "deactivated"} successfully`,
       data: {
         id: faq.id,
         isActive: faq.isActive,
@@ -659,11 +659,11 @@ const toggleVehicleFAQStatus = async (
 };
 
 // Delete an FAQ
-const deleteFAQ = async (req: Request, res: Response, next: NextFunction) => {
+const deleteVehicleFAQ = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { faqId } = tourFAQIdParamsSchema.parse(req.params);
+    const { faqId } = vehicleFAQIdParamsSchema.parse(req.params);
 
-    const existingFAQ = await prisma.tourFAQ.findUnique({
+    const existingFAQ = await prisma.vehicleFAQ.findUnique({
       where: { id: faqId },
     });
 
@@ -671,7 +671,7 @@ const deleteFAQ = async (req: Request, res: Response, next: NextFunction) => {
       return next({ status: 404, success: false, message: "FAQ not found" });
     }
 
-    await prisma.tourFAQ.delete({
+    await prisma.vehicleFAQ.delete({
       where: { id: faqId },
     });
 
@@ -1137,7 +1137,7 @@ export {
   getAdminVehicleFAQById,
   updateVehicleFAQ,
   toggleVehicleFAQStatus,
-  deleteFAQ,
+  deleteVehicleFAQ,
   bulkCreateFAQs,
   bulkUpdateFAQs,
   bulkDeleteFAQs,

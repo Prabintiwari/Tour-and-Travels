@@ -40,7 +40,7 @@ import {
   internalServerErrorSchema,
   unauthorizedErrorSchema,
 } from "../../schema/common.schema";
-import { createVehicleFAQ, getAdminVehicleFAQById, getAllFAQs, getAllVehicleFAQs, toggleVehicleFAQStatus, updateVehicleFAQ } from "../../controllers/vehicleFAQ.controller";
+import { createVehicleFAQ, deleteVehicleFAQ, getAdminVehicleFAQById, getAllFAQs, getAllVehicleFAQs, toggleVehicleFAQStatus, updateVehicleFAQ } from "../../controllers/vehicleFAQ.controller";
 
 const router = Router();
 router.use(authenticateToken, AdminOnly);
@@ -69,7 +69,7 @@ router.delete("/bulk-delete", bulkDeleteFAQs);
 
 router.get("/:faqId", getAdminVehicleFAQById);
 
-router.delete("/:faqId", deleteFAQ);
+router.delete("/:faqId", deleteVehicleFAQ);
 
 // Swagger registration
 
@@ -341,16 +341,16 @@ registerRoute({
 // Delete an FAQ
 registerRoute({
   method: "delete",
-  path: "/api/admin/faqs/{faqId}",
+  path: "/api/admin/vehicle-faqs/{faqId}",
   summary: "Delete a faqs",
   tags: ["Vehicle FAQS"],
   security: [{ bearerAuth: [] }],
   request: {
-    params: tourFAQIdParamsSchema,
+    params: vehicleFAQIdParamsSchema,
   },
   responses: {
     200: {
-      description: "Tour Faqs deleted successfully",
+      description: "Vehicle Faqs deleted successfully",
     },
     400: errorResponse(badRequestErrorSchema, "Bad Request"),
     401: errorResponse(unauthorizedErrorSchema, "Unauthorized"),
