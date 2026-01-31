@@ -610,15 +610,15 @@ const updateVehicleFAQ = async (req: Request, res: Response, next: NextFunction)
 };
 
 //Toggle FAQ active status
-const toggleFAQStatus = async (
+const toggleVehicleFAQStatus = async (
   req: Request,
   res: Response,
   next: NextFunction,
 ) => {
   try {
-    const { faqId } = tourFAQIdParamsSchema.parse(req.params);
+    const { faqId } = vehicleFAQIdParamsSchema.parse(req.params);
 
-    const existingFAQ = await prisma.tourFAQ.findUnique({
+    const existingFAQ = await prisma.vehicleFAQ.findUnique({
       where: { id: faqId },
     });
 
@@ -626,7 +626,7 @@ const toggleFAQStatus = async (
       return next({ status: 404, success: false, message: "FAQ not found" });
     }
 
-    const faq = await prisma.tourFAQ.update({
+    const faq = await prisma.vehicleFAQ.update({
       where: { id: faqId },
       data: {
         isActive: !existingFAQ.isActive,
@@ -1136,7 +1136,7 @@ export {
   getAllFAQs,
   getAdminVehicleFAQById,
   updateVehicleFAQ,
-  toggleFAQStatus,
+  toggleVehicleFAQStatus,
   deleteFAQ,
   bulkCreateFAQs,
   bulkUpdateFAQs,

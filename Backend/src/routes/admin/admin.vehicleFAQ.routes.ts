@@ -40,7 +40,7 @@ import {
   internalServerErrorSchema,
   unauthorizedErrorSchema,
 } from "../../schema/common.schema";
-import { createVehicleFAQ, getAdminVehicleFAQById, getAllFAQs, getAllVehicleFAQs, updateVehicleFAQ } from "../../controllers/vehicleFAQ.controller";
+import { createVehicleFAQ, getAdminVehicleFAQById, getAllFAQs, getAllVehicleFAQs, toggleVehicleFAQStatus, updateVehicleFAQ } from "../../controllers/vehicleFAQ.controller";
 
 const router = Router();
 router.use(authenticateToken, AdminOnly);
@@ -53,7 +53,7 @@ router.post("/tour/:tourId/bulk-create", bulkCreateFAQs);
 
 router.patch("/bulk-update", bulkUpdateFAQs);
 
-router.patch("/:faqId/toggle", toggleFAQStatus);
+router.patch("/:faqId/toggle", toggleVehicleFAQStatus);
 
 router.patch("/:faqId", updateVehicleFAQ);
 
@@ -224,18 +224,18 @@ registerRoute({
 // Toggle FAQ active status
 registerRoute({
   method: "patch",
-  path: "/api/admin/faqs/{faqId}/toggle",
+  path: "/api/admin/vehicle-faqs/{faqId}/toggle",
   summary: "Toggle FAQ active status",
   tags: ["Vehicle FAQS"],
   security: [{ bearerAuth: [] }],
   request: {
-    params: tourFAQIdParamsSchema,
+    params: vehicleFAQIdParamsSchema,
   },
   responses: {
     200: {
       description: "Toggle FAQ active status",
       content: {
-        "application/json": { schema: tourFAQResponseSchema },
+        "application/json": { schema: vehicleFAQResponseSchema },
       },
     },
     400: errorResponse(badRequestErrorSchema, "Bad Request"),
