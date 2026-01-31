@@ -13,6 +13,7 @@ import {
   tourFAQResponseSchema,
   tourFAQsListResponseSchema,
   updateTourFAQSchema,
+  updateVehicleFAQSchema,
   vehicleFAQIdParamsSchema,
   vehicleFAQResponseSchema,
   vehicleFAQsListResponseSchema,
@@ -131,26 +132,26 @@ registerRoute({
   },
 });
 
-// Update a new tour faqs
+// Update a vehicle faqs
 registerRoute({
   method: "patch",
-  path: "/api/admin/faqs/{faqId}",
-  summary: "Update a  tour faqs",
+  path: "/api/admin/vehicle-faqs/{faqId}",
+  summary: "Update a  vehicle faqs",
   tags: ["Vehicle FAQS"],
   security: [{ bearerAuth: [] }],
   request: {
-    params: tourFAQIdParamsSchema,
+    params: vehicleFAQIdParamsSchema,
     body: {
       content: {
-        "application/json": { schema: updateTourFAQSchema },
+        "application/json": { schema: updateVehicleFAQSchema },
       },
     },
   },
   responses: {
     200: {
-      description: "Tour Faqs updated",
+      description: "Vehicle Faqs updated",
       content: {
-        "application/json": { schema: tourFAQResponseSchema },
+        "application/json": { schema: vehicleFAQResponseSchema },
       },
     },
     400: errorResponse(badRequestErrorSchema, "Bad Request"),

@@ -15,6 +15,7 @@ import {
   tourFAQSQuerySchema,
   tourParamsSchema,
   updateTourFAQSchema,
+  updateVehicleFAQSchema,
   vehicleFAQIdParamsSchema,
   vehicleFAQSQuerySchema,
   vehicleParamsSchema,
@@ -512,8 +513,8 @@ const getAdminVehicleFAQById = async (
 // Update an FAQ
 const updateFAQ = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { faqId } = tourFAQIdParamsSchema.parse(req.params);
-    const validatedData = updateTourFAQSchema.parse(req.body);
+    const { faqId } = vehicleFAQIdParamsSchema.parse(req.params);
+    const validatedData = updateVehicleFAQSchema.parse(req.body);
 
     if (
       validatedData.question === undefined &&
@@ -527,7 +528,7 @@ const updateFAQ = async (req: Request, res: Response, next: NextFunction) => {
       });
     }
 
-    const existingFAQ = await prisma.tourFAQ.findUnique({
+    const existingFAQ = await prisma.vehicleFAQ.findUnique({
       where: { id: faqId },
     });
 
@@ -547,9 +548,9 @@ const updateFAQ = async (req: Request, res: Response, next: NextFunction) => {
       normalizedQuestion &&
       normalizedQuestion !== existingFAQ.questionLower
     ) {
-      const duplicateFAQ = await prisma.tourFAQ.findFirst({
+      const duplicateFAQ = await prisma.vehicleFAQ.findFirst({
         where: {
-          tourId: existingFAQ.tourId,
+          vehicleId: existingFAQ.vehicleId,
           questionLower: normalizedQuestion,
           id: { not: faqId },
         },
@@ -559,7 +560,7 @@ const updateFAQ = async (req: Request, res: Response, next: NextFunction) => {
         return next({
           status: 409,
           success: false,
-          message: "A FAQ with this question already exists for this tour",
+          message: "A FAQ with this question already exists for this vehicle",
         });
       }
     }
@@ -572,14 +573,15 @@ const updateFAQ = async (req: Request, res: Response, next: NextFunction) => {
       updateData.questionLower = normalizedQuestion;
     }
 
-    const faq = await prisma.tourFAQ.update({
+    const faq = await prisma.vehicleFAQ.update({
       where: { id: faqId },
       data: updateData,
       include: {
-        tour: {
+        vehicle: {
           select: {
             id: true,
-            title: true,
+            model: true,
+            brand: true,
           },
         },
       },
