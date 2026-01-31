@@ -1,22 +1,15 @@
 import { Request, Response, NextFunction } from "express";
 import {
-  allFAQSQuerySchema,
   allVehicleFAQSQuerySchema,
-  bulkCreateTourFAQsSchema,
   bulkCreateVehicleFAQsSchema,
   bulkDeleteFAQsSchema,
-  bulkUpdateTourFAQsSchema,
+  bulkDeleteVehicleFAQsSchema,
   bulkUpdateVehicleFAQsSchema,
   copyFAQsParamsSchema,
   copyFAQsSchema,
   createVehicleFAQSchema,
   FAQsStatisticsQuerySchema,
-  searchFAQSQuerySchema,
   searchVehicleFAQSQuerySchema,
-  tourFAQIdParamsSchema,
-  tourFAQSQuerySchema,
-  tourParamsSchema,
-  updateTourFAQSchema,
   updateVehicleFAQSchema,
   vehicleFAQIdParamsSchema,
   vehicleFAQSQuerySchema,
@@ -875,28 +868,17 @@ const bulkUpdateVehicleFAQs = async (
 };
 
 // Bulk delete FAQs
-const bulkDeleteFAQs = async (
+const bulkDeleteVehicleFAQs = async (
   req: Request,
   res: Response,
   next: NextFunction,
 ) => {
   try {
-    const { faqIds } = bulkDeleteFAQsSchema.parse(req.body);
+    const { faqIds } = bulkDeleteVehicleFAQsSchema.parse(req.body);
 
-    const validIds = [...new Set(faqIds)].filter((id) =>
-      /^[0-9a-fA-F]{24}$/.test(id),
-    );
 
-    if (validIds.length === 0) {
-      return next({
-        status: 400,
-        success: false,
-        message: "No valid FAQ IDs provided",
-      });
-    }
-
-    const result = await prisma.tourFAQ.deleteMany({
-      where: { id: { in: validIds } },
+    const result = await prisma.vehicleFAQ.deleteMany({
+      where: { id: { in: faqIds } },
     });
 
     if (result.count === 0) {
@@ -1142,7 +1124,7 @@ export {
   deleteVehicleFAQ,
   bulkCreateVehicleFAQs,
   bulkUpdateVehicleFAQs,
-  bulkDeleteFAQs,
+  bulkDeleteVehicleFAQs,
   copyFAQs,
   getFAQStatistics,
 };

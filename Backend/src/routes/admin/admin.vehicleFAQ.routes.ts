@@ -4,6 +4,7 @@ import {
   allVehicleFAQSQuerySchema,
   bulkCreateVehicleFAQsSchema,
   bulkDeleteFAQsSchema,
+  bulkDeleteVehicleFAQsSchema,
   bulkUpdateTourFAQsSchema,
   bulkUpdateVehicleFAQsSchema,
   copyFAQsParamsSchema,
@@ -41,7 +42,7 @@ import {
   internalServerErrorSchema,
   unauthorizedErrorSchema,
 } from "../../schema/common.schema";
-import { bulkCreateVehicleFAQs, bulkUpdateVehicleFAQs, createVehicleFAQ, deleteVehicleFAQ, getAdminVehicleFAQById, getAllFAQs, getAllVehicleFAQs, toggleVehicleFAQStatus, updateVehicleFAQ } from "../../controllers/vehicleFAQ.controller";
+import { bulkCreateVehicleFAQs, bulkDeleteVehicleFAQs, bulkUpdateVehicleFAQs, createVehicleFAQ, deleteVehicleFAQ, getAdminVehicleFAQById, getAllFAQs, getAllVehicleFAQs, toggleVehicleFAQStatus, updateVehicleFAQ } from "../../controllers/vehicleFAQ.controller";
 
 const router = Router();
 router.use(authenticateToken, AdminOnly);
@@ -66,7 +67,7 @@ router.get("/statistics", getFAQStatistics);
 
 router.get("/", getAllFAQs);
 
-router.delete("/bulk-delete", bulkDeleteFAQs);
+router.delete("/bulk-delete", bulkDeleteVehicleFAQs);
 
 router.get("/:faqId", getAdminVehicleFAQById);
 
@@ -364,14 +365,14 @@ registerRoute({
 // Bulk delete FAQs
 registerRoute({
   method: "delete",
-  path: "/api/admin/faqs/bulk-delete",
+  path: "/api/admin/vehicle-faqs/bulk-delete",
   summary: "Bulk delete FAQs",
   tags: ["Vehicle FAQS"],
   security: [{ bearerAuth: [] }],
   request: {
     body: {
       content: {
-        "application/json": { schema: bulkDeleteFAQsSchema },
+        "application/json": { schema: bulkDeleteVehicleFAQsSchema },
       },
     },
   },
