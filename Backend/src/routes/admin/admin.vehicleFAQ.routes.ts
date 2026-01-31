@@ -1,37 +1,25 @@
 import { Router } from "express";
 import {
-  allFAQSQuerySchema,
   allVehicleFAQSQuerySchema,
   bulkCreateVehicleFAQsSchema,
-  bulkDeleteFAQsSchema,
   bulkDeleteVehicleFAQsSchema,
-  bulkUpdateTourFAQsSchema,
   bulkUpdateVehicleFAQsSchema,
   copyFAQsParamsSchema,
   copyFAQsSchema,
+  copyVehicleFAQsParamsSchema,
+  copyVehicleFAQsSchema,
   createVehicleFAQSchema,
   FAQsStatisticsQuerySchema,
-  tourFAQIdParamsSchema,
   tourFAQResponseSchema,
   tourFAQsListResponseSchema,
-  updateTourFAQSchema,
   updateVehicleFAQSchema,
   vehicleFAQIdParamsSchema,
   vehicleFAQResponseSchema,
   vehicleFAQsListResponseSchema,
   vehicleFAQSQuerySchema,
+  vehicleFAQsStatisticsQuerySchema,
   vehicleParamsSchema,
 } from "../../schema";
-import {
-  bulkCreateFAQs,
-  bulkDeleteFAQs,
-  bulkUpdateFAQs,
-  copyFAQs,
-  deleteFAQ,
-  getFAQStatistics,
-  toggleFAQStatus,
-  updateFAQ,
-} from "../../controllers/tourFAQ.controller";
 import { AdminOnly, authenticateToken } from "../../middleware/auth";
 import { registerRoute } from "../../utils/openapi.utils";
 import {
@@ -42,7 +30,7 @@ import {
   internalServerErrorSchema,
   unauthorizedErrorSchema,
 } from "../../schema/common.schema";
-import { bulkCreateVehicleFAQs, bulkDeleteVehicleFAQs, bulkUpdateVehicleFAQs, createVehicleFAQ, deleteVehicleFAQ, getAdminVehicleFAQById, getAllFAQs, getAllVehicleFAQs, toggleVehicleFAQStatus, updateVehicleFAQ } from "../../controllers/vehicleFAQ.controller";
+import { bulkCreateVehicleFAQs, bulkDeleteVehicleFAQs, bulkUpdateVehicleFAQs, copyVehicleFAQs, createVehicleFAQ, deleteVehicleFAQ, getAdminVehicleFAQById, getAllFAQs, getAllVehicleFAQs, getVehicleFAQStatistics, toggleVehicleFAQStatus, updateVehicleFAQ } from "../../controllers/vehicleFAQ.controller";
 
 const router = Router();
 router.use(authenticateToken, AdminOnly);
@@ -61,9 +49,9 @@ router.patch("/:faqId", updateVehicleFAQ);
 
 router.get("/vehicles/:vehicleId", getAllVehicleFAQs);
 
-router.post("/vehicles/:sourceVehicleId/copy/:targetVehicleId", copyFAQs);
+router.post("/vehicles/:sourceVehicleId/copy/:targetVehicleId", copyVehicleFAQs);
 
-router.get("/statistics", getFAQStatistics);
+router.get("/statistics", getVehicleFAQStatistics);
 
 router.get("/", getAllFAQs);
 
@@ -193,18 +181,18 @@ registerRoute({
   },
 });
 
-// Copy FAQs from one tour to another
+// Copy FAQs from one vehicle to another
 registerRoute({
   method: "post",
-  path: "/api/admin/faqs/tours/{sourceTourId}/copy/{targetTourId}",
-  summary: "Copy FAQs from one tour to another",
+  path: "/api/admin/vehicle-faqs/vehicles/{sourceVehicleId}/copy/{targetVehicleId}",
+  summary: "Copy FAQs from one vehicle to another",
   tags: ["Vehicle FAQS"],
   security: [{ bearerAuth: [] }],
   request: {
-    params: copyFAQsParamsSchema,
+    params: copyVehicleFAQsParamsSchema,
     body: {
       content: {
-        "application/json": { schema: copyFAQsSchema },
+        "application/json": { schema: copyVehicleFAQsSchema },
       },
     },
   },
@@ -212,7 +200,7 @@ registerRoute({
     200: {
       description: "Faqs copy successfully",
       content: {
-        "application/json": { schema: tourFAQResponseSchema },
+        "application/json": { schema: vehicleFAQResponseSchema },
       },
     },
     400: errorResponse(badRequestErrorSchema, "Bad Request"),
@@ -274,16 +262,16 @@ registerRoute({
 // Get faqs statistics
 registerRoute({
   method: "get",
-  path: "/api/admin/faqs/statistics",
+  path: "/api/admin/vehicle-faqs/statistics",
   summary: "Get FAQs statistics",
   tags: ["Vehicle FAQS"],
   security: [{ bearerAuth: [] }],
-  request: { query: FAQsStatisticsQuerySchema },
+  request: { query: vehicleFAQsStatisticsQuerySchema },
   responses: {
     200: {
       description: "Get FAQs statistics",
       content: {
-        "application/json": { schema: tourFAQsListResponseSchema },
+        "application/json": { schema: vehicleFAQsListResponseSchema },
       },
     },
     400: errorResponse(badRequestErrorSchema, "Bad Request"),

@@ -2,7 +2,6 @@ import { Request, Response, NextFunction } from "express";
 import {
   allVehicleFAQSQuerySchema,
   bulkCreateVehicleFAQsSchema,
-  bulkDeleteFAQsSchema,
   bulkDeleteVehicleFAQsSchema,
   bulkUpdateVehicleFAQsSchema,
   copyFAQsParamsSchema,
@@ -13,6 +12,7 @@ import {
   updateVehicleFAQSchema,
   vehicleFAQIdParamsSchema,
   vehicleFAQSQuerySchema,
+  vehicleFAQsStatisticsQuerySchema,
   vehicleParamsSchema,
 } from "../schema";
 import prisma from "../config/prisma";
@@ -506,7 +506,11 @@ const getAdminVehicleFAQById = async (
 };
 
 // Update an FAQ
-const updateVehicleFAQ = async (req: Request, res: Response, next: NextFunction) => {
+const updateVehicleFAQ = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const { faqId } = vehicleFAQIdParamsSchema.parse(req.params);
     const validatedData = updateVehicleFAQSchema.parse(req.body);
@@ -654,7 +658,11 @@ const toggleVehicleFAQStatus = async (
 };
 
 // Delete an FAQ
-const deleteVehicleFAQ = async (req: Request, res: Response, next: NextFunction) => {
+const deleteVehicleFAQ = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const { faqId } = vehicleFAQIdParamsSchema.parse(req.params);
 
@@ -750,7 +758,7 @@ const bulkCreateVehicleFAQs = async (
         prisma.vehicleFAQ.create({
           data: {
             vehicleId,
-            vehicleType:faq.vehicleType,
+            vehicleType: faq.vehicleType,
             question: faq.question.trim(),
             questionLower: normalizedQuestions[index],
             answer: faq.answer.trim(),
@@ -876,7 +884,6 @@ const bulkDeleteVehicleFAQs = async (
   try {
     const { faqIds } = bulkDeleteVehicleFAQsSchema.parse(req.body);
 
-
     const result = await prisma.vehicleFAQ.deleteMany({
       where: { id: { in: faqIds } },
     });
@@ -912,7 +919,11 @@ const bulkDeleteVehicleFAQs = async (
 };
 
 //Copy FAQs from one tour to another
-const copyFAQs = async (req: Request, res: Response, next: NextFunction) => {
+const copyVehicleFAQs = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const { sourceTourId, targetTourId } = copyFAQsParamsSchema.parse(
       req.params,
@@ -1018,64 +1029,51 @@ const copyFAQs = async (req: Request, res: Response, next: NextFunction) => {
 };
 
 // Get FAQ statistics
-const getFAQStatistics = async (
+const getVehicleFAQStatistics = async (
   req: Request,
   res: Response,
   next: NextFunction,
 ) => {
   try {
-    const { tourId, destinationId } = FAQsStatisticsQuerySchema.parse(
-      req.query,
-    );
-
-    let tourIds: string[] | undefined;
-
-    if (destinationId) {
-      const tours = await prisma.tour.findMany({
-        where: { destinationId },
-        select: { id: true },
-      });
-      tourIds = tours.map((tour) => tour.id);
-    } else if (tourId) {
-      tourIds = [tourId];
-    }
+    const { vehicleId } = vehicleFAQsStatisticsQuerySchema.parse(req.query);
 
     const where: any = {};
-    if (tourIds) {
-      where.tourId = { in: tourIds };
+    if (vehicleId) {
+      where.vehicleId = vehicleId;
     }
 
-    const [totalFAQs, activeFAQs, inactiveFAQs, toursWithFAQs] =
+    const [totalFAQs, activeFAQs, inactiveFAQs, vehiclesWithFAQs] =
       await Promise.all([
-        prisma.tourFAQ.count({ where }),
-        prisma.tourFAQ.count({ where: { ...where, isActive: true } }),
-        prisma.tourFAQ.count({ where: { ...where, isActive: false } }),
-        prisma.tourFAQ.groupBy({
-          by: ["tourId"],
+        prisma.vehicleFAQ.count({ where }),
+        prisma.vehicleFAQ.count({ where: { ...where, isActive: true } }),
+        prisma.vehicleFAQ.count({ where: { ...where, isActive: false } }),
+        prisma.vehicleFAQ.groupBy({
+          by: ["vehicleId"],
           where,
           _count: true,
         }),
       ]);
 
-    const avgFAQsPerTour =
-      toursWithFAQs.length > 0 ? totalFAQs / toursWithFAQs.length : 0;
+    const avgFAQsPerVehicle =
+      vehiclesWithFAQs.length > 0 ? totalFAQs / vehiclesWithFAQs.length : 0;
 
-    const topTours = toursWithFAQs
+    const topVehicles = vehiclesWithFAQs
       .sort((a, b) => b._count - a._count)
       .slice(0, 5);
 
-    const topToursWithDetails = await Promise.all(
-      topTours.map(async (item) => {
-        const tour = await prisma.tour.findUnique({
-          where: { id: item.tourId },
+    const topVehiclesWithDetails = await Promise.all(
+      topVehicles.map(async (item) => {
+        const vehicle = await prisma.vehicle.findUnique({
+          where: { id: item.vehicleId },
           select: {
             id: true,
-            title: true,
-            coverImage: true,
+            model: true,
+            brand: true,
+            images: true,
           },
         });
         return {
-          ...tour,
+          ...vehicle,
           faqCount: item._count,
         };
       }),
@@ -1088,12 +1086,11 @@ const getFAQStatistics = async (
         totalFAQs,
         activeFAQs,
         inactiveFAQs,
-        toursWithFAQs: toursWithFAQs.length,
-        avgFAQsPerTour: Math.round(avgFAQsPerTour * 10) / 10,
-        topToursWithMostFAQs: topToursWithDetails,
+        vehiclesWithFAQs: vehiclesWithFAQs.length,
+        avgFAQsPerVehicle: Math.round(avgFAQsPerVehicle * 10) / 10,
+        topVehiclesWithMostFAQs: topVehiclesWithDetails,
         filters: {
-          tourId: tourId || null,
-          destinationId: destinationId || null,
+          tourId: vehicleId || null,
         },
       },
     });
@@ -1125,6 +1122,6 @@ export {
   bulkCreateVehicleFAQs,
   bulkUpdateVehicleFAQs,
   bulkDeleteVehicleFAQs,
-  copyFAQs,
-  getFAQStatistics,
+  copyVehicleFAQs,
+  getVehicleFAQStatistics,
 };
