@@ -6,6 +6,7 @@ import {
   bulkCreateVehicleFAQsSchema,
   bulkDeleteFAQsSchema,
   bulkUpdateTourFAQsSchema,
+  bulkUpdateVehicleFAQsSchema,
   copyFAQsParamsSchema,
   copyFAQsSchema,
   createVehicleFAQSchema,
@@ -791,14 +792,13 @@ const bulkCreateVehicleFAQs = async (
 };
 
 // Bulk update FAQs
-const bulkUpdateFAQs = async (
+const bulkUpdateVehicleFAQs = async (
   req: Request,
   res: Response,
   next: NextFunction,
 ) => {
   try {
-    const { faqs } = bulkUpdateTourFAQsSchema.parse(req.body);
-    console.log(faqs);
+    const { faqs } = bulkUpdateVehicleFAQsSchema.parse(req.body);
 
     const normalizedQuestions = faqs
       .filter((f) => f.question)
@@ -816,7 +816,7 @@ const bulkUpdateFAQs = async (
 
     //  Check duplicates against DB (exclude current faqIds)
     if (normalizedQuestions.length > 0) {
-      const existingFAQs = await prisma.tourFAQ.findMany({
+      const existingFAQs = await prisma.vehicleFAQ.findMany({
         where: {
           questionLower: { in: normalizedQuestions },
           NOT: { id: { in: faqs.map((f) => f.faqId) } },
@@ -838,7 +838,7 @@ const bulkUpdateFAQs = async (
       faqs.map((update) => {
         const { faqId, question, ...data } = update;
 
-        return prisma.tourFAQ.update({
+        return prisma.vehicleFAQ.update({
           where: { id: faqId },
           data: {
             ...data,
@@ -1141,7 +1141,7 @@ export {
   toggleVehicleFAQStatus,
   deleteVehicleFAQ,
   bulkCreateVehicleFAQs,
-  bulkUpdateFAQs,
+  bulkUpdateVehicleFAQs,
   bulkDeleteFAQs,
   copyFAQs,
   getFAQStatistics,

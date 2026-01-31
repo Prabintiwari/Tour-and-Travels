@@ -5,6 +5,7 @@ import {
   bulkCreateVehicleFAQsSchema,
   bulkDeleteFAQsSchema,
   bulkUpdateTourFAQsSchema,
+  bulkUpdateVehicleFAQsSchema,
   copyFAQsParamsSchema,
   copyFAQsSchema,
   createVehicleFAQSchema,
@@ -40,7 +41,7 @@ import {
   internalServerErrorSchema,
   unauthorizedErrorSchema,
 } from "../../schema/common.schema";
-import { bulkCreateVehicleFAQs, createVehicleFAQ, deleteVehicleFAQ, getAdminVehicleFAQById, getAllFAQs, getAllVehicleFAQs, toggleVehicleFAQStatus, updateVehicleFAQ } from "../../controllers/vehicleFAQ.controller";
+import { bulkCreateVehicleFAQs, bulkUpdateVehicleFAQs, createVehicleFAQ, deleteVehicleFAQ, getAdminVehicleFAQById, getAllFAQs, getAllVehicleFAQs, toggleVehicleFAQStatus, updateVehicleFAQ } from "../../controllers/vehicleFAQ.controller";
 
 const router = Router();
 router.use(authenticateToken, AdminOnly);
@@ -51,7 +52,7 @@ router.post("/", createVehicleFAQ);
 
 router.post("/vehicle/:vehicleId/bulk-create", bulkCreateVehicleFAQs);
 
-router.patch("/bulk-update", bulkUpdateFAQs);
+router.patch("/bulk-update", bulkUpdateVehicleFAQs);
 
 router.patch("/:faqId/toggle", toggleVehicleFAQStatus);
 
@@ -165,14 +166,14 @@ registerRoute({
 // Bulk update FAQs
 registerRoute({
   method: "patch",
-  path: "/api/admin/faqs/bulk-update",
+  path: "/api/admin/vehicle-faqs/bulk-update",
   summary: "Bulk update FAQs ",
   tags: ["Vehicle FAQS"],
   security: [{ bearerAuth: [] }],
   request: {
     body: {
       content: {
-        "application/json": { schema: bulkUpdateTourFAQsSchema },
+        "application/json": { schema: bulkUpdateVehicleFAQsSchema },
       },
     },
   },
@@ -180,7 +181,7 @@ registerRoute({
     200: {
       description: "Bulk FAQs updated",
       content: {
-        "application/json": { schema: tourFAQResponseSchema },
+        "application/json": { schema: vehicleFAQResponseSchema },
       },
     },
     400: errorResponse(badRequestErrorSchema, "Bad Request"),
