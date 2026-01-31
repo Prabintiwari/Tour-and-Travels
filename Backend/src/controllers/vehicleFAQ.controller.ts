@@ -3,6 +3,7 @@ import {
   allFAQSQuerySchema,
   allVehicleFAQSQuerySchema,
   bulkCreateTourFAQsSchema,
+  bulkCreateVehicleFAQsSchema,
   bulkDeleteFAQsSchema,
   bulkUpdateTourFAQsSchema,
   copyFAQsParamsSchema,
@@ -691,26 +692,26 @@ const deleteVehicleFAQ = async (req: Request, res: Response, next: NextFunction)
   }
 };
 
-// Bulk create FAQs for a tour
-const bulkCreateFAQs = async (
+// Bulk create FAQs for a vehicle
+const bulkCreateVehicleFAQs = async (
   req: Request,
   res: Response,
   next: NextFunction,
 ) => {
   try {
-    const { tourId } = tourParamsSchema.parse(req.params);
-    const { faqs } = bulkCreateTourFAQsSchema.parse(req.body);
+    const { vehicleId } = vehicleParamsSchema.parse(req.params);
+    const { faqs } = bulkCreateVehicleFAQsSchema.parse(req.body);
 
-    const tour = await prisma.tour.findUnique({
-      where: { id: tourId },
+    const vehicle = await prisma.vehicle.findUnique({
+      where: { id: vehicleId },
       select: { id: true },
     });
 
-    if (!tour) {
+    if (!vehicle) {
       return next({
         status: 404,
         success: false,
-        message: "Tour not found",
+        message: "Vehicle not found",
       });
     }
 
@@ -728,9 +729,9 @@ const bulkCreateFAQs = async (
       });
     }
 
-    const existingFAQs = await prisma.tourFAQ.findMany({
+    const existingFAQs = await prisma.vehicleFAQ.findMany({
       where: {
-        tourId,
+        vehicleId,
         questionLower: { in: normalizedQuestions },
       },
       select: {
@@ -742,7 +743,7 @@ const bulkCreateFAQs = async (
       return next({
         status: 409,
         success: false,
-        message: "Some FAQ questions already exist for this tour",
+        message: "Some FAQ questions already exist for this vehicle",
         data: {
           existingQuestions: existingFAQs.map((f) => f.questionLower),
         },
@@ -752,9 +753,10 @@ const bulkCreateFAQs = async (
     // Bulk create FAQs
     const createdFAQs = await prisma.$transaction(
       faqs.map((faq, index) =>
-        prisma.tourFAQ.create({
+        prisma.vehicleFAQ.create({
           data: {
-            tourId,
+            vehicleId,
+            vehicleType:faq.vehicleType,
             question: faq.question.trim(),
             questionLower: normalizedQuestions[index],
             answer: faq.answer.trim(),
@@ -1138,7 +1140,7 @@ export {
   updateVehicleFAQ,
   toggleVehicleFAQStatus,
   deleteVehicleFAQ,
-  bulkCreateFAQs,
+  bulkCreateVehicleFAQs,
   bulkUpdateFAQs,
   bulkDeleteFAQs,
   copyFAQs,

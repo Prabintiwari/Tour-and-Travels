@@ -40,7 +40,7 @@ import {
   internalServerErrorSchema,
   unauthorizedErrorSchema,
 } from "../../schema/common.schema";
-import { createVehicleFAQ, deleteVehicleFAQ, getAdminVehicleFAQById, getAllFAQs, getAllVehicleFAQs, toggleVehicleFAQStatus, updateVehicleFAQ } from "../../controllers/vehicleFAQ.controller";
+import { bulkCreateVehicleFAQs, createVehicleFAQ, deleteVehicleFAQ, getAdminVehicleFAQById, getAllFAQs, getAllVehicleFAQs, toggleVehicleFAQStatus, updateVehicleFAQ } from "../../controllers/vehicleFAQ.controller";
 
 const router = Router();
 router.use(authenticateToken, AdminOnly);
@@ -49,7 +49,7 @@ router.use(authenticateToken, AdminOnly);
 
 router.post("/", createVehicleFAQ);
 
-router.post("/tour/:tourId/bulk-create", bulkCreateFAQs);
+router.post("/vehicle/:vehicleId/bulk-create", bulkCreateVehicleFAQs);
 
 router.patch("/bulk-update", bulkUpdateFAQs);
 
@@ -59,7 +59,7 @@ router.patch("/:faqId", updateVehicleFAQ);
 
 router.get("/vehicles/:vehicleId", getAllVehicleFAQs);
 
-router.post("/tours/:sourceTourId/copy/:targetTourId", copyFAQs);
+router.post("/vehicles/:sourceVehicleId/copy/:targetVehicleId", copyFAQs);
 
 router.get("/statistics", getFAQStatistics);
 
@@ -105,7 +105,7 @@ registerRoute({
 // Bulk create FAQs for a vehicle
 registerRoute({
   method: "post",
-  path: "/api/admin/faqs/vehicle/{vehicleId}/bulk-create",
+  path: "/api/admin/vehicle-faqs/vehicle/{vehicleId}/bulk-create",
   summary: "Bulk create FAQs for a vehicle ",
   tags: ["Vehicle FAQS"],
   security: [{ bearerAuth: [] }],
