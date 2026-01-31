@@ -40,7 +40,7 @@ import {
   internalServerErrorSchema,
   unauthorizedErrorSchema,
 } from "../../schema/common.schema";
-import { createVehicleFAQ, getAdminVehicleFAQById, getAllFAQs, getAllVehicleFAQs } from "../../controllers/vehicleFAQ.controller";
+import { createVehicleFAQ, getAdminVehicleFAQById, getAllFAQs, getAllVehicleFAQs, updateVehicleFAQ } from "../../controllers/vehicleFAQ.controller";
 
 const router = Router();
 router.use(authenticateToken, AdminOnly);
@@ -55,7 +55,7 @@ router.patch("/bulk-update", bulkUpdateFAQs);
 
 router.patch("/:faqId/toggle", toggleFAQStatus);
 
-router.patch("/:faqId", updateFAQ);
+router.patch("/:faqId", updateVehicleFAQ);
 
 router.get("/vehicles/:vehicleId", getAllVehicleFAQs);
 

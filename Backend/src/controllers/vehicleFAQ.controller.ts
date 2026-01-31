@@ -511,7 +511,7 @@ const getAdminVehicleFAQById = async (
 };
 
 // Update an FAQ
-const updateFAQ = async (req: Request, res: Response, next: NextFunction) => {
+const updateVehicleFAQ = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { faqId } = vehicleFAQIdParamsSchema.parse(req.params);
     const validatedData = updateVehicleFAQSchema.parse(req.body);
@@ -1135,7 +1135,7 @@ export {
   getAllVehicleFAQs,
   getAllFAQs,
   getAdminVehicleFAQById,
-  updateFAQ,
+  updateVehicleFAQ,
   toggleFAQStatus,
   deleteFAQ,
   bulkCreateFAQs,
