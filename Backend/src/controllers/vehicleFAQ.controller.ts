@@ -4,10 +4,9 @@ import {
   bulkCreateVehicleFAQsSchema,
   bulkDeleteVehicleFAQsSchema,
   bulkUpdateVehicleFAQsSchema,
-  copyFAQsParamsSchema,
   copyFAQsSchema,
+  copyVehicleFAQsParamsSchema,
   createVehicleFAQSchema,
-  FAQsStatisticsQuerySchema,
   searchVehicleFAQSQuerySchema,
   updateVehicleFAQSchema,
   vehicleFAQIdParamsSchema,
@@ -925,48 +924,48 @@ const copyVehicleFAQs = async (
   next: NextFunction,
 ) => {
   try {
-    const { sourceTourId, targetTourId } = copyFAQsParamsSchema.parse(
+    const { sourceVehicleId, targetVehicleId } = copyVehicleFAQsParamsSchema.parse(
       req.params,
     );
     const { includeInactive } = copyFAQsSchema.parse(req.body);
 
-    const [sourceTour, targetTour] = await Promise.all([
-      prisma.tour.findUnique({ where: { id: sourceTourId } }),
-      prisma.tour.findUnique({ where: { id: targetTourId } }),
+    const [sourceVehicle, targetVehicle] = await Promise.all([
+      prisma.vehicle.findUnique({ where: { id: sourceVehicleId } }),
+      prisma.vehicle.findUnique({ where: { id: targetVehicleId } }),
     ]);
 
-    if (!sourceTour) {
+    if (!sourceVehicle) {
       return next({
         status: 404,
         success: false,
-        message: "Source tour not found",
+        message: "Source vehicle not found",
       });
     }
 
-    if (!targetTour) {
+    if (!targetVehicle) {
       return next({
         status: 404,
         success: false,
-        message: "Target tour not found",
+        message: "Target vehicle not found",
       });
     }
 
-    const where: any = { tourId: sourceTourId };
+    const where: any = { vehicleId: sourceVehicleId };
     if (!includeInactive) where.isActive = true;
 
-    const sourceFAQs = await prisma.tourFAQ.findMany({ where });
+    const sourceFAQs = await prisma.vehicleFAQ.findMany({ where });
 
     if (sourceFAQs.length === 0) {
       return next({
         status: 404,
         success: false,
-        message: "No FAQs found in source tour",
+        message: "No FAQs found in source vehicle",
       });
     }
 
     //  Prevent duplicates in target tour
-    const targetQuestions = await prisma.tourFAQ.findMany({
-      where: { tourId: targetTourId },
+    const targetQuestions = await prisma.vehicleFAQ.findMany({
+      where: { vehicleId: targetVehicleId },
       select: { questionLower: true },
     });
 
@@ -982,16 +981,16 @@ const copyVehicleFAQs = async (
       return next({
         status: 409,
         success: false,
-        message: "All FAQs already exist in the target tour",
+        message: "All FAQs already exist in the target vehicle",
       });
     }
 
     //  Copy FAQs to target tour
     const copiedFAQs = await prisma.$transaction(
       faqsToCopy.map((faq) =>
-        prisma.tourFAQ.create({
+        prisma.vehicleFAQ.create({
           data: {
-            tourId: targetTourId,
+            vehicleId: targetVehicleId,
             question: faq.question.trim(),
             questionLower: faq.question.trim().toLowerCase(),
             answer: faq.answer,
@@ -1006,8 +1005,8 @@ const copyVehicleFAQs = async (
       success: true,
       message: `${copiedFAQs.length} FAQ(s) copied successfully`,
       data: {
-        sourceTourId,
-        targetTourId,
+        sourceVehicleId,
+        targetVehicleId,
         copiedCount: copiedFAQs.length,
         faqs: copiedFAQs,
       },
@@ -1090,7 +1089,7 @@ const getVehicleFAQStatistics = async (
         avgFAQsPerVehicle: Math.round(avgFAQsPerVehicle * 10) / 10,
         topVehiclesWithMostFAQs: topVehiclesWithDetails,
         filters: {
-          tourId: vehicleId || null,
+          vehicleId: vehicleId || null,
         },
       },
     });
